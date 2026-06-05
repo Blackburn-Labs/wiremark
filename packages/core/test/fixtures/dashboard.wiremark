@@ -1,0 +1,24 @@
+Wireframe #dashboard landscape
+  AppBar
+    Toolbar
+      Typography h6 "Acme"
+  Stack row 100% *
+    Box 240px *
+      List
+        ListItem "Home" to=#home
+        ListItem "Reports" to=#reports
+        ListItem "Settings" to=#settings
+    Box * *
+      Grid cols=3
+        Card
+          Typography h3 "Card 1"
+          Img
+          Typography
+        Card
+          Typography h3 "Card 2"
+          Img
+          Typography
+        Card
+          Typography h3 "Card 3"
+          Img
+          Typography

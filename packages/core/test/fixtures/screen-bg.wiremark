@@ -1,0 +1,5 @@
+Wireframe #screen landscape background=#shell
+  Grid cols=3            // only the screen-specific content; chrome comes from #shell
+    Card
+    Card
+    Card

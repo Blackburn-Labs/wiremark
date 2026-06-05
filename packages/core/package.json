@@ -1,0 +1,39 @@
+{
+  "name": "wiremark",
+  "version": "0.0.1",
+  "description": "Core parser, layout engine, and hand-drawn SVG renderer for the wiremark wireframe DSL. Pure JS, no host dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "wiremark": "bin/render.js",
+    "wiremark-render": "bin/render.js"
+  },
+  "files": [
+    "src",
+    "bin"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "render": "node bin/render.js"
+  },
+  "keywords": [
+    "wireframe",
+    "dsl",
+    "mui",
+    "svg",
+    "markdown",
+    "sketch",
+    "balsamiq",
+    "mockup"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "roughjs": "^4.6.6"
+  }
+}

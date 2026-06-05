@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+*.tgz
+
+# docs site (Docusaurus)
+.docusaurus/
+
+# test / coverage
+coverage/
+.nyc_output/
+packages/core/test/fixtures/*.svg
+tasks/
+
+# editor / OS
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.swp
+
+# env
+.env
+.env.local

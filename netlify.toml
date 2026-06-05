@@ -1,0 +1,24 @@
+# Netlify config for the wiremark docs site (docs.wiremark.dev).
+#
+# The main marketing site (www.wiremark.dev) is a separate repo/deploy. This
+# config builds ONLY the docs site, from this repo's site/ directory.
+#
+# base = "site" makes Netlify install and build inside site/. The build runs
+# site's `prebuild` hook first (node ../scripts/generate-reference.mjs), which
+# regenerates ../docs/reference/components.md from meta/mui-support-matrix.json,
+# so the published reference is always in sync with the source of truth.
+
+[build]
+  base = "site"
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# --- Optional: serve under www.wiremark.dev/docs instead of a subdomain ---
+# Keep this build as-is but set these env vars in the Netlify UI for this site:
+#   DOCS_URL      = https://www.wiremark.dev
+#   DOCS_BASE_URL = /docs/
+# Then add a proxy rewrite on the MAIN site (its _redirects or netlify.toml):
+#   /docs/*  https://<this-docs-site>.netlify.app/docs/:splat  200

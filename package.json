@@ -1,0 +1,17 @@
+{
+  "name": "wiremark-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "wiremark -- agent-first, markdown-embeddable wireframe DSL. Core library plus its official host adapters.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "docs:reference": "node scripts/generate-reference.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
