@@ -47,3 +47,42 @@ test('a bare Typography ~N renders squiggle filler, not a label', () => {
   const { svg } = render(FILLER_SRC);
   assert.match(svg, /<path/);  // squiggle rows are drawn as hand-drawn paths
 });
+
+test('variant defaults to body1 when omitted (strategy applies the default)', () => {
+  // The resolver does not inject PropDef defaults; an unset variant is absent and
+  // the strategy treats it as body1.
+  const t = parse('Wireframe w=400 h=300\n  Typography "x"').frames[0].children[0];
+  assert.equal(t.props.variant, undefined);
+});
+
+test('`body` is no longer a valid variant and is rejected', () => {
+  // The spec dropped the extra `body` value (use body1/body2); the bare token has
+  // no keyless slot to land in, so the resolver throws.
+  assert.throws(
+    () => parse('Wireframe w=400 h=300\n  Typography body "x"'),
+    /unexpected token `body`/,
+  );
+});
+
+test('align is a keyed enum that drives the SVG text-anchor', () => {
+  // center -> middle, right -> end; left / justify / inherit (and the default)
+  // all anchor at the start. (placement() in Typography.js.)
+  const anchorFor = (align) => {
+    const src = `Wireframe w=400 h=300\n  Typography "Hi"${align ? ` align=${align}` : ''}`;
+    assert.deepEqual(parse(src).diagnostics, [], `align=${align} should parse cleanly`);
+    return (render(src).svg.match(/text-anchor="(start|middle|end)"/) ?? [])[1];
+  };
+  assert.equal(anchorFor('center'), 'middle');
+  assert.equal(anchorFor('right'), 'end');
+  assert.equal(anchorFor('left'), 'start');
+  assert.equal(anchorFor('justify'), 'start');   // degrades to left at sketch fidelity
+  assert.equal(anchorFor('inherit'), 'start');
+  assert.equal(anchorFor(''), 'start');           // omitted => default start
+});
+
+test('noWrap parses both as a bare flag and keyed', () => {
+  const bare = parse('Wireframe w=400 h=300\n  Typography "Hi" noWrap');
+  assert.deepEqual(bare.diagnostics, []);
+  assert.equal(bare.frames[0].children[0].props.noWrap, true);
+  assert.equal(parse('Wireframe w=400 h=300\n  Typography "Hi" noWrap=true').frames[0].children[0].props.noWrap, true);
+});

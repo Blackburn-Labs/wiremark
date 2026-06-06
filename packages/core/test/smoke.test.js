@@ -42,13 +42,26 @@ test('getComponent merges the universal to= prop', () => {
   assert.equal(getComponent('NopeComponent'), undefined);
 });
 
-test('keyless slots never collide (<=1 literal, <=1 enum) per ss.3.2.2', () => {
+test('keyless slots never collide: <=1 literal; keyless-enum domains pairwise disjoint (ss.3.2.2)', () => {
+  // Multiple keyless enums per element are allowed (e.g. Button variant+size); a bare
+  // token resolves to the enum whose value-domain contains it, so those domains MUST
+  // be pairwise disjoint per component. (Mirrors the foundation invariant test.)
   for (const [name, def] of Object.entries(REGISTRY)) {
     const slots = def.keyless ?? [];
-    const literals = slots.filter((s) => s.kind === 'literal').length;
-    const enums = slots.filter((s) => s.kind === 'enum').length;
-    assert.ok(literals <= 1, `${name}: more than one keyless literal`);
-    assert.ok(enums <= 1, `${name}: more than one keyless enum`);
+    assert.ok(slots.filter((s) => s.kind === 'literal').length <= 1, `${name}: more than one keyless literal`);
+    const seen = new Map();
+    for (const slot of slots.filter((s) => s.kind === 'enum')) {
+      for (const v of def.props[slot.to]?.values ?? []) {
+        assert.ok(!seen.has(v), `${name}: keyless-enum value "${v}" in both "${seen.get(v)}" and "${slot.to}" (domains must be disjoint)`);
+        seen.set(v, slot.to);
+      }
+    }
+    // A keyless boolean resolves by its bare NAME, after keyless enums — so a boolean
+    // prop whose name equals a keyless-enum value would be unreachable as a bare flag.
+    for (const [pname, pdef] of Object.entries(def.props ?? {})) {
+      if (pdef.type === 'boolean')
+        assert.ok(!seen.has(pname), `${name}: boolean "${pname}" is shadowed by a same-named keyless-enum value`);
+    }
   }
 });
 
@@ -74,8 +87,8 @@ test('Phase 1: parse the login fixture to a stable AST', () => {
 
   const stack = frame.children[0];
   assert.equal(stack.component, 'Stack');
-  assert.equal(stack.props.direction, 'col');
-  assert.equal(stack.props.gap, 2);
+  assert.equal(stack.props.direction, 'column');
+  assert.equal(stack.props.spacing, 2);
 
   const heading = stack.children[0];
   assert.equal(heading.component, 'Typography');
@@ -87,7 +100,7 @@ test('Phase 1: parse the login fixture to a stable AST', () => {
   assert.equal(email.props.type, 'email');
 
   const button = stack.children.find((c) => c.component === 'Button');
-  assert.equal(button.props.primary, true);
+  assert.equal(button.props.variant, 'contained'); // filled look now via variant=contained (no `primary`)
   assert.equal(button.props.to, 'dashboard'); // to=#dashboard, anchor normalized
 
   const filler = stack.children.at(-1);
@@ -159,11 +172,28 @@ test('Phase 3: render the §8 fixtures to valid SVG with their content', () => {
   }
 });
 
+// Inline sources keep these self-contained (the standalone shell/screen fixtures
+// were folded into multi-frame.wiremark): a hidden #shell supplies shared chrome,
+// a visible #screen pulls it in with background=#shell.
+const SHELL = [
+  'Wireframe #shell landscape visible=false',
+  '  AppBar',
+  '    Toolbar',
+  '      Typography h6 "Acme"',
+  '  Box 240px *',
+].join('\n');
+const SCREEN_BG = [
+  'Wireframe #screen landscape background=#shell',
+  '  Grid cols=3',
+  '    Card',
+  '    Card',
+  '    Card',
+].join('\n');
+
 test('Phase 3 (composition): a visible frame paints over its background= chain (ss.5.1.1)', () => {
-  // shell.wiremark (#shell, visible=false) supplies shared chrome; screen-bg.wiremark
-  // (#screen background=#shell) is the foreground. Rendered together, the shell is
-  // underlaid beneath the screen and the pair resolves cleanly.
-  const { svg, diagnostics } = render(`${fixture('shell.wiremark')}\n${fixture('screen-bg.wiremark')}`);
+  // Rendered together, the shell is underlaid beneath the screen and the pair
+  // resolves cleanly.
+  const { svg, diagnostics } = render(`${SHELL}\n\n${SCREEN_BG}`);
   assert.deepEqual(diagnostics, [], 'a resolvable background chain warns about nothing');
   assert.match(svg, /^<svg /);
   assert.match(svg, /Acme/, "the shell's chrome is painted beneath the screen");
@@ -172,9 +202,9 @@ test('Phase 3 (composition): a visible frame paints over its background= chain (
 });
 
 test('Phase 3 (composition): an unresolved background= warns but still renders (ss.5.1.1)', () => {
-  // Rendered on its own, #screen cannot find #shell (it lives in another file); the
-  // engine warns rather than failing and emits the foreground regardless.
-  const { svg, diagnostics } = render(fixture('screen-bg.wiremark'));
+  // Rendered on its own, #screen cannot find #shell; the engine warns rather than
+  // failing and emits the foreground regardless.
+  const { svg, diagnostics } = render(SCREEN_BG);
   assert.ok(
     diagnostics.some((d) => d.severity === 'warning' && /#shell/.test(d.message)),
     'a missing background target yields a warning',

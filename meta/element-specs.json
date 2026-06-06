@@ -1,0 +1,1586 @@
+{
+  "components": [
+    {
+      "name": "Box",
+      "category": "Layout",
+      "children": true,
+      "properties": [
+        {
+          "name": "width",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["h"]
+        },
+        {
+          "name": "elevation",
+          "type": "numeric",
+          "default": "0",
+          "keyless": false
+        },
+        {
+          "name": "outline",
+          "type": "enum",
+          "values": ["none", "solid", "dashed", "dotted"],
+          "default": "none",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Stack",
+      "category": "Layout",
+      "children": true,
+      "properties": [
+        {
+          "name": "direction",
+          "type": "enum",
+          "values": ["row", "row-reverse", "column", "column-reverse"],
+          "default": "column",
+          "keyless": true
+        },
+        {
+          "name": "spacing",
+          "type": "numeric",
+          "default": 0,
+          "keyless": false,
+          "aliases": ["gap"]
+        },
+        {
+          "name": "divider",
+          "type": "boolean",
+          "keyless": true,
+          "default": false
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["h"]
+        },
+        {
+          "name": "elevation",
+          "type": "numeric",
+          "default": "0",
+          "keyless": false
+        },
+        {
+          "name": "outline",
+          "type": "enum",
+          "values": ["none", "solid", "dashed", "dotted"],
+          "default": "none",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Grid",
+      "category": "Layout",
+      "children": true,
+      "properties": [
+        {
+          "name": "columns",
+          "type": "numeric",
+          "default": 12,
+          "keyless": false,
+          "aliases": ["cols"]
+        },
+        {
+          "name": "spacing",
+          "type": "numeric",
+          "default": 0,
+          "keyless": false,
+          "aliases": ["gap"]
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "default": "100%",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["h"]
+        }
+      ]
+    },
+    {
+      "name": "Divider",
+      "category": "Layout",
+      "children": false,
+      "properties": [
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "keyless": true
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["solid", "dashed", "dotted"],
+          "default": "solid",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Spacer",
+      "category": "Layout",
+      "children": false,
+      "properties": [
+        {
+          "name": "width",
+          "type": "size",
+          "default": "1",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "1",
+          "keyless": true,
+          "aliases": ["h"]
+        }
+      ]
+    },
+    {
+      "name": "Card",
+      "category": "Surfaces",
+      "children": true,
+      "properties": [
+        {
+          "name": "elevation",
+          "type": "numeric",
+          "default": "1",
+          "keyless": false
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["elevation", "outlined"],
+          "default": "elevation",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "CardHeader",
+      "category": "Surfaces",
+      "children": true,
+      "properties": [
+        {
+          "name": "title",
+          "type": "string",
+          "aliases": ["label", "text"],
+          "keyless": true
+        },
+        {
+          "name": "subheader",
+          "aliases": ["subtext"],
+          "type": "string",
+          "keyless": false
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "default": null,
+          "keyless": false
+        },
+        {
+          "name": "closeIcon",
+          "type": "icon",
+          "default": "Close",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "CardContent",
+      "category": "Surfaces",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "CardActions",
+      "category": "Surfaces",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "AppBar",
+      "category": "Surfaces",
+      "children": true,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["regular", "dense"],
+          "default": "regular",
+          "keyless": true
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "default": "hatch",
+          "keyless": false,
+          "notes": "Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Packs the background tint's hatch lines closer together."
+        }
+      ]
+    },
+    {
+      "name": "Toolbar",
+      "category": "Surfaces",
+      "children": true,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["regular", "dense"],
+          "default": "regular",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "AccordionHeader",
+      "category": "Surfaces",
+      "children": false,
+      "properties": [
+        {
+          "name": "title",
+          "type": "string",
+          "aliases": ["label", "text"],
+          "keyless": true
+        },
+        {
+          "name": "expanded",
+          "type": "boolean",
+          "keyless": true,
+          "default": false
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "default": false,
+          "keyless": true
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "default": "ChevronRight",
+          "keyless": false,
+          "notes": "ChevronDown used by default if `expanded`"
+        }
+      ]
+    },
+    {
+      "name": "AccordionBody",
+      "category": "Surfaces",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "Drawer",
+      "category": "Navigation",
+      "children": true,
+      "properties": [
+        {
+          "name": "anchor",
+          "type": "enum",
+          "values": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ],
+          "default": "left",
+          "keyless": true,
+          "notes": "v1.0."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "permanent",
+            "persistent",
+            "temporary"
+          ],
+          "default": "temporary",
+          "keyless": true,
+          "notes": "v1.0."
+        },
+        {
+          "name": "open",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "notes": "Drawn open by default in wireframe."
+        }
+      ]
+    },
+    {
+      "name": "Link",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless text literal."
+        },
+        {
+          "name": "href",
+          "type": "reference",
+          "keyless": false,
+          "aliases": [
+            "to"
+          ],
+          "notes": "DSL to=#id (frame-level only)."
+        },
+        {
+          "name": "underline",
+          "type": "enum",
+          "values": [
+            "none",
+            "hover",
+            "always"
+          ],
+          "default": "always",
+          "keyless": false,
+          "notes": "Cosmetic; v1.0."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "subtitle1",
+            "subtitle2",
+            "body1",
+            "body2",
+            "caption",
+            "overline",
+            "button"
+          ],
+          "default": "inherit",
+          "keyless": true,
+          "notes": "Shares Typography scale."
+        },
+        {
+          "name": "filler",
+          "type": "string",
+          "keyless": false,
+          "notes": "Filler control."
+        }
+      ]
+    },
+    {
+      "name": "MenuItem",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": false,
+          "notes": "Could map like ListItem in v1.0."
+        },
+        {
+          "name": "selected",
+          "type": "boolean",
+          "default": false,
+          "keyless": false
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "default": false,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Menubar",
+      "category": "Navigation",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "Tabs",
+      "category": "Navigation",
+      "children": true,
+      "properties": [
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "keyless": true
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "standard",
+            "scrollable",
+            "fullWidth"
+          ],
+          "default": "standard",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Tab",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Breadcrumbs",
+      "category": "Navigation",
+      "children": true,
+      "properties": [
+        {
+          "name": "separator",
+          "type": "string",
+          "default": "/",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Stepper",
+      "category": "Navigation",
+      "children": true,
+      "properties": [
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Step",
+      "category": "Navigation",
+      "children": true,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Pagination",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "count",
+          "type": "numeric",
+          "default": 1,
+          "keyless": false
+        },
+        {
+          "name": "page",
+          "type": "numeric",
+          "default": 1,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "BottomNavigation",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "value",
+          "type": "string",
+          "keyless": false,
+          "notes": "Mobile nav bar; v1.0 candidate."
+        },
+        {
+          "name": "showLabels",
+          "type": "boolean",
+          "default": false,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "BottomNavigationAction",
+      "category": "Navigation",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": false
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Typography",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless text literal."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "subtitle1",
+            "subtitle2",
+            "body1",
+            "body2",
+            "caption",
+            "overline",
+            "button"
+          ],
+          "default": "body1",
+          "keyless": true,
+          "notes": "Keyless enum (DSL uses h4/body etc)."
+        },
+        {
+          "name": "align",
+          "type": "enum",
+          "values": [
+            "inherit",
+            "left",
+            "center",
+            "right",
+            "justify"
+          ],
+          "default": "inherit",
+          "keyless": false,
+          "notes": "v1.0."
+        },
+        {
+          "name": "noWrap",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Truncation; v1.0."
+        },
+        {
+          "name": "filler",
+          "type": "string",
+          "default": "1 line",
+          "keyless": false,
+          "notes": "Filler amount + style."
+        }
+      ]
+    },
+    {
+      "name": "Button",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless text literal."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "text",
+            "outlined",
+            "contained"
+          ],
+          "default": "text",
+          "keyless": true,
+          "notes": "Keyless enum."
+        },
+        {
+          "name": "href",
+          "type": "reference",
+          "keyless": false,
+          "aliases": [
+            "to"
+          ],
+          "notes": "DSL to=#id."
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": ["small", "medium", "large"],
+          "default": "medium",
+          "keyless": true
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "v1.0 boolean flag."
+        },
+        {
+          "name": "startIcon",
+          "type": "string",
+          "keyless": false,
+          "notes": "Use Icon child in v1.0."
+        },
+        {
+          "name": "endIcon",
+          "type": "string",
+          "keyless": false
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Express via sizing instead."
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "default": "hatch",
+          "keyless": false,
+          "notes": "Tint pattern for the contained fill: hatch (single diagonal) or crosshatch (both diagonals)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Packs the contained tint's hatch lines closer together."
+        }
+      ]
+    },
+    {
+      "name": "TextField",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless string literal."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "outlined",
+            "filled",
+            "standard"
+          ],
+          "default": "outlined",
+          "keyless": true,
+          "notes": "Keyless enum."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "keyless": false,
+          "notes": "Keyed; drawn value text."
+        },
+        {
+          "name": "type",
+          "type": "enum",
+          "values": [
+            "text",
+            "password",
+            "email",
+            "number"
+          ],
+          "default": "text",
+          "keyless": false,
+          "notes": "Keyed."
+        },
+        {
+          "name": "multiline",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Boolean flag."
+        },
+        {
+          "name": "required",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Boolean flag."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "keyless": false,
+          "notes": "v1.0; value= covers most cases."
+        },
+        {
+          "name": "helperText",
+          "type": "string",
+          "keyless": false,
+          "aliases": [
+            "helper"
+          ],
+          "notes": "v1.0."
+        },
+        {
+          "name": "error",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "v1.0 boolean."
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "v1.0 boolean."
+        },
+        {
+          "name": "rows",
+          "type": "numeric",
+          "keyless": false,
+          "notes": "With multiline."
+        },
+        {
+          "name": "defaultValue",
+          "type": "string",
+          "keyless": false,
+          "notes": "Use value= in DSL."
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": [
+            "small",
+            "medium"
+          ],
+          "default": "medium",
+          "keyless": false,
+          "notes": "v1.0."
+        },
+        {
+          "name": "fullWidth",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Express via sizing."
+        },
+        {
+          "name": "select",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Use Select component instead."
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "default": "hatch",
+          "keyless": false,
+          "notes": "Tint pattern for the filled/disabled fill: hatch (single diagonal) or crosshatch (both diagonals)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Packs the filled/disabled tint's hatch lines closer together."
+        },
+        {
+          "name": "to",
+          "type": "reference",
+          "keyless": false,
+          "notes": "Clickable region."
+        },
+        {
+          "name": "filler",
+          "type": "string",
+          "default": "label fill",
+          "keyless": false,
+          "notes": "Filler."
+        }
+      ]
+    },
+    {
+      "name": "Img",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "ratio",
+          "type": "ratio",
+          "keyless": false,
+          "notes": "Aspect ratio keyed."
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "keyless": false,
+          "notes": "Alt text keyed (quoted literal)."
+        },
+        {
+          "name": "src",
+          "type": "string",
+          "keyless": false,
+          "notes": "Real source; v1.0."
+        }
+      ]
+    },
+    {
+      "name": "Avatar",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "circular",
+            "rounded",
+            "square"
+          ],
+          "default": "circular",
+          "keyless": true,
+          "notes": "v0.1 draws a circle."
+        },
+        {
+          "name": "src",
+          "type": "string",
+          "keyless": false,
+          "notes": "v1.0."
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "keyless": false,
+          "notes": "v1.0."
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Initials/icon."
+        }
+      ]
+    },
+    {
+      "name": "Chip",
+      "category": "Content",
+      "children": true,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless text literal."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "filled",
+            "outlined"
+          ],
+          "default": "filled",
+          "keyless": true,
+          "notes": "v1.0."
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": [
+            "small",
+            "medium"
+          ],
+          "default": "medium",
+          "keyless": true,
+          "notes": "v1.0."
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "default": "hatch",
+          "keyless": false,
+          "notes": "Tint pattern for the filled fill: hatch (single diagonal) or crosshatch (both diagonals)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Packs the filled tint's hatch lines closer together."
+        },
+        {
+          "name": "filler",
+          "type": "string",
+          "default": "Chip",
+          "keyless": false,
+          "notes": "Filler."
+        }
+      ]
+    },
+    {
+      "name": "Icon",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "name",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless name; vocab is open (spec §10.3)."
+        },
+        {
+          "name": "fontSize",
+          "type": "enum",
+          "values": [
+            "small",
+            "medium",
+            "large",
+            "inherit"
+          ],
+          "default": "medium",
+          "keyless": false,
+          "aliases": [
+            "size"
+          ],
+          "notes": "v1.0."
+        }
+      ]
+    },
+    {
+      "name": "List",
+      "category": "Content",
+      "children": true,
+      "properties": [
+        {
+          "name": "dense",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "v1.0 flag."
+        },
+        {
+          "name": "subheader",
+          "type": "string",
+          "keyless": false,
+          "notes": "v1.0."
+        }
+      ]
+    },
+    {
+      "name": "ListItem",
+      "category": "Content",
+      "children": true,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true,
+          "notes": "Keyless text literal."
+        },
+        {
+          "name": "to",
+          "type": "reference",
+          "keyless": false,
+          "notes": "Clickable nav target."
+        },
+        {
+          "name": "filler",
+          "type": "string",
+          "default": "1 line",
+          "keyless": false,
+          "notes": "Filler."
+        }
+      ]
+    },
+    {
+      "name": "ListItemButton",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "selected",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Folded into ListItem to= in DSL."
+        }
+      ]
+    },
+    {
+      "name": "ListItemIcon",
+      "category": "Content",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "ListItemText",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "primary",
+          "type": "string",
+          "keyless": false,
+          "notes": "Folded into ListItem label."
+        },
+        {
+          "name": "secondary",
+          "type": "string",
+          "keyless": false,
+          "notes": "Two-line item; v1.0."
+        }
+      ]
+    },
+    {
+      "name": "Table",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "size",
+          "type": "enum",
+          "values": [
+            "small",
+            "medium"
+          ],
+          "default": "medium",
+          "keyless": false,
+          "notes": "Tables likely v1.0."
+        }
+      ]
+    },
+    {
+      "name": "TableRow",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "selected",
+          "type": "boolean",
+          "default": false,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "TableCell",
+      "category": "Content",
+      "children": true,
+      "properties": [
+        {
+          "name": "align",
+          "type": "enum",
+          "values": [
+            "left",
+            "center",
+            "right"
+          ],
+          "default": "left",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Badge",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "badgeContent",
+          "type": "string",
+          "keyless": true,
+          "notes": "Overlay count; v1.0."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "standard",
+            "dot"
+          ],
+          "default": "standard",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Control",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["radio", "checkbox", "switch"],
+          "default": "checkbox",
+          "keyless": true
+        },
+        {
+          "name": "checked",
+          "type": "boolean",
+          "keyless": true,
+          "default": false
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "keyless": true,
+          "default": false
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": ["small", "medium", "large"],
+          "default": "medium",
+          "keyless": true
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "default": "hatch",
+          "keyless": false,
+          "notes": "Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Packs the checked switch track's hatch lines closer together."
+        }
+      ]
+    },
+    {
+      "name": "Select",
+      "category": "Inputs",
+      "children": true,
+      "properties": [
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["outlined", "filled", "standard"],
+          "default": "outlined",
+          "keyless": true
+        },
+        {
+          "name": "value",
+          "aliases": ["v", "val"],
+          "type": "string",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Option",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "label",
+          "aliases": ["text"],
+          "type": "string",
+          "keyless": true
+        },
+        {
+          "name": "subtext",
+          "type": "string",
+          "keyless": false,
+          "default": null
+        },
+        {
+          "name": "selected",
+          "type": "boolean",
+          "keyless": true,
+          "default": false
+        },
+        {
+          "name": "startIcon",
+          "type": "icon",
+          "default": null,
+          "keyless": false
+        },
+        {
+          "name": "endIcon",
+          "type": "icon",
+          "default": null,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Slider",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "value",
+          "type": "numeric",
+          "aliases": ["n", "v", "val"],
+          "default": 0,
+          "keyless": true
+        },
+        {
+          "name": "min",
+          "type": "numeric",
+          "default": 0,
+          "keyless": false
+        },
+        {
+          "name": "max",
+          "type": "numeric",
+          "default": 100,
+          "keyless": false
+        },
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Rating",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "value",
+          "type": "numeric",
+          "aliases": ["n", "v", "val"],
+          "default": 0,
+          "keyless": true
+        },
+        {
+          "name": "max",
+          "type": "numeric",
+          "default": 100,
+          "keyless": false
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "default": "Star",
+          "keyless": false
+        },
+        {
+          "name": "emptyIcon",
+          "type": "icon",
+          "default": "StarBorder",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "ToggleButtonGroup",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "keyless": true
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": ["small", "medium", "large"],
+          "default": "medium",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "ToggleButton",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "icon",
+          "type": "icon",
+          "keyless": true
+        },
+        {
+          "name": "selected",
+          "type": "boolean",
+          "default": false,
+          "keyless": true
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": ["small", "medium", "large"],
+          "default": "medium",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "ButtonGroup",
+      "category": "Inputs",
+      "children": true,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["text", "outlined", "contained"],
+          "default": "outlined",
+          "keyless": true
+        },
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Fab",
+      "category": "Inputs",
+      "children": false,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["circular", "extended"],
+          "default": "circular",
+          "keyless": true
+        },
+        {
+          "name": "size",
+          "type": "enum",
+          "values": [ "small", "medium", "large"],
+          "default": "medium",
+          "keyless": true
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Alert",
+      "category": "Feedback",
+      "children": false,
+      "properties": [
+        {
+          "name": "severity",
+          "type": "enum",
+          "values": ["error", "warning", "info", "success"],
+          "default": "success",
+          "keyless": true
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["standard", "filled", "outlined"],
+          "default": "standard",
+          "keyless": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Dialog",
+      "category": "Feedback",
+      "children": true,
+      "properties": [
+        {
+          "name": "size",
+          "type": "enum",
+          "values": [ "fullScreen", "content", "xs", "sm", "md", "lg", "lx"],
+          "default": "content",
+          "keyless": true
+        }
+      ]
+    },
+    {
+      "name": "Snackbar",
+      "category": "Feedback",
+      "children": false,
+      "properties": [
+        {
+          "name": "position",
+          "type": "enum",
+          "values": [ "inline", "topLeft", "topRight", "bottomLeft", "bottomRight"],
+          "default": "inline",
+          "keyless": true
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "keyless": true,
+          "aliases": ["label"]
+        }
+      ]
+    },
+    {
+      "name": "Progress",
+      "category": "Feedback",
+      "children": false,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [ "linear", "circular"],
+          "default": "indeterminate",
+          "keyless": true,
+          "notes": "v1.0."
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "aliases": ["n", "v", "val"],
+          "default": 0,
+          "keyless": true
+        },
+        {
+          "name": "min",
+          "type": "numeric",
+          "default": 0,
+          "keyless": false
+        },
+        {
+          "name": "max",
+          "type": "numeric",
+          "default": 100,
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Skeleton",
+      "category": "Feedback",
+      "children": false,
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": [
+            "text",
+            "circular",
+            "rectangular",
+            "rounded"
+          ],
+          "default": "rectangular",
+          "keyless": true
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "keyless": true,
+          "aliases": ["h"]
+        }
+      ]
+    }
+  ]
+}

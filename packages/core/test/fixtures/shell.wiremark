@@ -1,5 +1,0 @@
-Wireframe #shell landscape visible=false
-  AppBar
-    Toolbar
-      Typography h6 "Acme"
-  Box 240px *            // left nav rail, part of the shared chrome

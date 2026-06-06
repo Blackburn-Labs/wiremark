@@ -46,7 +46,7 @@ visual editor lives in its own repository.
 packages/
   core/         # parser, layout engine, hand-drawn SVG renderer (pure JS, no host deps)
   adapter-*/    # thin per-host adapters (Obsidian, markdown-it, remark, ...) -- added as built
-meta/           # mui-support-matrix.json -- component coverage matrix (hand-maintained)
+meta/           # element-specs.json -- component coverage matrix (hand-maintained)
 ```
 
 - **core** turns wiremark source — the text inside a ` ```wireframe ` block —
@@ -66,3 +66,22 @@ hand-drawn SVG`, with the navigation graph inferred from `to=#id` links.
 The format is specified at v0.1. The workspace and core skeleton are scaffolded;
 the parser, layout engine, and renderer are in progress. Run the core test suite
 with `npm test`.
+
+## Releasing
+
+`packages/core` is published to npm as `wiremark` automatically by the **Publish
+to npm** workflow (`.github/workflows/release.yml`), which authenticates via OIDC
+trusted publishing — no tokens or secrets required.
+
+To cut a release:
+
+1. Bump `version` in `packages/core/package.json` (semver). The published version
+   is read from this field, so it must be one not already on npm.
+2. Commit and push to `main`.
+3. Draft and publish a new **GitHub Release** with a tag matching the version
+   (e.g. `v0.2.0`).
+
+Publishing the Release runs the workflow — test suite, then `npm publish
+--provenance` — and the new version (with a provenance attestation) appears on
+npm a few minutes later. The workflow can also be run on demand from the
+**Actions** tab.

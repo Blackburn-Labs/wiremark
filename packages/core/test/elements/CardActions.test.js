@@ -30,11 +30,13 @@ test('CardActions lays its buttons out in a finite, positive row', () => {
   assert.ok(Number.isFinite(actions.w) && actions.w > 0, `w should be finite & positive, got ${actions.w}`);
   assert.ok(Number.isFinite(actions.h) && actions.h > 0, `h should be finite & positive, got ${actions.h}`);
 
-  // A row: the two buttons sit side by side, the second to the right of the first.
+  // A padded row: the two buttons sit side by side, the second to the right of
+  // the first, both inset from the actions box edge by the padding.
   const [buy, details] = actions.children;
   assert.equal(actions.children.length, 2);
   assert.equal(buy.y, details.y, 'actions share a row');
   assert.ok(details.x > buy.x, 'the second action is laid to the right');
+  assert.ok(buy.x > actions.x, 'actions are inset from the box edge by padding');
 });
 
 test('CardActions flows its button labels to the SVG', () => {

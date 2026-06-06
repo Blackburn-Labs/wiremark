@@ -68,7 +68,7 @@ test('identical edges are de-duped', () => {
   const doc = parse(
     [
       'Wireframe #a',
-      '  Stack col',
+      '  Stack column',
       '    Button "Go" to=#b',
       '    Button "Go" to=#b', // identical from/to/label -> one edge
       '    Link "Go" to=#b', // same from/to/label via a different element -> still one

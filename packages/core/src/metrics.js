@@ -23,6 +23,29 @@ export const PRESET_SIZES = {
 /** Size for a preset-less, dimension-less `Wireframe`. */
 export const DEFAULT_FRAME = { w: 800, h: 600 };
 
+/**
+ * Multi-frame flow-chart layout (SPEC ss.7.4). When a file declares several
+ * frames, they are positioned as a Mermaid-style flow chart over the `to=#id`
+ * navigation graph rather than stacked. These are the inter-frame gaps:
+ *  - FLOW_GAP: between consecutive ranks (along the flow axis).
+ *  - SIBLING_GAP: between frames sharing a rank (across the flow axis).
+ *  - COMPONENT_GAP: between disconnected frame groups.
+ */
+export const FRAME_FLOW_GAP = 80;
+export const FRAME_SIBLING_GAP = 48;
+export const FRAME_COMPONENT_GAP = 96;
+
+/** Connector arrowhead: wing length (px) and half-spread (radians). */
+export const ARROW_HEAD = 10;
+export const ARROW_SPREAD = 0.45;
+
+/**
+ * Perpendicular gap (px) between parallel connectors that share a frame pair, so
+ * a bidirectional `#a ⇄ #b` (or two same-direction edges) fan out instead of
+ * overlapping (ss.7.4).
+ */
+export const CONNECTOR_SPREAD = 40;
+
 /** Per-variant font size in px (MUI-ish); the default variant is `body`. */
 export const VARIANT_FONT = {
   h1: 48, h2: 40, h3: 32, h4: 24, h5: 20, h6: 18,
@@ -56,13 +79,18 @@ export function measureText(str, fontSize) {
  * Intrinsic size of a single-line text leaf (label/filler) plus optional
  * padding -- the shared `intrinsic` body for Button / Chip / Link / ListItem so
  * they don't each re-derive it.
+ *
+ * Pass `fontSize` when the element draws its label at a size that ISN'T its
+ * Typography variant (e.g. Button/Chip/Icon scale by their own `size` prop) so
+ * the measured box matches the drawn text. Omit it to measure at the node's
+ * variant size (`fontSizeOf`) -- the default for true text elements.
  * @param {import('./resolve.js').ResolvedNode} node
- * @param {{ padX?: number, padY?: number, fallback?: string }} [opts]
+ * @param {{ padX?: number, padY?: number, fallback?: string, fontSize?: number }} [opts]
  * @returns {{ w: number, h: number }}
  */
 export function textIntrinsic(node, opts = {}) {
-  const { padX = 0, padY = 0, fallback = 'Text' } = opts;
-  const fs = fontSizeOf(node);
+  const { padX = 0, padY = 0, fallback = 'Text', fontSize } = opts;
+  const fs = typeof fontSize === 'number' ? fontSize : fontSizeOf(node);
   const { w, h } = measureText(textOf(node, fallback), fs);
   return { w: w + 2 * padX, h: h + 2 * padY };
 }

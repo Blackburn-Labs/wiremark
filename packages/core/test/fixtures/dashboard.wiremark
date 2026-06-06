@@ -1,8 +1,8 @@
 Wireframe #dashboard landscape
-  AppBar
+  AppBar background=crosshatch denseBackground
     Toolbar
       Typography h6 "Acme"
-  Stack row 100% *
+  Stack row 100% * spacing=3
     Box 240px *
       List
         ListItem "Home" to=#home

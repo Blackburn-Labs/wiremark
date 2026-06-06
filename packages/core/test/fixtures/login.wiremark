@@ -1,13 +1,13 @@
 Wireframe #login mobile
-  Stack col gap=2
+  Stack column spacing=2
     Typography h4 "Sign in"
     TextField "Email" type=email
     TextField "Password" type=password
     Stack row
-      Checkbox
-      Typography body "Remember me"
+      Control
+      Typography body2 "Remember me"
       Spacer
       Link "Forgot?" to=#reset
-    Button "Sign in" primary to=#dashboard
+    Button "Sign in" contained to=#dashboard
     Divider
     Typography ~2

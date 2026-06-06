@@ -12,10 +12,8 @@ import Stack from './Stack.js';
 import Box from './Box.js';
 import Grid from './Grid.js';
 import Spacer from './Spacer.js';
-import Container from './Container.js';
 import Divider from './Divider.js';
 import Card from './Card.js';
-import CardMedia from './CardMedia.js';
 import CardContent from './CardContent.js';
 import CardActions from './CardActions.js';
 import AppBar from './AppBar.js';
@@ -29,17 +27,16 @@ import Chip from './Chip.js';
 import Icon from './Icon.js';
 import List from './List.js';
 import ListItem from './ListItem.js';
-import Checkbox from './Checkbox.js';
-import Switch from './Switch.js';
+import Control from './Control.js';
 
 /** Every element definition, grouped by category. @type {import('./common.js').ComponentDef[]} */
 export const ELEMENTS = [
   Wireframe,
-  Stack, Box, Grid, Spacer, Container, Divider,
-  Card, CardMedia, CardContent, CardActions, AppBar, Toolbar,
+  Stack, Box, Grid, Spacer, Divider,
+  Card, CardContent, CardActions, AppBar, Toolbar,
   Link,
   Typography, Button, TextField, Img, Chip, Icon, List, ListItem,
-  Checkbox, Switch,
+  Control,
 ];
 
 export { FILLER_STYLES, PRESETS } from './common.js';

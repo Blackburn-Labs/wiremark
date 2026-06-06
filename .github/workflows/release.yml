@@ -1,0 +1,43 @@
+name: Publish to npm
+
+# Publishes packages/core (the "wiremark" package) to npm via OIDC trusted
+# publishing — no NPM_TOKEN secret required. Provenance is generated because
+# the source repo is public.
+#
+# One-time prerequisite: the "wiremark" package must already exist on npm and
+# have a Trusted Publisher configured at
+# https://www.npmjs.com/package/wiremark/access (GitHub Actions -> this repo ->
+# workflow "release.yml", allowed action "npm publish").
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm OIDC trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22" # OIDC requires Node >= 22.14
+          registry-url: "https://registry.npmjs.org"
+
+      # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test --workspace wiremark
+
+      - name: Publish (OIDC + provenance)
+        run: npm publish --provenance --access public
+        working-directory: packages/core

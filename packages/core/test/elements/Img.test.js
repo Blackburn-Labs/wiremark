@@ -7,6 +7,7 @@ import { layout } from '../../src/layout.js';
 
 const RATIO_SRC = 'Wireframe landscape\n  Img ratio=16:9';
 const BARE_SRC = 'Wireframe\n  Img';
+const FULL_SRC = 'Wireframe landscape\n  Img ratio=16:9 alt="A photo" src="hero.png"';
 
 test('Img with ratio parses cleanly and resolves its ratio prop', () => {
   const doc = parse(RATIO_SRC);
@@ -40,4 +41,19 @@ test('a bare Img (no ratio) still lays out and renders a hand-drawn path', () =>
 
   const { svg } = render(BARE_SRC);
   assert.match(svg, /<path/);
+});
+
+test('Img resolves ratio + alt + src together, and the aspect is preserved', () => {
+  const doc = parse(FULL_SRC);
+  assert.deepEqual(doc.diagnostics, []);
+
+  const img = doc.frames[0].children[0];
+  assert.equal(img.props.ratio, '16:9');
+  assert.equal(img.props.alt, 'A photo');
+  assert.equal(img.props.src, 'hero.png');
+
+  // src is metadata only (the placeholder looks the same), but ratio still drives
+  // the aspect-locked layout.
+  const box = layout(doc)[0].root.children[0];
+  assert.ok(Math.abs(box.w / box.h - 16 / 9) < 0.05, `w/h should be ~16/9, got ${box.w / box.h}`);
 });

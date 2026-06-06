@@ -29,3 +29,23 @@ test('Toolbar is invisible but flows its child through a row', () => {
   // The child Typography text reaches the SVG, proving the row layoutSpec ran.
   assert.match(svg, /Acme/);
 });
+
+test('variant is a keyless enum: `dense` sets it, a bare Toolbar defaults to regular', () => {
+  const dense = parse('Wireframe landscape\n  Toolbar dense\n    Typography h6 "A"');
+  assert.deepEqual(dense.diagnostics, []);
+  assert.equal(dense.frames[0].children[0].props.variant, 'dense');
+  // Defaults aren't injected (CONVENTION s.6): an omitted variant is absent and
+  // the strategy treats it as `regular`.
+  assert.equal(parse(SRC).frames[0].children[0].props.variant, undefined);
+});
+
+test('a dense Toolbar packs its items tighter than a regular one', () => {
+  // The dense variant halves the inter-item gap (SPACING -> SPACING/2), so the
+  // second child sits closer to the first. Two items so the gap is observable.
+  const boxOf = (variant) => layout(parse(
+    `Wireframe landscape\n  Toolbar ${variant}\n    Typography h6 "A"\n    Typography h6 "B"`,
+  ))[0].root.children[0];
+  const gapOf = (b) => b.children[1].x - (b.children[0].x + b.children[0].w);
+  assert.ok(gapOf(boxOf('dense')) < gapOf(boxOf('regular')),
+    'dense inter-item gap should be smaller than regular');
+});

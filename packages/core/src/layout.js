@@ -42,9 +42,11 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {Frame} frame
  * @property {boolean} visible
  * @property {LaidOutFrame[]} backgroundChain   // deepest-first, painted beneath
+ * @property {number} [x]   // absolute frame position (multi-frame flow layout); see frame-layout.js
+ * @property {number} [y]
  */
 
-/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean, flex?:boolean, minSize?:{w:number,h:number}}} */
+/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}}} */
 function strategyFor(name) {
   return REGISTRY[name] ?? /** @type {*} */ ({});
 }
@@ -124,7 +126,7 @@ function measureContainer(node, spec, avail) {
     return { w: w + 2 * pad, h: h + 2 * pad };
   }
   if (spec.axis === 'grid') {
-    const cols = Math.max(1, spec.cols ?? 1);
+    const cols = Math.max(1, Math.floor(spec.cols ?? 1));
     const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad : undefined;
     const cellW = innerW != null ? (innerW - gap * (cols - 1)) / cols : undefined;
     const sizes = kids.map((k) => measure(k, cellW != null ? { w: cellW } : undefined));
@@ -165,7 +167,7 @@ export function place(node, region) {
 
 /**
  * @param {ResolvedNode[]} children @param {Rect} content
- * @param {{ axis:string, gap?:number }} spec @returns {Box[]}
+ * @param {{ axis:string, gap?:number, reverse?:boolean }} spec @returns {Box[]}
  */
 function arrangeLinear(children, content, spec) {
   const horiz = spec.axis === 'row';
@@ -201,8 +203,12 @@ function arrangeLinear(children, content, spec) {
   for (const i of items) if (i.flex > 0) i.main = totalFlex ? (leftover * i.flex) / totalFlex : 0;
 
   const boxes = [];
+  // row-reverse / column-reverse: flip placement order along the main axis. Flex
+  // weights, leftover and totalGap are all computed order-independently above, so
+  // reversing here only mirrors visual order (Stack `-reverse` directions, ss.5.2).
+  const order = spec.reverse ? [...items].reverse() : items;
   let cursor = horiz ? content.x : content.y;
-  for (const i of items) {
+  for (const i of order) {
     const cross = crossExtent(i.child, horiz, crossAvail);
     // Row items center on the cross (vertical) axis, matching MUI; column items
     // align to the start. Block children fill the cross axis either way.
@@ -227,7 +233,9 @@ function crossExtent(child, horiz, crossAvail) {
   if (tok?.unit === 'px') return tok.value;
   if (tok?.unit === '%') return (/** @type {number} */ (tok.value) / 100) * crossAvail;
   if (tok) return crossAvail; // fill / flex on the cross axis
-  const block = s.block ?? isContainer(child); // containers stretch to fill by default
+  // `block` may be a static boolean OR a per-node predicate (e.g. Button stretches
+  // only when fullWidth). Containers stretch to fill by default.
+  const block = typeof s.block === 'function' ? s.block(child) : (s.block ?? isContainer(child));
   if (block) return crossAvail;
   // An inline leaf keeps its intrinsic cross size, but never wider than the space
   // available -- a long label is clamped rather than overflowing the parent.
@@ -239,7 +247,7 @@ function crossExtent(child, horiz, crossAvail) {
  * @param {{ gap?:number, cols?:number }} spec @returns {Box[]}
  */
 function arrangeGrid(children, content, spec) {
-  const cols = Math.max(1, spec.cols ?? 1);
+  const cols = Math.max(1, Math.floor(spec.cols ?? 1));
   const gap = spec.gap ?? 0;
   const rows = Math.ceil(children.length / cols) || 1;
   const cellW = (content.w - gap * (cols - 1)) / cols;

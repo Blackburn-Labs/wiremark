@@ -1,0 +1,42 @@
+Wireframe #shell landscape visible=false
+  AppBar
+    Toolbar
+      Typography h6 "Acme"
+  Box 240px *
+    Spacer #content
+
+Wireframe #login landscape
+  Stack column spacing=2
+    Typography h4 "Sign in"
+    TextField "Email" type=email
+    TextField "Password" type=password
+    Stack row spacing=3
+      Control
+      Typography body2 "Remember me"
+      Spacer
+      Link "Forgot?" to=#reset
+    Button "Sign in" contained to=#home
+    Divider
+    Typography ~2
+
+Wireframe #home landscape background=#shell
+  Typography h1 "Dashboard"
+  Grid cols=3
+    Card to=#details
+    Card to=#details
+    Card to=#product
+
+Wireframe #details landscape background=#shell
+  Stack column spacing=3
+    Link "Back" to=#home
+    Typography h1 "Item Details"
+  Typography ~16
+
+Wireframe #product landscape background=#shell
+  Card
+    Img ratio=16:9
+    CardContent
+      Typography h5 "Product name"
+    CardActions
+      Button "Buy" contained
+      Button "Details" variant=outlined to=#detail

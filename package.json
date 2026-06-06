@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "test": "node --test",
-    "docs:reference": "node scripts/generate-reference.mjs"
+    "docs:reference": "node scripts/generate-reference.mjs",
+    "render:fixtures": "node scripts/render-fixtures.mjs"
   },
   "engines": {
     "node": ">=18"

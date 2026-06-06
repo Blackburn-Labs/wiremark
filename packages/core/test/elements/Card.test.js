@@ -10,14 +10,18 @@ import { layout } from '../../src/layout.js';
  * sub-parts in a column. Two authoring forms collapse to one shape by layout
  * time: a Card with no explicit Card* children has its content wrapped in an
  * implicit CardContent (the resolver's flatten rule), while a Card with explicit
- * CardMedia/CardContent/CardActions keeps them as written.
+ * CardContent/CardActions keeps them as written.
+ *
+ * Card carries two looks (SPEC props): the default `variant=elevation` lifts the
+ * paper with an `elevation` drop shadow (default 1), and `variant=outlined` is a
+ * bordered paper with no shadow. `variant` is keyless; `elevation` is keyed.
  *
  * The Card box is the frame's first (and only) child: layout(doc)[0].root.children[0].
  */
 
 // --- Form 1: implicit -- a bare Card whose content becomes one CardContent ----
 
-const IMPLICIT_SRC = 'Wireframe\n  Card\n    Typography h3 "Card 1"\n    Typography body';
+const IMPLICIT_SRC = 'Wireframe\n  Card\n    Typography h3 "Card 1"\n    Typography body2';
 
 test('implicit Card parses cleanly and flattens its content into one CardContent', () => {
   const doc = parse(IMPLICIT_SRC);
@@ -48,13 +52,11 @@ test('implicit Card renders its content and a hand-drawn card surface', () => {
   assert.match(svg, /<path/);
 });
 
-// --- Form 2: explicit -- the product-card shape with all three sub-parts ------
+// --- Form 2: explicit -- the product-card shape with its sub-parts ------------
 
 const EXPLICIT_SRC = [
   'Wireframe',
   '  Card',
-  '    CardMedia',
-  '      Img ratio=16:9',
   '    CardContent',
   '      Typography h5 "Product"',
   '      Typography body2 "Description"',
@@ -73,7 +75,7 @@ test('explicit Card parses cleanly and preserves its Card* sub-parts unwrapped',
   assert.equal(card.component, 'Card');
   assert.deepEqual(
     card.children.map((c) => c.component),
-    ['CardMedia', 'CardContent', 'CardActions'],
+    ['CardContent', 'CardActions'],
   );
 });
 
@@ -84,10 +86,10 @@ test('explicit Card lays out to a finite, positive box stacking its sub-parts', 
   assert.ok(Number.isFinite(box.w) && box.w > 0, `w should be finite & positive, got ${box.w}`);
   assert.ok(Number.isFinite(box.h) && box.h > 0, `h should be finite & positive, got ${box.h}`);
 
-  // The Card arranges all three sub-parts as its laid-out children, in order.
+  // The Card arranges its sub-parts as its laid-out children, in order.
   assert.deepEqual(
     box.children.map((c) => c.node.component),
-    ['CardMedia', 'CardContent', 'CardActions'],
+    ['CardContent', 'CardActions'],
   );
 });
 
@@ -101,6 +103,77 @@ test('explicit Card renders a hand-drawn card surface', () => {
   const { svg: probe } = render('Wireframe\n  Typography h5 "Product"\n  Button "Buy"');
   if (/Product/.test(probe)) assert.match(svg, /Product/);
   if (/Buy/.test(probe)) assert.match(svg, /Buy/);
+});
+
+// --- Props: variant (keyless enum) + elevation (keyed numeric) ----------------
+
+test('Card variant is keyless and accepts each enum value', () => {
+  for (const v of ['elevation', 'outlined']) {
+    const doc = parse(`Wireframe\n  Card ${v}`);
+    assert.deepEqual(doc.diagnostics, [], `variant=${v} should parse clean`);
+    assert.equal(doc.frames[0].children[0].props.variant, v);
+  }
+});
+
+test('Card variant also resolves in keyed form', () => {
+  const doc = parse('Wireframe\n  Card variant=outlined');
+  assert.deepEqual(doc.diagnostics, []);
+  assert.equal(doc.frames[0].children[0].props.variant, 'outlined');
+});
+
+test('Card elevation is a keyed number coerced from the token', () => {
+  const doc = parse('Wireframe\n  Card elevation=4');
+  assert.deepEqual(doc.diagnostics, []);
+  const card = doc.frames[0].children[0];
+  assert.equal(card.props.elevation, 4);
+  assert.equal(typeof card.props.elevation, 'number');
+});
+
+test('Card defaults: variant/elevation unset in props, strategy supplies them', () => {
+  // The resolver does NOT inject defaults; an omitted prop stays undefined and the
+  // render applies elevation default 1 / variant default elevation itself (ss.6).
+  const doc = parse('Wireframe\n  Card');
+  assert.deepEqual(doc.diagnostics, []);
+  const card = doc.frames[0].children[0];
+  assert.equal(card.props.variant, undefined);
+  assert.equal(card.props.elevation, undefined);
+});
+
+test('Card elevation accepts a token alongside the keyless variant, in any order', () => {
+  const doc = parse('Wireframe\n  Card outlined elevation=2');
+  assert.deepEqual(doc.diagnostics, []);
+  const card = doc.frames[0].children[0];
+  assert.equal(card.props.variant, 'outlined');
+  assert.equal(card.props.elevation, 2);
+});
+
+// --- Render: each variant lays out finite/positive and draws its chrome -------
+
+test('default (elevation) Card draws a drop shadow behind the paper', () => {
+  const { svg } = render('Wireframe\n  Card\n    Typography body2');
+  // The elevation shadow is an extra opacity-bearing path painted behind the
+  // surface; the default variant (elevation 1) must emit it.
+  assert.match(svg, /<path opacity=/);
+  const box = layout(parse('Wireframe\n  Card'))[0].root.children[0];
+  assert.ok(Number.isFinite(box.w) && box.w > 0 && Number.isFinite(box.h) && box.h > 0);
+});
+
+test('outlined Card draws a bordered paper with no shadow', () => {
+  const { svg } = render('Wireframe\n  Card outlined\n    Typography body2');
+  // outlined => no elevation shadow, so no opacity-bearing path...
+  assert.doesNotMatch(svg, /<path opacity=/);
+  // ...but the paper surface (border) is still drawn.
+  assert.match(svg, /<path/);
+  const box = layout(parse('Wireframe\n  Card outlined'))[0].root.children[0];
+  assert.ok(Number.isFinite(box.w) && box.w > 0 && Number.isFinite(box.h) && box.h > 0);
+});
+
+test('a larger elevation still renders a finite, positive Card', () => {
+  const { svg } = render('Wireframe\n  Card elevation=8\n    Typography body2');
+  assert.match(svg, /<path opacity=/);
+  const box = layout(parse('Wireframe\n  Card elevation=8'))[0].root.children[0];
+  assert.ok(Number.isFinite(box.w) && box.w > 0, `w should be finite & positive, got ${box.w}`);
+  assert.ok(Number.isFinite(box.h) && box.h > 0, `h should be finite & positive, got ${box.h}`);
 });
 
 // --- Edge: a bare empty Card still draws via minSize (screen-bg case) ---------

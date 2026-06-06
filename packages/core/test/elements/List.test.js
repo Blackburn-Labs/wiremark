@@ -44,3 +44,26 @@ test('List renders its items\' labels (children flowed through the col layoutSpe
     assert.match(svg, /Reports/);
   }
 });
+
+test('dense resolves as a bare flag (and keyed) and tightens the list', () => {
+  // `dense` is a keyless boolean (CONVENTION s.3): a bare token sets it true; the
+  // keyed form works too. It applies a negative inter-row gap, so the same two
+  // items occupy LESS height than a non-dense list.
+  const denseDoc = parse('Wireframe\n  List dense\n    ListItem "Home"\n    ListItem "Reports"');
+  assert.deepEqual(denseDoc.diagnostics, []);
+  assert.equal(denseDoc.frames[0].children[0].props.dense, true);
+  assert.equal(parse('Wireframe\n  List dense=true\n    ListItem "Home"').frames[0].children[0].props.dense, true);
+
+  const regular = layout(parse(SRC))[0].root.children[0];
+  const dense = layout(denseDoc)[0].root.children[0];
+  assert.ok(dense.h < regular.h, `a dense list (${dense.h}) should be shorter than a regular one (${regular.h})`);
+});
+
+test('subheader resolves as a keyed string and renders its heading text', () => {
+  const src = 'Wireframe\n  List subheader="Section"\n    ListItem "Home"';
+  const doc = parse(src);
+  assert.deepEqual(doc.diagnostics, []);
+  assert.equal(doc.frames[0].children[0].props.subheader, 'Section');
+  // The heading is drawn in the reserved top band.
+  assert.match(render(src).svg, /Section/);
+});

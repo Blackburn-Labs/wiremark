@@ -42,7 +42,7 @@ Read in order if you are new; jump around once you know the basics.
 - [Component library reference](reference/components.md) — every supported
   component and property, with its keyless behavior, default, and DSL mapping.
 
-The reference is **generated** from [`meta/mui-support-matrix.json`](../meta/mui-support-matrix.json),
+The reference is **generated** from [`meta/element-specs.json`](../meta/element-specs.json),
 which is the single source of truth for component coverage. Do not edit the
 generated markdown by hand. After changing the JSON, regenerate it:
 

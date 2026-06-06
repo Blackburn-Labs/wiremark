@@ -1,5 +1,5 @@
 // @ts-check
-import { surface, COLORS } from '../draw.js';
+import { surfaceWith, COLORS } from '../draw.js';
 
 /**
  * Card -- surface container. Flattening rule (ss.5.3): with no `Card*` children
@@ -13,6 +13,11 @@ import { surface, COLORS } from '../draw.js';
  * in an implicit CardContent). `minSize` keeps an empty Card from collapsing, so
  * a bare `Card` in a screen background still draws as a visible card.
  *
+ * Per spec it carries two looks: `variant=outlined` is a bordered paper with no
+ * shadow, while the default `variant=elevation` lifts the paper with an
+ * `elevation` drop shadow (default 1). Both go through the shared `surfaceWith`
+ * helper so the chrome matches Box/Stack/AppBar (CONVENTION ss.8).
+ *
  * @type {import('./common.js').ComponentDef}
  */
 export default {
@@ -21,10 +26,20 @@ export default {
   category: 'surfaces',
   container: true,
   sizing: true,
-  props: {},
+  props: {
+    elevation: { type: 'number', default: 1 },
+    variant: { type: 'enum', values: ['elevation', 'outlined'], default: 'elevation' },
+  },
+  keyless: [
+    { kind: 'enum', to: 'variant' },
+  ],
   notes: 'Flattening rule (ss.5.3): with no Card* children, children live in an implicit CardContent.',
 
   layoutSpec: () => ({ axis: 'col', pad: 0, gap: 0 }),
   minSize: { w: 160, h: 100 },
-  render: (node, box) => surface(box, { fill: COLORS.paper }),
+  render: (node, box) => {
+    // outlined => bordered paper, no shadow; elevation (default) => paper + shadow.
+    const elevation = node.props.variant === 'outlined' ? 0 : Number(node.props.elevation ?? 1);
+    return surfaceWith(box, { outline: 'solid', fill: COLORS.paper, elevation });
+  },
 };

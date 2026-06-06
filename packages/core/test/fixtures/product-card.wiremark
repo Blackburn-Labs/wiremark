@@ -1,10 +1,9 @@
 Wireframe #product
   Card
-    CardMedia
-      Img ratio=16:9
+    Img ratio=16:9
     CardContent
       Typography h5 "Product name"
       Typography ~2
     CardActions
-      Button "Buy" primary
+      Button "Buy" contained
       Button "Details" variant=outlined to=#detail

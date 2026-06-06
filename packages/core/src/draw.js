@@ -1,6 +1,6 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD } from './metrics.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -35,6 +35,7 @@ export const COLORS = {
   muted: '#9aa7b2',   // secondary strokes / placeholders
   fill: '#eef2f5',    // subtle surface fill
   accent: '#cfe0ee',  // primary-ish fill
+  hatch: '#c4c4c4',   // true gray -- default background hatch strokes
 };
 
 /** Handwriting-ish font stack for the sketch look (no font embedding). */
@@ -48,18 +49,23 @@ export function escape(s) {
   )[c]);
 }
 
-/** @param {{ d: string, stroke?: string, strokeWidth?: number, fill?: string }} p */
-function pathToSvg(p) {
+/**
+ * @param {{ d: string, stroke?: string, strokeWidth?: number, fill?: string }} p
+ * @param {number[]} [dash]  stroke-dasharray pattern; rough.js bakes geometry in
+ *   `toPaths` and drops its own `strokeLineDash`, so we re-apply it as an SVG attr.
+ */
+function pathToSvg(p, dash) {
   const fill = p.fill && p.fill !== 'none' ? p.fill : 'none';
   const stroke = p.stroke && p.stroke !== 'none' ? p.stroke : 'none';
   const sw = p.strokeWidth ?? 1;
-  return `<path d="${p.d}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" `
+  const da = dash && dash.length ? ` stroke-dasharray="${dash.join(' ')}"` : '';
+  return `<path d="${p.d}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${da} `
     + 'stroke-linecap="round" stroke-linejoin="round"/>';
 }
 
-/** @param {*} drawable @returns {string} */
-function emit(drawable) {
-  return generator.toPaths(drawable).map(pathToSvg).join('');
+/** @param {*} drawable @param {number[]} [dash] @returns {string} */
+function emit(drawable, dash) {
+  return generator.toPaths(drawable).map((p) => pathToSvg(p, dash)).join('');
 }
 
 /**
@@ -69,8 +75,9 @@ function emit(drawable) {
  * @returns {string}
  */
 export function rrect(x, y, w, h, opts = {}) {
+  const { strokeLineDash, ...rough } = opts;
   return emit(generator.rectangle(x, y, Math.max(1, w), Math.max(1, h),
-    { seed: seedOf(x, y, w, h), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...opts }));
+    { seed: seedOf(x, y, w, h), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...rough }), strokeLineDash);
 }
 
 /**
@@ -83,9 +90,54 @@ export function rrect(x, y, w, h, opts = {}) {
  * @returns {string}
  */
 export function surface(box, opts = {}) {
-  const { fill = 'none', stroke = COLORS.ink, strokeWidth = 1.2, fillStyle = 'solid' } = opts;
-  const o = fill === 'none' ? { stroke, strokeWidth } : { fill, fillStyle, stroke, strokeWidth };
+  const { fill = 'none', stroke = COLORS.ink, strokeWidth = 1.2, fillStyle = 'solid', ...rest } = opts;
+  const o = fill === 'none'
+    ? { stroke, strokeWidth, ...rest }
+    : { fill, fillStyle, stroke, strokeWidth, ...rest };
   return rrect(box.x, box.y, box.w, box.h, o);
+}
+
+/**
+ * Background-tint patterns keyed by the `background` prop value, each mapped to
+ * its rough.js `fillStyle`. A tinted surface fills with light gray HAND-DRAWN
+ * hashes -- never a solid block, which would read as a finished UI rather than a
+ * wireframe. Keeping our enum (`hatch`/`crosshatch`) distinct from rough.js's own
+ * token names (`hachure`/`cross-hatch`) keeps the DSL decoupled from the library.
+ *  - hatch:      single-direction diagonal hashes (the default look).
+ *  - crosshatch: hashes in BOTH directions (\ and /), reads darker/denser.
+ * The `denseBackground` flag packs either pattern's lines closer together.
+ * @type {Record<string, string>}
+ */
+const HATCH_PATTERNS = { hatch: 'hachure', crosshatch: 'cross-hatch' };
+
+/** Line spacing (px) for the normal vs `denseBackground` tint. */
+const HATCH_GAP = { normal: 6, dense: 3 };
+
+/** Shared hatch tuning: thin strokes on a fixed diagonal, low roughness so the
+ *  hashes barely overflow the box (the border is drawn separately, at its own
+ *  normal roughness, so it stays as wobbly as every other surface). */
+const HATCH_BASE = { fillWeight: 1, hachureAngle: -41, roughness: 0.4 };
+
+/** The `background` enum domain, shared by every tinted element + the spec. */
+export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
+
+/**
+ * The wireframe background tint: light gray hand-drawn hashes filling `box`,
+ * BORDERLESS. Draw your own border afterwards (e.g. `surface(box, { fill:
+ * 'none' })`) so the tight hatch roughness doesn't stiffen the outline.
+ * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
+ * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer). Pass
+ * `opts.fill` to recolor the hashes (e.g. muted when disabled).
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {string} [pattern]  'hatch' | 'crosshatch'
+ * @param {boolean} [dense]
+ * @param {{ fill?: string }} [opts]
+ * @returns {string}
+ */
+export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
+  const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
+  const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
+  return surface(box, { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE });
 }
 
 /**
@@ -95,8 +147,57 @@ export function surface(box, opts = {}) {
  * @returns {string}
  */
 export function rline(x1, y1, x2, y2, opts = {}) {
+  const { strokeLineDash, ...rough } = opts;
   return emit(generator.line(x1, y1, x2, y2,
-    { seed: seedOf(x1, y1, x2, y2), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...opts }));
+    { seed: seedOf(x1, y1, x2, y2), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...rough }), strokeLineDash);
+}
+
+/**
+ * Hand-drawn arrow: a wobbly shaft from (x1,y1) to the tip (x2,y2), plus two
+ * short wing strokes forming the arrowhead at the tip. Built only from `rline`
+ * (like `rcrossbox`), so the sketch aesthetic, dashing, and the geometry-derived
+ * seed all come for free -- the wobble stays deterministic across runs because
+ * every coordinate derives from the two endpoints. Used by the multi-frame flow
+ * chart to connect frames border-to-border (SPEC ss.7.4).
+ * @param {number} x1 @param {number} y1   tail
+ * @param {number} x2 @param {number} y2   head (the tip)
+ * @param {object} [opts]  { stroke?, strokeWidth?, head?, spread?, strokeLineDash? }
+ * @returns {string}
+ */
+export function rarrow(x1, y1, x2, y2, opts = {}) {
+  const { head = ARROW_HEAD, spread = ARROW_SPREAD, strokeWidth = 1.4, ...rest } = opts;
+  const base = { strokeWidth, ...rest };
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  const lx = x2 - head * Math.cos(ang - spread);
+  const ly = y2 - head * Math.sin(ang - spread);
+  const rx = x2 - head * Math.cos(ang + spread);
+  const ry = y2 - head * Math.sin(ang + spread);
+  return rline(x1, y1, x2, y2, base) + rline(x2, y2, lx, ly, base) + rline(x2, y2, rx, ry, base);
+}
+
+/**
+ * Hand-drawn arrow whose shaft follows a polyline (>= 2 points): a sequence of
+ * `rline` segments plus an arrowhead at the LAST point, oriented along the last
+ * segment. Generalizes `rarrow` to elbow/orthogonal connectors -- the head meets
+ * the final segment's direction, so an elbow that arrives perpendicular to a frame
+ * face gets a square-on arrowhead. Deterministic (each segment seeds from its own
+ * endpoints, like `rarrow`).
+ * @param {{x:number,y:number}[]} points
+ * @param {object} [opts]  { stroke?, strokeWidth?, head?, spread?, strokeLineDash? }
+ * @returns {string}
+ */
+export function rarrowPath(points, opts = {}) {
+  const { head = ARROW_HEAD, spread = ARROW_SPREAD, strokeWidth = 1.4, ...rest } = opts;
+  const base = { strokeWidth, ...rest };
+  let out = '';
+  for (let i = 0; i < points.length - 1; i++)
+    out += rline(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, base);
+  const a = points[points.length - 2];
+  const b = points[points.length - 1];
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  out += rline(b.x, b.y, b.x - head * Math.cos(ang - spread), b.y - head * Math.sin(ang - spread), base);
+  out += rline(b.x, b.y, b.x - head * Math.cos(ang + spread), b.y - head * Math.sin(ang + spread), base);
+  return out;
 }
 
 /**
@@ -165,5 +266,70 @@ export function fillerRows(x, y, w, lines, fontSize) {
     const lw = i === lines - 1 ? w * 0.6 : w; // ragged last line
     out += rline(x, ly, x + lw, ly, { stroke: COLORS.muted, strokeWidth: 1, roughness: 1.4 });
   }
+  return out;
+}
+
+// --- shared variant helpers (outline / elevation / surface) -------------------
+// These let Box / Stack / Card / AppBar express the spec's `outline`, `elevation`
+// and `variant` props without each re-deriving stroke styling (CONVENTION s.8).
+
+/** Dash pattern per outline style; `solid`/`none` have none. @type {Record<string, number[]>} */
+const OUTLINE_DASH = { dashed: [6, 4], dotted: [1, 4] };
+
+/**
+ * Outline style -> stroke options to feed straight into `rrect`/`surfaceWith`.
+ * `'none'` yields `{ stroke: 'none' }` (no border drawn); `solid` a plain stroke;
+ * `dashed`/`dotted` add a `strokeLineDash` the primitives turn into a real
+ * `stroke-dasharray` (CONVENTION s.8).
+ * @param {string} [style]  'none' | 'solid' | 'dashed' | 'dotted'
+ * @param {{ stroke?: string, strokeWidth?: number }} [opts]
+ * @returns {{ stroke: string, strokeWidth?: number, strokeLineDash?: number[] }}
+ */
+export function outlineOpts(style = 'solid', opts = {}) {
+  if (style === 'none') return { stroke: 'none' };
+  const { stroke = COLORS.ink, strokeWidth = 1.2 } = opts;
+  const dash = OUTLINE_DASH[style];
+  return dash ? { stroke, strokeWidth, strokeLineDash: dash } : { stroke, strokeWidth };
+}
+
+/**
+ * A subtle drop shadow conveying elevation `n` (MUI-ish; n<=0 draws nothing).
+ * Returns SVG to paint BEHIND a surface, so call it first and concatenate the
+ * surface after. The offset/opacity grow gently with n and saturate, so a big
+ * elevation never produces a runaway shadow (CONVENTION s.8).
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {number} [n]
+ * @returns {string}
+ */
+export function elevationShadow(box, n = 0) {
+  n = Number(n);                             // tolerate a spec string default ("1")
+  if (!(n > 0)) return '';
+  const off = Math.min(2 + n, 6);            // px offset, saturating
+  const opacity = Math.min(0.06 + n * 0.03, 0.22);
+  return rrect(box.x + off, box.y + off, box.w, box.h,
+    { stroke: 'none', fill: COLORS.ink, fillStyle: 'solid', roughness: 0.6, fillWeight: 0.5 })
+    .replace(/<path /g, `<path opacity="${opacity}" `);
+}
+
+/**
+ * Bundled surface: optional elevation shadow, then a filled/bordered box whose
+ * border style comes from `outline`. The one-call path for Card / Box / Stack /
+ * AppBar (CONVENTION s.8). With `outline:'none'` and no elevation/fill it emits
+ * nothing, so an invisible layout primitive can call it unconditionally.
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {{ fill?: string, outline?: string, elevation?: number, stroke?: string, strokeWidth?: number, fillStyle?: string }} [opts]
+ * @returns {string}
+ */
+export function surfaceWith(box, opts = {}) {
+  const { fill = 'none', outline = 'solid', elevation = 0, stroke, strokeWidth, fillStyle = 'solid' } = opts;
+  const line = outlineOpts(outline, { stroke, strokeWidth });
+  const hasBorder = line.stroke !== 'none';
+  const hasFill = fill !== 'none';
+  let out = elevationShadow(box, elevation);
+  if (!hasBorder && !hasFill) return out; // fully invisible: nothing to draw
+  const rectOpts = hasFill
+    ? { ...line, fill, fillStyle }
+    : line;
+  out += rrect(box.x, box.y, box.w, box.h, rectOpts);
   return out;
 }

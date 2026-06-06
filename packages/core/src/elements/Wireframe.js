@@ -1,5 +1,5 @@
 // @ts-check
-import { FILLER_STYLES, PRESETS } from './common.js';
+import { DIRECTIONS, FILLER_STYLES, PRESETS } from './common.js';
 import { rrect, COLORS } from '../draw.js';
 import { FRAME_PAD, SPACING } from '../metrics.js';
 
@@ -28,6 +28,10 @@ export default {
     background: { type: 'ref' },
     visible: { type: 'boolean', default: true },
     filler: { type: 'enum', values: FILLER_STYLES },
+    // Multi-frame flow-chart direction (ss.7.4). Keyed-only (`direction=LR`): no
+    // keyless slot and no default, so the resolver leaves it undefined unless the
+    // author sets it, letting index.js honor "the first frame that declares it".
+    direction: { type: 'enum', values: DIRECTIONS },
   },
   keyless: [{ kind: 'id', to: 'id' }, { kind: 'preset', to: 'preset' }],
   notes: 'Frame root. style=/sx= are out of scope (ss.10).',

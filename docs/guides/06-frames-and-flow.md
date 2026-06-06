@@ -46,7 +46,7 @@ These keep the flow model trivial:
 
 Because links are inline and frame-level, a renderer can emit the inferred
 navigation as a Mermaid flowchart automatically — the same structure that powers
-the reserved multi-frame flow view (see [below](#one-frame-per-block)).
+the multi-frame flow view (see [below](#multiple-frames-and-the-flow-view)).
 
 ## Composing shared chrome: `background=#id`
 
@@ -106,16 +106,40 @@ Wireframe #shell visible=false
   it being used as a `background=` target. "Hidden" means "not drawn on its own",
   not "never drawn".
 
-## One frame per block
+## Multiple frames and the flow view
 
-In v0.1, each ` ```wireframe ` block holds exactly one `Wireframe`, which keeps
-every block independently renderable. To show several screens, use several
-blocks; their `#id` / `to=#id` links connect across the whole document.
+A single ` ```wireframe ` block can declare **several `Wireframe` frames**. When
+more than one frame is visible, wiremark arranges them as a **flow chart**: each
+frame is a node, positioned automatically over the inferred `to=#id` graph, with
+hand-drawn connectors joining linked screens (the same structure `toMermaid`
+emits).
 
-> **Reserved for the future.** A forward-looking mode allows **multiple frames in
-> one block**, auto-laid-out as a flow diagram (Mermaid-like) with connectors
-> derived from `to=` links. It is reserved so the grammar stays open; v0.1
-> renderers may treat a multi-frame block as an error or stack the frames.
+```wireframe
+Wireframe #home landscape
+  Grid cols=3
+    Card to=#details
+    Card to=#details
+
+Wireframe #details landscape
+  Link "Back" to=#home
+  Typography h1 "Item details"
+```
+
+- **Direction.** The flow runs top-down by default. Put `direction=LR` on a frame
+  to lay it out left-to-right instead (`direction=TD` is the explicit default); a
+  host may also pass `{ direction }` to the renderer. The first frame that
+  declares `direction=` sets it for the whole document.
+- **Background templates stay out of the flow.** A `visible=false` frame (e.g. a
+  `#shell` pulled in via `background=#id`) is never a flow node, but still
+  composes underneath the screens that reference it.
+- **Only resolvable links draw.** A `to=#id` whose target is not a frame in the
+  document — or a frame linking to itself — is left out of the graph and draws no
+  connector; it never hard-fails.
+- **Disconnected screens** (frames nothing links to) are packed alongside the
+  linked group rather than dropped.
+
+A lone frame is unaffected: a single-`Wireframe` document renders exactly as it
+always has, with no flow chrome.
 
 ## Recap
 
@@ -125,5 +149,7 @@ blocks; their `#id` / `to=#id` links connect across the whole document.
 - Targets are frames only; there is no deep-linking and no `from`.
 - `background=#id` underlays a shared frame; `visible=false` keeps that shared
   frame from drawing on its own.
+- Several visible frames auto-arrange into a connected flow chart; `direction=TD`
+  (default) or `direction=LR` sets its orientation.
 
 Next: [Patterns & recipes](07-patterns.md).

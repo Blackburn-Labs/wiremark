@@ -5,7 +5,7 @@
 #
 # base = "site" makes Netlify install and build inside site/. The build runs
 # site's `prebuild` hook first (node ../scripts/generate-reference.mjs), which
-# regenerates ../docs/reference/components.md from meta/mui-support-matrix.json,
+# regenerates ../docs/reference/components.md from meta/element-specs.json,
 # so the published reference is always in sync with the source of truth.
 
 [build]

@@ -11,10 +11,11 @@
  * @property {PropType} type
  * @property {string[]} [values]    // enum domain
  * @property {*} [default]
+ * @property {string[]} [aliases]   // alternate keyed spellings (`gap`->`spacing`, `w`->width); resolver maps them to this canonical prop (CONVENTION s.1)
  *
  * @typedef {Object} KeylessSlot
  * @property {'literal'|'enum'|'sizing'|'id'|'preset'} kind
- * @property {string} [to]          // keyed prop this slot resolves to
+ * @property {string} [to]          // keyed prop this slot resolves to ('enum'/'literal')
  *
  * @typedef {Object} ComponentDef
  * @property {string} name
@@ -46,6 +47,7 @@
  * @property {number} [pad]   // inner padding (px)
  * @property {number} [gap]   // gap between children (px)
  * @property {number} [cols]  // grid only: column count
+ * @property {boolean} [reverse] // row-reverse/column-reverse: flip child order on the main axis
  */
 
 /*
@@ -92,3 +94,6 @@ export const FILLER_STYLES = ['squiggle', 'lorem', 'blocks'];
 
 /** `Wireframe` size presets (ss.5.1). */
 export const PRESETS = ['mobile', 'landscape', 'portrait'];
+
+/** Multi-frame flow-chart layout direction (ss.7.4): top-down or left-right. */
+export const DIRECTIONS = ['TD', 'LR'];

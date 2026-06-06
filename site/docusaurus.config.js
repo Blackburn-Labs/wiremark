@@ -2,7 +2,7 @@
 // Docusaurus configuration for the wiremark docs site.
 //
 // - Reads the repo's ../docs folder directly (no copying). The component
-//   reference is regenerated from meta/mui-support-matrix.json by the
+//   reference is regenerated from meta/element-specs.json by the
 //   prestart/prebuild hooks in package.json, so it is always fresh.
 // - URL and base path are env-driven so the SAME build can deploy either as a
 //   subdomain (docs.wiremark.dev, the default) or behind a /docs proxy on the

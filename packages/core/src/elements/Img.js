@@ -4,7 +4,10 @@ import { parseRatio } from '../metrics.js';
 
 /**
  * Img -- placeholder image box. `ratio=` (e.g. 16:9) sets aspect; `alt=` is
- * descriptive text. (SPEC ss.5.4, ss.8.3)
+ * descriptive text; `src=` is the real source. (SPEC ss.5.4, ss.8.3)
+ *
+ * `src` is metadata only: a wireframe always draws the crossed-box placeholder
+ * regardless of source, so it does not affect the render.
  *
  * Strategy (leaf): the classic crossed-box image placeholder. An image is a
  * block leaf -- it fills its container's cross axis like a real <img> stretched
@@ -23,6 +26,7 @@ export default {
   props: {
     ratio: { type: 'ratio' },
     alt: { type: 'string' },
+    src: { type: 'string' },
   },
   notes: 'Placeholder box; ratio like 16:9.',
 

@@ -29,7 +29,7 @@ Each component is defined in its own file under `src/elements/`
 (`Button.js`, `Card.js`, ...) so everything about an element -- its schema now,
 its measure/render functions later -- lives in one place. `src/registry.js`
 indexes them by name. Full MUI coverage is tracked in
-[`meta/mui-support-matrix.json`](../../meta/mui-support-matrix.json).
+[`meta/element-specs.json`](../../meta/element-specs.json).
 
 ## API (intended)
 
@@ -48,3 +48,19 @@ node --test test/
 ```
 
 Uses Node's built-in test runner -- no dependencies.
+
+## Render the fixtures
+
+Render every `test/fixtures/*.wiremark` to a sibling `.svg` -- handy for eyeballing
+output after an engine change. The SVGs are gitignored, so this never dirties the
+tree. Run from the repo root:
+
+```sh
+npm run render:fixtures
+```
+
+To render a single file instead, use the CLI:
+
+```sh
+npm run render --workspace wiremark -- test/fixtures/login.wiremark -o /tmp/login.svg
+```
