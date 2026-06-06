@@ -2,7 +2,18 @@
   "name": "wiremark",
   "version": "0.0.1",
   "description": "Core parser, layout engine, and hand-drawn SVG renderer for the wiremark wireframe DSL. Pure JS, no host dependencies.",
+  "homepage": "https://wiremark.dev",
+  "bugs": "https://github.com/Blackburn-Labs/wiremark/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Blackburn-Labs/wiremark.git",
+    "directory": "packages/core"
+  },
   "license": "MIT",
+  "author": {
+    "name": "Blackburn Labs",
+    "url": "https://www.blackburnlabs.com"
+  },
   "type": "module",
   "main": "src/index.js",
   "exports": {
