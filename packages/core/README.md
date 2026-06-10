@@ -1,4 +1,4 @@
-# wiremark (core)
+# @wiremark/core
 
 The pure-JS core of [wiremark](../../README.md): it turns wiremark **source**
 (the text inside a ` ```wireframe ` block) into a hand-drawn SVG, plus the parsed
@@ -34,7 +34,7 @@ indexes them by name. Full MUI coverage is tracked in
 ## API (intended)
 
 ```js
-import { parse, render, toMermaid } from 'wiremark';
+import { parse, render, toMermaid } from '@wiremark/core';
 
 const { svg } = render(source);     // wiremark source -> SVG
 const doc = parse(source);          // -> { frames, diagnostics }
@@ -59,8 +59,9 @@ tree. Run from the repo root:
 npm run render:fixtures
 ```
 
-To render a single file instead, use the CLI:
+To render a single file instead, use the [`@wiremark/cli`](../cli) renderer (from the
+repo root):
 
 ```sh
-npm run render --workspace wiremark -- test/fixtures/login.wiremark -o /tmp/login.svg
+node packages/cli/bin/wiremark.js packages/core/test/fixtures/login.wiremark -o /tmp/login.svg
 ```

@@ -1,13 +1,20 @@
 name: Publish to npm
 
-# Publishes packages/core (the "wiremark" package) to npm via OIDC trusted
-# publishing — no NPM_TOKEN secret required. Provenance is generated because
-# the source repo is public.
+# Publishes the scoped wiremark packages to npm via OIDC trusted publishing — no
+# NPM_TOKEN secret required. Provenance is generated because the source repo is
+# public. Packages are published in dependency order:
 #
-# One-time prerequisite: the "wiremark" package must already exist on npm and
-# have a Trusted Publisher configured at
-# https://www.npmjs.com/package/wiremark/access (GitHub Actions -> this repo ->
-# workflow "release.yml", allowed action "npm publish").
+#   - @wiremark/core  (packages/core) — the library
+#   - @wiremark/cli   (packages/cli)  — the command-line renderer, depends on core
+#
+# One-time prerequisite PER PACKAGE: it must already exist on npm and have a
+# Trusted Publisher configured (GitHub Actions -> this repo -> workflow
+# "release.yml", allowed action "npm publish") on its Access page:
+#   https://www.npmjs.com/package/@wiremark/core/access
+#   https://www.npmjs.com/package/@wiremark/cli/access
+# Because trusted publishing needs the package to pre-exist, the very first
+# publish of each package is done manually (`npm publish --access public`); CI
+# takes over for every release after.
 
 on:
   release:
@@ -36,8 +43,13 @@ jobs:
         run: npm ci
 
       - name: Test
-        run: npm test --workspace wiremark
+        run: npm test --workspace @wiremark/core
 
-      - name: Publish (OIDC + provenance)
+      # Publish core first — @wiremark/cli pins this exact version as a dependency.
+      - name: Publish @wiremark/core (OIDC + provenance)
         run: npm publish --provenance --access public
         working-directory: packages/core
+
+      - name: Publish @wiremark/cli (OIDC + provenance)
+        run: npm publish --provenance --access public
+        working-directory: packages/cli

@@ -11,9 +11,12 @@ lives inside a fenced ` ```wireframe ` block.
 
 This is an npm-workspaces monorepo:
 
-- **`packages/core`** — the `wiremark` npm package: parser, layout engine, and SVG
-  renderer. Pure ESM JS, one runtime dependency (`roughjs`), knows nothing about
+- **`packages/core`** — the `@wiremark/core` npm package: parser, layout engine, and
+  SVG renderer. Pure ESM JS, one runtime dependency (`roughjs`), knows nothing about
   markdown. This is where almost all work happens.
+- **`packages/cli`** — the `@wiremark/cli` npm package: a thin command-line renderer
+  (`npx @wiremark/cli in.wiremark -o out.svg`). Its bin just calls `@wiremark/core`'s
+  `run()` (the `@wiremark/core/cli` export) — no logic of its own.
 - **`docs/`** + **`site/`** — portable Markdown language docs (`docs/`) served by a
   Docusaurus site (`site/`, `path: '../docs'`). The visual editor and the marketing
   site are separate repos.
@@ -22,12 +25,12 @@ This is an npm-workspaces monorepo:
 
 ```sh
 npm test                            # run the whole suite (Node's built-in runner, no deps)
-npm test --workspace wiremark       # run only core's tests (what CI runs before publish)
+npm test --workspace @wiremark/core  # run only core's tests (what CI runs before publish)
 node --test packages/core/test/elements/Button.test.js   # a single test file
 node --test --test-name-pattern="navigation graph"        # tests matching a name
 
-npm run render --workspace wiremark -- <in.wiremark> [out.svg]   # CLI: render a file to SVG
-node packages/core/bin/render.js <in.wiremark> -o out.svg        # same, directly
+npm run render --workspace @wiremark/cli -- <in.wiremark> [out.svg]   # CLI: render a file to SVG
+node packages/cli/bin/wiremark.js <in.wiremark> -o out.svg           # same, directly
 
 npm run docs:reference              # regenerate docs/reference/components.md from meta/element-specs.json
 cd site && npm start                # docs site dev server (regenerates the reference first)
@@ -125,8 +128,15 @@ levels — when changing a stage, check assertions across all three.
 
 ## Releasing
 
-`packages/core` publishes to npm as `wiremark` via the **Publish to npm** workflow
-(`.github/workflows/release.yml`), which uses OIDC trusted publishing (no tokens). To
-release: bump `version` in `packages/core/package.json`, push to `main`, then publish a
-GitHub Release whose tag matches the version (e.g. `v0.2.0`). The published version is
-read from `package.json`, so it must not already exist on npm.
+`packages/core` (`@wiremark/core`) and `packages/cli` (`@wiremark/cli`) publish to npm
+via the **Publish to npm** workflow (`.github/workflows/release.yml`), which uses OIDC
+trusted publishing (no tokens) and publishes core first, then cli (cli depends on
+core). To release: bump `version` in **both** `packages/core/package.json` and
+`packages/cli/package.json` — and the `@wiremark/core` dependency pin in
+`packages/cli/package.json` — to the same value, push to `main`, then publish a GitHub
+Release whose tag matches the version (e.g. `v0.2.0`). Published versions are read from
+each `package.json`, so they must not already exist on npm.
+
+The first publish of each package is manual (`npm publish --access public` from the
+package dir): OIDC trusted publishing requires the package to already exist with a
+Trusted Publisher configured, so CI can only take over from the second release on.

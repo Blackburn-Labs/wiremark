@@ -44,7 +44,8 @@ visual editor lives in its own repository.
 
 ```
 packages/
-  core/         # parser, layout engine, hand-drawn SVG renderer (pure JS, no host deps)
+  core/         # @wiremark/core -- parser, layout engine, hand-drawn SVG renderer (pure JS, no host deps)
+  cli/          # @wiremark/cli  -- thin command-line renderer (npx @wiremark/cli in.wiremark -o out.svg)
   adapter-*/    # thin per-host adapters (Obsidian, markdown-it, remark, ...) -- added as built
 meta/           # element-specs.json -- component coverage matrix (hand-maintained)
 ```
@@ -69,19 +70,27 @@ with `npm test`.
 
 ## Releasing
 
-`packages/core` is published to npm as `wiremark` automatically by the **Publish
-to npm** workflow (`.github/workflows/release.yml`), which authenticates via OIDC
-trusted publishing — no tokens or secrets required.
+The scoped packages **`@wiremark/core`** (`packages/core`, the library) and
+**`@wiremark/cli`** (`packages/cli`, the command-line renderer) are published to
+npm by the **Publish to npm** workflow (`.github/workflows/release.yml`), which
+authenticates via OIDC trusted publishing — no tokens or secrets required. The
+workflow publishes core first, then cli (cli depends on core).
 
 To cut a release:
 
-1. Bump `version` in `packages/core/package.json` (semver). The published version
-   is read from this field, so it must be one not already on npm.
+1. Bump `version` in **both** `packages/core/package.json` and
+   `packages/cli/package.json` — and the `@wiremark/core` dependency pin in
+   `packages/cli/package.json` — to the same new semver (one not already on npm).
 2. Commit and push to `main`.
 3. Draft and publish a new **GitHub Release** with a tag matching the version
    (e.g. `v0.2.0`).
 
 Publishing the Release runs the workflow — test suite, then `npm publish
---provenance` — and the new version (with a provenance attestation) appears on
-npm a few minutes later. The workflow can also be run on demand from the
-**Actions** tab.
+--provenance --access public` for each package — and the new versions (with
+provenance attestations) appear on npm a few minutes later. The workflow can also
+be run on demand from the **Actions** tab.
+
+> **First publish is manual.** OIDC trusted publishing requires the package to
+> already exist on npm with a Trusted Publisher configured, so the very first
+> publish of each package is done by hand (`npm publish --access public` from the
+> package dir); CI takes over from the second release on.

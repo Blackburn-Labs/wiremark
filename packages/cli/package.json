@@ -1,13 +1,13 @@
 {
-  "name": "@wiremark/core",
+  "name": "@wiremark/cli",
   "version": "0.0.1",
-  "description": "Core parser, layout engine, and hand-drawn SVG renderer for the wiremark wireframe DSL. Pure JS, no host dependencies.",
+  "description": "Command-line renderer for the wiremark wireframe DSL: turn a .wiremark file into a hand-drawn SVG.",
   "homepage": "https://wiremark.dev",
   "bugs": "https://github.com/Blackburn-Labs/wiremark/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Blackburn-Labs/wiremark.git",
-    "directory": "packages/core"
+    "directory": "packages/cli"
   },
   "license": "MIT",
   "author": {
@@ -15,23 +15,21 @@
     "url": "https://www.blackburnlabs.com"
   },
   "type": "module",
-  "main": "src/index.js",
-  "exports": {
-    ".": "./src/index.js",
-    "./cli": "./src/cli.js"
+  "bin": {
+    "wiremark": "bin/wiremark.js"
   },
   "files": [
-    "src"
+    "bin"
   ],
   "scripts": {
-    "test": "node --test"
+    "render": "node bin/wiremark.js"
   },
   "keywords": [
     "wireframe",
     "dsl",
     "mui",
     "svg",
-    "markdown",
+    "cli",
     "sketch",
     "balsamiq",
     "mockup"
@@ -43,6 +41,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "roughjs": "^4.6.6"
+    "@wiremark/core": "0.0.1"
   }
 }
