@@ -1,0 +1,40 @@
+Wireframe #settings landscape
+  AppBar
+    Toolbar
+      Typography h6 "Checkout"
+  Stack column spacing=3
+    Stepper
+      Step "Cart" completed
+      Step "Shipping" active
+      Step "Payment"
+    Card
+      Typography h5 "Shipping details"
+      TextField "Full name"
+      TextField "Email" type=email
+      Select "Country" outlined value="United States"
+        Option "United States" selected
+        Option "Canada"
+        Option "Mexico" subtext="MX"
+      Stack row spacing=2
+        Typography body2 "Delivery speed"
+        ToggleButtonGroup
+          ToggleButton "Standard" selected
+          ToggleButton "Express"
+          ToggleButton "Overnight" large
+      Stack row spacing=2
+        Typography body2 "Order priority"
+        Slider 40 min=0 max=100
+      Stack row spacing=2
+        Control
+        Typography body2 "Save this address"
+    Card
+      Typography h5 "Rate your experience"
+      Rating 4 max=5
+      TextField "Comments" type=text
+    Stack row spacing=2
+      ButtonGroup outlined
+        Button "Back"
+        Button "Save draft"
+      Spacer
+      Button "Place order" contained to=#confirm
+  Fab "edit" extended large to=#cart

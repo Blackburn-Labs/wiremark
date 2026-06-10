@@ -1,0 +1,29 @@
+Wireframe #feedback landscape
+  AppBar
+    Toolbar
+      Typography h6 "Sync status"
+  Stack column spacing=3
+    Alert "Your changes were saved" success
+    Alert "Connection lost - retrying" warning outlined
+    Alert "Upload failed" error filled
+    Card
+      Typography h5 "Importing data"
+      Progress linear 65
+      Stack row spacing=2
+        Progress circular
+        Typography body2 "Crunching 1,204 records..."
+    Card
+      Typography h5 "Loading profile"
+      Stack row spacing=2
+        Skeleton circular 48px 48px
+        Stack column spacing=1
+          Skeleton text 200px 16px
+          Skeleton text 160px 16px
+      Skeleton rectangular 600px 120px
+    Dialog sm
+      Typography h6 "Discard draft?"
+      Typography body2 "This action cannot be undone."
+      Stack row spacing=2
+        Button "Cancel"
+        Button "Discard" contained to=#home
+  Snackbar "Settings updated" bottomLeft

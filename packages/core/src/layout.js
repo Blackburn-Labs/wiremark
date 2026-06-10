@@ -46,7 +46,7 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {number} [y]
  */
 
-/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}}} */
+/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}|((node:ResolvedNode)=>{w:number,h:number})}} */
 function strategyFor(name) {
   return REGISTRY[name] ?? /** @type {*} */ ({});
 }
@@ -95,7 +95,17 @@ export function measure(node, avail) {
 
   // A surface/leaf may declare a minimum so an empty one (e.g. a bare Card in a
   // grid) still draws at a sensible size rather than collapsing to nothing.
-  if (s.minSize) base = { w: Math.max(base.w, s.minSize.w), h: Math.max(base.h, s.minSize.h) };
+  // `minSize` may be a static `{w,h}` OR a predicate `(node) => {w,h}`, mirroring
+  // how `block` may be a function -- a per-node minimum lets an element floor its
+  // size by a prop (Dialog's `size` breakpoint). A non-finite floor is ignored so
+  // a malformed minSize can never poison the geometry (a NaN dimension feeds an
+  // unbounded fill in the renderer -- the Dialog-then-Snackbar OOM, this migration).
+  if (s.minSize) {
+    const min = typeof s.minSize === 'function' ? s.minSize(node) : s.minSize;
+    const mw = Number.isFinite(min?.w) ? min.w : 0;
+    const mh = Number.isFinite(min?.h) ? min.h : 0;
+    base = { w: Math.max(base.w, mw), h: Math.max(base.h, mh) };
+  }
 
   // Explicit px tokens pin the size; %/*/flex resolve only in `place`.
   const sz = node.size;

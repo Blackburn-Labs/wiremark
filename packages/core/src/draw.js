@@ -205,6 +205,24 @@ export function rcrossbox(x, y, w, h, opts = {}) {
 }
 
 /**
+ * A generic placeholder glyph: a muted bordered square of side `s` at (x, y),
+ * with an optional diagonal mark -- the wireframe stand-in for ANY icon, shared
+ * by every icon-bearing element (Icon, Button, Fab, ToggleButton, Option,
+ * BottomNavigationAction, AccordionHeader, Rating, ...) so the icon look stays
+ * consistent and no element re-rolls the mark. Pass `diagonal: false` for a bare
+ * square (Button's inline affordance) and `stroke` to tint it (e.g. muted ink
+ * when disabled).
+ * @param {number} x @param {number} y @param {number} s
+ * @param {{ stroke?: string, diagonal?: boolean }} [opts]
+ * @returns {string}
+ */
+export function iconGlyph(x, y, s, opts = {}) {
+  const { stroke = COLORS.muted, diagonal = true } = opts;
+  return rrect(x, y, s, s, { stroke, strokeWidth: 1 })
+    + (diagonal ? rline(x, y + s, x + s, y, { stroke, strokeWidth: 1 }) : '');
+}
+
+/**
  * A `<text>` element in the sketch font.
  * @param {number} x @param {number} y  baseline-ish anchor
  * @param {string} str

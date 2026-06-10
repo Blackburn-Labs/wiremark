@@ -14,13 +14,13 @@
  * @property {string[]} [aliases]   // alternate keyed spellings (`gap`->`spacing`, `w`->width); resolver maps them to this canonical prop (CONVENTION s.1)
  *
  * @typedef {Object} KeylessSlot
- * @property {'literal'|'enum'|'sizing'|'id'|'preset'} kind
- * @property {string} [to]          // keyed prop this slot resolves to ('enum'/'literal')
+ * @property {'literal'|'enum'|'number'|'sizing'|'id'|'preset'} kind
+ * @property {string} [to]          // keyed prop this slot resolves to ('enum'/'literal'/'number')
  *
  * @typedef {Object} ComponentDef
  * @property {string} name
  * @property {'v0.1'|'v1.0'} tier
- * @property {'root'|'layout'|'surfaces'|'navigation'|'content'|'inputs'} category
+ * @property {'root'|'layout'|'surfaces'|'navigation'|'content'|'inputs'|'feedback'} category
  * @property {boolean} [container]  // may hold children
  * @property {Record<string, PropDef>} props
  * @property {KeylessSlot[]} [keyless]
@@ -35,7 +35,7 @@
  * @property {boolean} [block]      // stretch to the container's cross axis (default: containers yes, leaves no)
  * @property {(node: ResolvedNode) => (number|undefined)} [aspect] // LEAVES: w/h ratio; engine derives cross from main (Img ratio=)
  * @property {boolean} [flex]       // consumes leftover main-axis space when unsized (Spacer)
- * @property {Size2D} [minSize]     // clamp intrinsic up to at least this, so an empty surface still draws (Card, Img)
+ * @property {Size2D | ((node: ResolvedNode) => Size2D)} [minSize]  // clamp intrinsic up to at least this, so an empty surface still draws (Card, Img); may be a predicate of the node for a per-prop floor (Dialog size breakpoint). A non-finite dimension is ignored.
  * @property {(node: ResolvedNode, box: Box) => string} [render] // draw THIS element's chrome (children drawn by the facade)
  *
  * @typedef {import('../resolve.js').ResolvedNode} ResolvedNode

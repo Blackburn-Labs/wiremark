@@ -15,6 +15,10 @@ coverage/
 packages/core/test/fixtures/*.svg
 tasks/
 
+# agent scratch (test-output redirect workaround)
+.claude-tmp/
+.qa-tmp/
+
 # editor / OS
 .DS_Store
 *.log

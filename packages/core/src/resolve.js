@@ -150,7 +150,7 @@ function resolveKeyed(props, tok, comp, name, loc) {
  */
 
 /** The explicit Card sub-part components (SPEC ss.5.3; CardMedia removed in the spec migration). */
-const CARD_PARTS = new Set(['CardContent', 'CardActions']);
+const CARD_PARTS = new Set(['CardHeader', 'CardContent', 'CardActions']);
 
 /**
  * Resolve one non-frame node (and its subtree) against its component definition.
@@ -178,6 +178,11 @@ function resolveNode(raw) {
   // component (CONVENTION s.2.1), so the match is unambiguous. N=1 is the common
   // case and behaves exactly as before.
   const enumSlots = slots.filter((s) => s.kind === 'enum');
+  // At most one keyless NUMBER slot per element (CONVENTION s.4): a bare numeric
+  // token (`Progress 60`) routes to a numeric prop. Tried AFTER sizing/filler so a
+  // `sizing:true` element still reads bare numbers as geometry and `~`/`_` filler
+  // is untouched; there is one shared slot across Progress/Slider/Rating's `value`.
+  const numberSlot = slots.find((s) => s.kind === 'number');
   let sawLiteral = false;
 
   for (const tok of raw.tokens) {
@@ -211,6 +216,14 @@ function resolveNode(raw) {
     if (f) {
       if (!comp.text) throw new WiremarkError(`${raw.name}: filler (\`${v}\`) is only valid on text components`, loc);
       filler = f;
+      continue;
+    }
+    // Keyless number (CONVENTION s.4): a bare numeric token -> the number slot's
+    // prop, coerced to a Number. Comes before enum/bool so `Progress 60` sets value.
+    if (numberSlot && /^-?\d+(?:\.\d+)?$/.test(v)) {
+      const to = /** @type {string} */ (numberSlot.to);
+      if (Object.hasOwn(props, to)) throw new WiremarkError(`${raw.name}: "${to}" set more than once (\`${v}\`)`, loc);
+      props[to] = Number(v);
       continue;
     }
     const enumSlot = enumSlots.find((s) => comp.props[s.to]?.values?.includes(v));

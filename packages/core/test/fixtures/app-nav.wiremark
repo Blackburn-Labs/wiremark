@@ -1,0 +1,30 @@
+Wireframe #appnav landscape
+  AppBar
+    Toolbar
+      Typography h6 "Acme Console"
+      Menubar
+        MenuItem "File" selected
+        MenuItem "Edit"
+        MenuItem "View" disabled
+  Stack row 100% * spacing=3
+    Drawer left permanent open
+      List
+        ListItem "Dashboard" to=#dashboard
+        ListItem "Projects" to=#projects
+        ListItem "Settings" to=#settings
+    Box * *
+      Breadcrumbs
+        Link "Home" to=#home
+        Link "Projects" to=#projects
+        Typography "Overview"
+      Tabs fullWidth
+        Tab "Overview"
+        Tab "Activity"
+        Tab "Settings"
+      Card
+        Typography h5 "Project overview"
+        Typography ~3
+  BottomNavigation showLabels
+    BottomNavigationAction "Home" icon="Home"
+    BottomNavigationAction "Search" icon="Search"
+    BottomNavigationAction "Profile" icon="Person"

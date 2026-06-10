@@ -1,0 +1,24 @@
+Wireframe #profile mobile
+  AppBar
+    Toolbar
+      Typography h6 "Profile"
+  Card
+    CardHeader "Jane Doe" subheader="Product Designer" icon="MoreVert"
+    Stack row spacing=2
+      Badge "3" dot
+        Avatar "JD" rounded
+      Stack column spacing=1
+        Typography h5 "Jane Doe"
+        Typography body2 "San Francisco, CA"
+        Stack row spacing=1
+          Chip "Pro" outlined
+          Chip "Verified"
+  AccordionHeader "About" expanded
+  AccordionBody
+    Typography ~3
+  AccordionHeader "Activity"
+  AccordionBody
+    Stack column spacing=1
+      Typography body2 "Joined March 2021"
+      Typography body2 "142 projects"
+  AccordionHeader "Settings" disabled

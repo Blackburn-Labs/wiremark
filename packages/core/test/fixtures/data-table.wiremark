@@ -1,0 +1,42 @@
+Wireframe #users landscape
+  AppBar
+    Toolbar
+      Typography h6 "Users"
+  Stack column spacing=3
+    Stack row spacing=2
+      TextField "Search users"
+      Spacer
+      Button "Add user" contained to=#new
+    Table medium
+      TableHead
+        TableRow
+          TableCell "Name"
+          TableCell "Role"
+          TableCell "Status"
+          TableCell "Seats" align=right
+      TableBody
+        TableRow
+          TableCell "Ada Lovelace"
+          TableCell "Engineering"
+          TableCell "Active"
+          TableCell "3" align=right
+        TableRow selected
+          TableCell "Grace Hopper"
+          TableCell "Engineering"
+          TableCell "Away"
+          TableCell "5" align=right
+        TableRow
+          TableCell "Alan Turing"
+          TableCell "Research"
+          TableCell "Active"
+          TableCell "2" align=right
+      TableFooter
+        TableRow
+          TableCell "3 users"
+          TableCell "Total"
+          TableCell ""
+          TableCell "10" align=right
+    Stack row spacing=2
+      Typography body2 "Rows per page: 25"
+      Spacer
+      Pagination count=8 page=2

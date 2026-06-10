@@ -6,6 +6,8 @@ import { REGISTRY, getComponent } from '../src/registry.js';
 import { resolve } from '../src/resolve.js';
 import { buildTree } from '../src/tree.js';
 import { lex } from '../src/lexer.js';
+import { measure, layout } from '../src/layout.js';
+import { render } from '../src/index.js';
 
 /**
  * Foundation regression suite (Task #1) -- locks in the resolver/prop-model
@@ -134,6 +136,134 @@ test('keyless bool: the keyed form (disabled=true/false) still works', () => {
     assert.equal(parse('Wireframe\n  Controlish disabled=true').frames[0].children[0].props.disabled, true);
     assert.equal(parse('Wireframe\n  Controlish disabled=false').frames[0].children[0].props.disabled, false);
   });
+});
+
+// --- keyless number (a bare numeric token -> a numeric prop) ------------------
+
+/** A Progress-shaped element: a keyless number slot (value) + a keyless enum. */
+const NUMERICISH = {
+  name: 'Numericish', tier: 'v1.0', category: 'feedback',
+  props: {
+    value: { type: 'number', default: 0, aliases: ['n', 'v', 'val'] },
+    variant: { type: 'enum', values: ['linear', 'circular'], default: 'linear' },
+  },
+  keyless: [
+    { kind: 'number', to: 'value' },
+    { kind: 'enum', to: 'variant' },
+  ],
+  intrinsic: () => ({ w: 10, h: 10 }),
+};
+
+test('keyless number: a bare numeric token lands on the number slot, coerced', () => {
+  withElement(NUMERICISH, () => {
+    const n = parse('Wireframe\n  Numericish 60').frames[0].children[0];
+    assert.equal(n.props.value, 60);
+    assert.equal(typeof n.props.value, 'number');
+  });
+});
+
+test('keyless number: fractional and negative bare numbers parse', () => {
+  withElement(NUMERICISH, () => {
+    assert.equal(parse('Wireframe\n  Numericish 3.5').frames[0].children[0].props.value, 3.5);
+    assert.equal(parse('Wireframe\n  Numericish -2').frames[0].children[0].props.value, -2);
+  });
+});
+
+test('keyless number: composes with a keyless enum in any order', () => {
+  withElement(NUMERICISH, () => {
+    const a = parse('Wireframe\n  Numericish 60 circular').frames[0].children[0];
+    assert.deepEqual({ v: a.props.value, var: a.props.variant }, { v: 60, var: 'circular' });
+    const b = parse('Wireframe\n  Numericish circular 60').frames[0].children[0];
+    assert.deepEqual({ v: b.props.value, var: b.props.variant }, { v: 60, var: 'circular' });
+  });
+});
+
+test('keyless number: the keyed spelling and its aliases still work', () => {
+  withElement(NUMERICISH, () => {
+    for (const src of ['value=42', 'n=42', 'v=42', 'val=42']) {
+      const n = parse(`Wireframe\n  Numericish ${src}`).frames[0].children[0];
+      assert.equal(n.props.value, 42, `${src} should set value`);
+    }
+  });
+});
+
+test('keyless number: setting the value twice (bare + bare) is an error', () => {
+  withElement(NUMERICISH, () => {
+    assert.throws(() => parse('Wireframe\n  Numericish 1 2'), /set more than once/);
+  });
+});
+
+test('keyless number: a bare number on an element with NO number slot still errors', () => {
+  // The slot is opt-in; without one, a bare number is an unexpected token as before.
+  assert.throws(() => parse('Wireframe\n  Typography 60'), /unexpected token|60/i);
+});
+
+test('keyless number: a sizing element still reads a bare number as geometry, not value', () => {
+  // The number slot is tried AFTER sizing, so `sizing:true` is unaffected (Box 240).
+  const box = parse('Wireframe\n  Box 240 80').frames[0].children[0];
+  assert.deepEqual(box.size.w, { unit: 'flex', value: 240 });
+});
+
+// --- function minSize + NaN guard (the Dialog breakpoint / Snackbar OOM) ------
+
+/** A Dialog-shaped container whose width floor is a FUNCTION of its `size` prop. */
+const FLOORED = {
+  name: 'Floored', tier: 'v1.0', category: 'feedback', container: true,
+  props: { size: { type: 'enum', values: ['sm', 'lg', 'bad'], default: 'sm' } },
+  keyless: [{ kind: 'enum', to: 'size' }],
+  layoutSpec: () => ({ axis: 'col', pad: 0, gap: 0 }),
+  // sm/lg floor to real widths; `bad` returns a non-finite floor to exercise the guard.
+  minSize: (node) => ({ w: node.props.size === 'lg' ? 600 : node.props.size === 'bad' ? NaN : 300, h: 40 }),
+};
+
+test('minSize may be a function of the node, flooring the box per prop', () => {
+  withElement(FLOORED, () => {
+    const sm = measure(parse('Wireframe\n  Floored sm').frames[0].children[0]);
+    const lg = measure(parse('Wireframe\n  Floored lg').frames[0].children[0]);
+    assert.equal(sm.w, 300, 'sm floors to 300');
+    assert.equal(lg.w, 600, 'lg floors to 600 (a function minSize varies the floor by prop)');
+  });
+});
+
+test('a non-finite minSize dimension is IGNORED, never poisoning the geometry', () => {
+  // The OOM root cause: a NaN width floor fed an unbounded fill in the renderer.
+  // The engine must drop a non-finite floor and keep a finite box.
+  withElement(FLOORED, () => {
+    const bad = measure(parse('Wireframe\n  Floored bad').frames[0].children[0]);
+    assert.ok(Number.isFinite(bad.w), `width must stay finite despite a NaN floor, got ${bad.w}`);
+    assert.ok(Number.isFinite(bad.h), `height must stay finite, got ${bad.h}`);
+  });
+});
+
+test('an object minSize still works (backward compatible)', () => {
+  // The function form is additive; a plain {w,h} floor behaves exactly as before.
+  const STATIC = { ...FLOORED, name: 'StaticFloor', minSize: { w: 333, h: 40 } };
+  withElement(STATIC, () => {
+    const box = measure(parse('Wireframe\n  StaticFloor').frames[0].children[0]);
+    assert.equal(box.w, 333);
+  });
+});
+
+test('REGRESSION: a Dialog followed by a Snackbar lays out and renders finitely (no OOM)', () => {
+  // Order-dependent runaway allocation (3/3 OOM) when a function-minSize Dialog
+  // preceded a Snackbar sibling: the Dialog's floor was read as `fn.w` (undefined)
+  // -> NaN width -> unbounded fill. This pins the exact repro: it must complete and
+  // produce finite geometry + a real SVG. If the NaN guard regresses, layout/render
+  // blows the heap and this test fails (times out / aborts) rather than passing.
+  const src = 'Wireframe\n  Dialog sm\n    Typography h6 "Hi"\n  Snackbar "Updated"';
+  const frame = layout(parse(src))[0];
+  const dialog = frame.root.children[0];
+  assert.ok(Number.isFinite(dialog.w) && dialog.w > 0, `Dialog width must be finite, got ${dialog.w}`);
+  const snackbar = frame.root.children[1];
+  assert.ok(Number.isFinite(snackbar.w) && snackbar.w > 0, `Snackbar width must be finite, got ${snackbar.w}`);
+
+  const { svg } = render(src);
+  assert.doesNotMatch(svg, /NaN/, 'no NaN coordinates may reach the SVG');
+  assert.match(svg, /<svg[\s\S]*<\/svg>/, 'renders a complete SVG');
+
+  // Reordered (Snackbar first) must also stay finite -- both orders are safe now.
+  const swapped = render('Wireframe\n  Snackbar "Updated"\n  Dialog sm\n    Typography h6 "Hi"').svg;
+  assert.doesNotMatch(swapped, /NaN/);
 });
 
 // --- to / href reconciliation -------------------------------------------------

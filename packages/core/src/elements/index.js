@@ -28,15 +28,55 @@ import Icon from './Icon.js';
 import List from './List.js';
 import ListItem from './ListItem.js';
 import Control from './Control.js';
+import CardHeader from './CardHeader.js';
+import AccordionHeader from './AccordionHeader.js';
+import AccordionBody from './AccordionBody.js';
+import Drawer from './Drawer.js';
+import MenuItem from './MenuItem.js';
+import Menubar from './Menubar.js';
+import Tabs from './Tabs.js';
+import Tab from './Tab.js';
+import Breadcrumbs from './Breadcrumbs.js';
+import Stepper from './Stepper.js';
+import Step from './Step.js';
+import Pagination from './Pagination.js';
+import BottomNavigation from './BottomNavigation.js';
+import BottomNavigationAction from './BottomNavigationAction.js';
+import Avatar from './Avatar.js';
+import Table from './Table.js';
+import TableHead from './TableHead.js';
+import TableBody from './TableBody.js';
+import TableFooter from './TableFooter.js';
+import TableRow from './TableRow.js';
+import TableCell from './TableCell.js';
+import Badge from './Badge.js';
+import Select from './Select.js';
+import Option from './Option.js';
+import Slider from './Slider.js';
+import Rating from './Rating.js';
+import ToggleButtonGroup from './ToggleButtonGroup.js';
+import ToggleButton from './ToggleButton.js';
+import ButtonGroup from './ButtonGroup.js';
+import Fab from './Fab.js';
+import Alert from './Alert.js';
+import Dialog from './Dialog.js';
+import Snackbar from './Snackbar.js';
+import Progress from './Progress.js';
+import Skeleton from './Skeleton.js';
 
 /** Every element definition, grouped by category. @type {import('./common.js').ComponentDef[]} */
 export const ELEMENTS = [
   Wireframe,
   Stack, Box, Grid, Spacer, Divider,
-  Card, CardContent, CardActions, AppBar, Toolbar,
-  Link,
-  Typography, Button, TextField, Img, Chip, Icon, List, ListItem,
-  Control,
+  Card, CardHeader, CardContent, CardActions, AppBar, Toolbar,
+  AccordionHeader, AccordionBody,
+  Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,
+  Stepper, Step, Pagination, BottomNavigation, BottomNavigationAction,
+  Typography, Button, TextField, Img, Avatar, Chip, Icon, List, ListItem,
+  Table, TableHead, TableBody, TableFooter, TableRow, TableCell, Badge,
+  Control, Select, Option, Slider, Rating,
+  ToggleButtonGroup, ToggleButton, ButtonGroup, Fab,
+  Alert, Dialog, Snackbar, Progress, Skeleton,
 ];
 
 export { FILLER_STYLES, PRESETS } from './common.js';
