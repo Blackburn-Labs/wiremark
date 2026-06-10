@@ -356,8 +356,7 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless text literal."
+          "keyless": true
         },
         {
           "name": "href",
@@ -370,15 +369,9 @@
         },
         {
           "name": "underline",
-          "type": "enum",
-          "values": [
-            "none",
-            "hover",
-            "always"
-          ],
-          "default": "always",
-          "keyless": false,
-          "notes": "Cosmetic; v1.0."
+          "type": "boolean",
+          "default": true,
+          "keyless": true
         },
         {
           "name": "variant",
@@ -418,20 +411,19 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": false,
-          "notes": "Could map like ListItem in v1.0."
+          "keyless": true
         },
         {
           "name": "selected",
           "type": "boolean",
           "default": false,
-          "keyless": false
+          "keyless": true
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": false
+          "keyless": true
         }
       ]
     },
@@ -524,12 +516,13 @@
         {
           "name": "active",
           "type": "boolean",
-          "default": false
+          "default": false,
+          "keyless": true
         },
         {
           "name": "completed",
           "type": "boolean",
-          "keyless": false
+          "keyless": true
         }
       ]
     },
@@ -555,13 +548,12 @@
     {
       "name": "BottomNavigation",
       "category": "Navigation",
-      "children": false,
+      "children": true,
       "properties": [
         {
           "name": "value",
           "type": "string",
-          "keyless": false,
-          "notes": "Mobile nav bar; v1.0 candidate."
+          "keyless": false
         },
         {
           "name": "showLabels",
@@ -579,11 +571,11 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": false
+          "keyless": true
         },
         {
           "name": "icon",
-          "type": "string",
+          "type": "icon",
           "keyless": false
         }
       ]
@@ -596,8 +588,7 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless text literal."
+          "keyless": true
         },
         {
           "name": "variant",
@@ -618,8 +609,7 @@
             "button"
           ],
           "default": "body1",
-          "keyless": true,
-          "notes": "Keyless enum (DSL uses h4/body etc)."
+          "keyless": true
         },
         {
           "name": "align",
@@ -632,22 +622,19 @@
             "justify"
           ],
           "default": "inherit",
-          "keyless": false,
-          "notes": "v1.0."
+          "keyless": true
         },
         {
           "name": "noWrap",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Truncation; v1.0."
+          "keyless": true
         },
         {
           "name": "filler",
           "type": "string",
           "default": "1 line",
-          "keyless": false,
-          "notes": "Filler amount + style."
+          "keyless": false
         }
       ]
     },
@@ -659,8 +646,7 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless text literal."
+          "keyless": true
         },
         {
           "name": "variant",
@@ -671,8 +657,7 @@
             "contained"
           ],
           "default": "text",
-          "keyless": true,
-          "notes": "Keyless enum."
+          "keyless": true
         },
         {
           "name": "href",
@@ -680,8 +665,7 @@
           "keyless": false,
           "aliases": [
             "to"
-          ],
-          "notes": "DSL to=#id."
+          ]
         },
         {
           "name": "size",
@@ -694,25 +678,23 @@
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "v1.0 boolean flag."
+          "keyless": true
         },
         {
           "name": "startIcon",
-          "type": "string",
-          "keyless": false,
-          "notes": "Use Icon child in v1.0."
+          "type": "icon",
+          "keyless": false
         },
         {
           "name": "endIcon",
-          "type": "string",
+          "type": "icon",
           "keyless": false
         },
         {
           "name": "fullWidth",
           "type": "boolean",
           "default": false,
-          "keyless": false,
+          "keyless": true,
           "notes": "Express via sizing instead."
         },
         {
@@ -720,15 +702,13 @@
           "type": "enum",
           "values": ["hatch", "crosshatch"],
           "default": "hatch",
-          "keyless": false,
-          "notes": "Tint pattern for the contained fill: hatch (single diagonal) or crosshatch (both diagonals)."
+          "keyless": true
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Packs the contained tint's hatch lines closer together."
+          "keyless": true
         }
       ]
     },
@@ -740,8 +720,7 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless string literal."
+          "keyless": true
         },
         {
           "name": "variant",
@@ -752,14 +731,12 @@
             "standard"
           ],
           "default": "outlined",
-          "keyless": true,
-          "notes": "Keyless enum."
+          "keyless": true
         },
         {
           "name": "value",
           "type": "string",
-          "keyless": false,
-          "notes": "Keyed; drawn value text."
+          "keyless": false
         },
         {
           "name": "type",
@@ -771,116 +748,86 @@
             "number"
           ],
           "default": "text",
-          "keyless": false,
-          "notes": "Keyed."
+          "keyless": true
         },
         {
           "name": "multiline",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Boolean flag."
+          "keyless": true
         },
         {
           "name": "required",
           "type": "boolean",
           "default": false,
           "keyless": false,
-          "notes": "Boolean flag."
+          "notes": true
         },
         {
           "name": "placeholder",
           "type": "string",
-          "keyless": false,
-          "notes": "v1.0; value= covers most cases."
+          "keyless": false
         },
         {
           "name": "helperText",
           "type": "string",
           "keyless": false,
-          "aliases": [
-            "helper"
-          ],
-          "notes": "v1.0."
+          "aliases": ["helper"]
         },
         {
           "name": "error",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "v1.0 boolean."
+          "keyless": true
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "v1.0 boolean."
+          "keyless": true
         },
         {
           "name": "rows",
           "type": "numeric",
-          "keyless": false,
-          "notes": "With multiline."
-        },
-        {
-          "name": "defaultValue",
-          "type": "string",
-          "keyless": false,
-          "notes": "Use value= in DSL."
+          "default": 1,
+          "keyless": false
         },
         {
           "name": "size",
           "type": "enum",
-          "values": [
-            "small",
-            "medium"
-          ],
+          "values": ["small", "medium"],
           "default": "medium",
-          "keyless": false,
-          "notes": "v1.0."
+          "keyless": true
         },
         {
           "name": "fullWidth",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Express via sizing."
-        },
-        {
-          "name": "select",
-          "type": "boolean",
-          "default": false,
-          "keyless": false,
-          "notes": "Use Select component instead."
+          "keyless": true
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch"],
           "default": "hatch",
-          "keyless": false,
-          "notes": "Tint pattern for the filled/disabled fill: hatch (single diagonal) or crosshatch (both diagonals)."
+          "keyless": true
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Packs the filled/disabled tint's hatch lines closer together."
+          "keyless": true
         },
         {
           "name": "to",
           "type": "reference",
-          "keyless": false,
-          "notes": "Clickable region."
+          "keyless": false
         },
         {
           "name": "filler",
           "type": "string",
           "default": "label fill",
-          "keyless": false,
-          "notes": "Filler."
+          "keyless": false
         }
       ]
     },
@@ -892,20 +839,12 @@
         {
           "name": "ratio",
           "type": "ratio",
-          "keyless": false,
-          "notes": "Aspect ratio keyed."
-        },
-        {
-          "name": "alt",
-          "type": "string",
-          "keyless": false,
-          "notes": "Alt text keyed (quoted literal)."
+          "keyless": false
         },
         {
           "name": "src",
           "type": "string",
-          "keyless": false,
-          "notes": "Real source; v1.0."
+          "keyless": false
         }
       ]
     },
@@ -923,26 +862,17 @@
             "square"
           ],
           "default": "circular",
-          "keyless": true,
-          "notes": "v0.1 draws a circle."
+          "keyless": true
         },
         {
           "name": "src",
           "type": "string",
-          "keyless": false,
-          "notes": "v1.0."
-        },
-        {
-          "name": "alt",
-          "type": "string",
-          "keyless": false,
-          "notes": "v1.0."
+          "keyless": false
         },
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Initials/icon."
+          "keyless": true
         }
       ]
     },
@@ -954,8 +884,7 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless text literal."
+          "keyless": true
         },
         {
           "name": "variant",
@@ -965,8 +894,7 @@
             "outlined"
           ],
           "default": "filled",
-          "keyless": true,
-          "notes": "v1.0."
+          "keyless": true
         },
         {
           "name": "size",
@@ -976,30 +904,26 @@
             "medium"
           ],
           "default": "medium",
-          "keyless": true,
-          "notes": "v1.0."
+          "keyless": true
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch"],
           "default": "hatch",
-          "keyless": false,
-          "notes": "Tint pattern for the filled fill: hatch (single diagonal) or crosshatch (both diagonals)."
+          "keyless": true
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "Packs the filled tint's hatch lines closer together."
+          "keyless": true
         },
         {
           "name": "filler",
           "type": "string",
           "default": "Chip",
-          "keyless": false,
-          "notes": "Filler."
+          "keyless": false
         }
       ]
     },
@@ -1009,26 +933,20 @@
       "children": false,
       "properties": [
         {
-          "name": "name",
-          "type": "string",
-          "keyless": true,
-          "notes": "Keyless name; vocab is open (spec §10.3)."
+          "name": "icon",
+          "type": "icon",
+          "keyless": true
         },
         {
-          "name": "fontSize",
+          "name": "size",
           "type": "enum",
           "values": [
             "small",
             "medium",
-            "large",
-            "inherit"
+            "large"
           ],
           "default": "medium",
-          "keyless": false,
-          "aliases": [
-            "size"
-          ],
-          "notes": "v1.0."
+          "keyless": true
         }
       ]
     },
@@ -1041,14 +959,7 @@
           "name": "dense",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": "v1.0 flag."
-        },
-        {
-          "name": "subheader",
-          "type": "string",
-          "keyless": false,
-          "notes": "v1.0."
+          "keyless": true
         }
       ]
     },
@@ -1060,67 +971,31 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true,
-          "notes": "Keyless text literal."
+          "keyless": true
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "keyless": false,
+          "default": null
         },
         {
           "name": "to",
           "type": "reference",
-          "keyless": false,
-          "notes": "Clickable nav target."
+          "keyless": false
         },
         {
           "name": "filler",
           "type": "string",
           "default": "1 line",
-          "keyless": false,
-          "notes": "Filler."
-        }
-      ]
-    },
-    {
-      "name": "ListItemButton",
-      "category": "Content",
-      "children": false,
-      "properties": [
-        {
-          "name": "selected",
-          "type": "boolean",
-          "default": false,
-          "keyless": false,
-          "notes": "Folded into ListItem to= in DSL."
-        }
-      ]
-    },
-    {
-      "name": "ListItemIcon",
-      "category": "Content",
-      "children": true,
-      "properties": []
-    },
-    {
-      "name": "ListItemText",
-      "category": "Content",
-      "children": false,
-      "properties": [
-        {
-          "name": "primary",
-          "type": "string",
-          "keyless": false,
-          "notes": "Folded into ListItem label."
-        },
-        {
-          "name": "secondary",
-          "type": "string",
-          "keyless": false,
-          "notes": "Two-line item; v1.0."
+          "keyless": false
         }
       ]
     },
     {
       "name": "Table",
       "category": "Content",
-      "children": false,
+      "children": true,
       "properties": [
         {
           "name": "size",
@@ -1130,10 +1005,27 @@
             "medium"
           ],
           "default": "medium",
-          "keyless": false,
-          "notes": "Tables likely v1.0."
+          "keyless": true
         }
       ]
+    },
+    {
+      "name": "TableHead",
+      "category": "Content",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "TableBody",
+      "category": "Content",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "TableFooter",
+      "category": "Content",
+      "children": true,
+      "properties": []
     },
     {
       "name": "TableRow",
@@ -1144,7 +1036,7 @@
           "name": "selected",
           "type": "boolean",
           "default": false,
-          "keyless": false
+          "keyless": true
         }
       ]
     },
@@ -1174,8 +1066,7 @@
         {
           "name": "badgeContent",
           "type": "string",
-          "keyless": true,
-          "notes": "Overlay count; v1.0."
+          "keyless": true
         },
         {
           "name": "variant",

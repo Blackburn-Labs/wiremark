@@ -160,9 +160,9 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless text literal. |
+| label | string |  |  | yes |  |  |
 | href | reference |  |  | no | to | DSL to=#id (frame-level only). |
-| underline | enum | none, hover, always | always | no |  | Cosmetic; v1.0. |
+| underline | boolean |  | true | yes |  |  |
 | variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | inherit | yes |  | Shares Typography scale. |
 | filler | string |  |  | no |  | Filler control. |
 
@@ -172,9 +172,9 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | no |  | Could map like ListItem in v1.0. |
-| selected | boolean |  | false | no |  |  |
-| disabled | boolean |  | false | no |  |  |
+| label | string |  |  | yes |  |  |
+| selected | boolean |  | false | yes |  |  |
+| disabled | boolean |  | false | yes |  |  |
 
 ### Menubar
 
@@ -222,8 +222,8 @@ No configurable properties.
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | label | string |  |  | yes |  |  |
-| active | boolean |  | false | no |  |  |
-| completed | boolean |  |  | no |  |  |
+| active | boolean |  | false | yes |  |  |
+| completed | boolean |  |  | yes |  |  |
 
 ### Pagination
 
@@ -236,11 +236,11 @@ No configurable properties.
 
 ### BottomNavigation
 
-*Accepts children: no*
+*Accepts children: yes*
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| value | string |  |  | no |  | Mobile nav bar; v1.0 candidate. |
+| value | string |  |  | no |  |  |
 | showLabels | boolean |  | false | no |  |  |
 
 ### BottomNavigationAction
@@ -249,8 +249,8 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | no |  |  |
-| icon | string |  |  | no |  |  |
+| label | string |  |  | yes |  |  |
+| icon | icon |  |  | no |  |  |
 
 ## Content
 
@@ -260,11 +260,11 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless text literal. |
-| variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | body1 | yes |  | Keyless enum (DSL uses h4/body etc). |
-| align | enum | inherit, left, center, right, justify | inherit | no |  | v1.0. |
-| noWrap | boolean |  | false | no |  | Truncation; v1.0. |
-| filler | string |  | 1 line | no |  | Filler amount + style. |
+| label | string |  |  | yes |  |  |
+| variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | body1 | yes |  |  |
+| align | enum | inherit, left, center, right, justify | inherit | yes |  |  |
+| noWrap | boolean |  | false | yes |  |  |
+| filler | string |  | 1 line | no |  |  |
 
 ### Button
 
@@ -272,16 +272,16 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless text literal. |
-| variant | enum | text, outlined, contained | text | yes |  | Keyless enum. |
-| href | reference |  |  | no | to | DSL to=#id. |
+| label | string |  |  | yes |  |  |
+| variant | enum | text, outlined, contained | text | yes |  |  |
+| href | reference |  |  | no | to |  |
 | size | enum | small, medium, large | medium | yes |  |  |
-| disabled | boolean |  | false | no |  | v1.0 boolean flag. |
-| startIcon | string |  |  | no |  | Use Icon child in v1.0. |
-| endIcon | string |  |  | no |  |  |
-| fullWidth | boolean |  | false | no |  | Express via sizing instead. |
-| background | enum | hatch, crosshatch | hatch | no |  | Tint pattern for the contained fill: hatch (single diagonal) or crosshatch (both diagonals). |
-| denseBackground | boolean |  | false | no |  | Packs the contained tint's hatch lines closer together. |
+| disabled | boolean |  | false | yes |  |  |
+| startIcon | icon |  |  | no |  |  |
+| endIcon | icon |  |  | no |  |  |
+| fullWidth | boolean |  | false | yes |  | Express via sizing instead. |
+| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| denseBackground | boolean |  | false | yes |  |  |
 
 ### TextField
 
@@ -289,25 +289,23 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless string literal. |
-| variant | enum | outlined, filled, standard | outlined | yes |  | Keyless enum. |
-| value | string |  |  | no |  | Keyed; drawn value text. |
-| type | enum | text, password, email, number | text | no |  | Keyed. |
-| multiline | boolean |  | false | no |  | Boolean flag. |
-| required | boolean |  | false | no |  | Boolean flag. |
-| placeholder | string |  |  | no |  | v1.0; value= covers most cases. |
-| helperText | string |  |  | no | helper | v1.0. |
-| error | boolean |  | false | no |  | v1.0 boolean. |
-| disabled | boolean |  | false | no |  | v1.0 boolean. |
-| rows | numeric |  |  | no |  | With multiline. |
-| defaultValue | string |  |  | no |  | Use value= in DSL. |
-| size | enum | small, medium | medium | no |  | v1.0. |
-| fullWidth | boolean |  | false | no |  | Express via sizing. |
-| select | boolean |  | false | no |  | Use Select component instead. |
-| background | enum | hatch, crosshatch | hatch | no |  | Tint pattern for the filled/disabled fill: hatch (single diagonal) or crosshatch (both diagonals). |
-| denseBackground | boolean |  | false | no |  | Packs the filled/disabled tint's hatch lines closer together. |
-| to | reference |  |  | no |  | Clickable region. |
-| filler | string |  | label fill | no |  | Filler. |
+| label | string |  |  | yes |  |  |
+| variant | enum | outlined, filled, standard | outlined | yes |  |  |
+| value | string |  |  | no |  |  |
+| type | enum | text, password, email, number | text | yes |  |  |
+| multiline | boolean |  | false | yes |  |  |
+| required | boolean |  | false | no |  | true |
+| placeholder | string |  |  | no |  |  |
+| helperText | string |  |  | no | helper |  |
+| error | boolean |  | false | yes |  |  |
+| disabled | boolean |  | false | yes |  |  |
+| rows | numeric |  | 1 | no |  |  |
+| size | enum | small, medium | medium | yes |  |  |
+| fullWidth | boolean |  | false | yes |  |  |
+| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| denseBackground | boolean |  | false | yes |  |  |
+| to | reference |  |  | no |  |  |
+| filler | string |  | label fill | no |  |  |
 
 ### Img
 
@@ -315,9 +313,8 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| ratio | ratio |  |  | no |  | Aspect ratio keyed. |
-| alt | string |  |  | no |  | Alt text keyed (quoted literal). |
-| src | string |  |  | no |  | Real source; v1.0. |
+| ratio | ratio |  |  | no |  |  |
+| src | string |  |  | no |  |  |
 
 ### Avatar
 
@@ -325,10 +322,9 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| variant | enum | circular, rounded, square | circular | yes |  | v0.1 draws a circle. |
-| src | string |  |  | no |  | v1.0. |
-| alt | string |  |  | no |  | v1.0. |
-| label | string |  |  | yes |  | Initials/icon. |
+| variant | enum | circular, rounded, square | circular | yes |  |  |
+| src | string |  |  | no |  |  |
+| label | string |  |  | yes |  |  |
 
 ### Chip
 
@@ -336,12 +332,12 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless text literal. |
-| variant | enum | filled, outlined | filled | yes |  | v1.0. |
-| size | enum | small, medium | medium | yes |  | v1.0. |
-| background | enum | hatch, crosshatch | hatch | no |  | Tint pattern for the filled fill: hatch (single diagonal) or crosshatch (both diagonals). |
-| denseBackground | boolean |  | false | no |  | Packs the filled tint's hatch lines closer together. |
-| filler | string |  | Chip | no |  | Filler. |
+| label | string |  |  | yes |  |  |
+| variant | enum | filled, outlined | filled | yes |  |  |
+| size | enum | small, medium | medium | yes |  |  |
+| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| denseBackground | boolean |  | false | yes |  |  |
+| filler | string |  | Chip | no |  |  |
 
 ### Icon
 
@@ -349,8 +345,8 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| name | string |  |  | yes |  | Keyless name; vocab is open (spec §10.3). |
-| fontSize | enum | small, medium, large, inherit | medium | no | size | v1.0. |
+| icon | icon |  |  | yes |  |  |
+| size | enum | small, medium, large | medium | yes |  |  |
 
 ### List
 
@@ -358,8 +354,7 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| dense | boolean |  | false | no |  | v1.0 flag. |
-| subheader | string |  |  | no |  | v1.0. |
+| dense | boolean |  | false | yes |  |  |
 
 ### ListItem
 
@@ -367,40 +362,36 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  | Keyless text literal. |
-| to | reference |  |  | no |  | Clickable nav target. |
-| filler | string |  | 1 line | no |  | Filler. |
+| label | string |  |  | yes |  |  |
+| icon | icon |  |  | no |  |  |
+| to | reference |  |  | no |  |  |
+| filler | string |  | 1 line | no |  |  |
 
-### ListItemButton
+### Table
 
-*Accepts children: no*
+*Accepts children: yes*
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| selected | boolean |  | false | no |  | Folded into ListItem to= in DSL. |
+| size | enum | small, medium | medium | yes |  |  |
 
-### ListItemIcon
+### TableHead
 
 *Accepts children: yes*
 
 No configurable properties.
 
-### ListItemText
+### TableBody
 
-*Accepts children: no*
+*Accepts children: yes*
 
-| Name | Type | Values | Default | Keyless | Aliases | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| primary | string |  |  | no |  | Folded into ListItem label. |
-| secondary | string |  |  | no |  | Two-line item; v1.0. |
+No configurable properties.
 
-### Table
+### TableFooter
 
-*Accepts children: no*
+*Accepts children: yes*
 
-| Name | Type | Values | Default | Keyless | Aliases | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| size | enum | small, medium | medium | no |  | Tables likely v1.0. |
+No configurable properties.
 
 ### TableRow
 
@@ -408,7 +399,7 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| selected | boolean |  | false | no |  |  |
+| selected | boolean |  | false | yes |  |  |
 
 ### TableCell
 
@@ -424,7 +415,7 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| badgeContent | string |  |  | yes |  | Overlay count; v1.0. |
+| badgeContent | string |  |  | yes |  |  |
 | variant | enum | standard, dot | standard | yes |  |  |
 
 ## Inputs
