@@ -164,6 +164,7 @@ export function rline(x1, y1, x2, y2, opts = {}) {
  * @returns {string}
  */
 export function connectorArrow(points, opts = {}) {
+  if (!points || points.length < 2) return ''; // degrade gracefully, never crash the render
   const { stroke = COLORS.ink, strokeWidth = CONNECTOR_WIDTH, head = ARROW_HEAD, spread = ARROW_SPREAD } = opts;
   const r = Math.round; // crisp integer coordinates -- no sub-pixel bloat in the SVG
   const shaft = points.map((p, i) => `${i ? 'L' : 'M'}${r(p.x)} ${r(p.y)}`).join(' ');

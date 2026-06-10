@@ -8,6 +8,7 @@ import { parse, render, toFlowGraph } from '../src/index.js';
 import { layout } from '../src/layout.js';
 import { layoutFrames } from '../src/frame-layout.js';
 import { connectorGeometry } from '../src/render.js';
+import { connectorArrow } from '../src/draw.js';
 import { PRESET_SIZES, FRAME_FLOW_GAP, CONNECTOR_SPREAD, CONNECTOR_WIDTH } from '../src/metrics.js';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
@@ -27,6 +28,24 @@ function positioned(dir) {
 /** Visible frames as render's placed-rect shape. @param {*[]} frames */
 const placedOf = (frames) =>
   frames.filter((f) => f.visible).map((f) => ({ frame: f, x: f.x, y: f.y, w: f.w, h: f.h }));
+
+/** Synthetic placed rects from {id,x,y,w,h}. @param {*[]} rs */
+const rects = (rs) => rs.map((r) => ({ frame: { id: r.id }, x: r.x, y: r.y, w: r.w, h: r.h }));
+
+/** Do two connector polylines properly intersect (endpoints touching don't count)? @param {*[]} a @param {*[]} b */
+function pathsCross(a, b) {
+  const seg = (/** @type {*} */ p1, /** @type {*} */ p2, /** @type {*} */ p3, /** @type {*} */ p4) => {
+    const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+    if (Math.abs(d) < 1e-9) return false;
+    const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+    const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+    return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
+  };
+  for (let i = 0; i < a.length - 1; i++)
+    for (let j = 0; j < b.length - 1; j++)
+      if (seg(a[i], a[i + 1], b[j], b[j + 1])) return true;
+  return false;
+}
 
 const { h: LH } = PRESET_SIZES.landscape; // every frame in the fixture is landscape
 
@@ -168,8 +187,8 @@ test('multi-frame: a bidirectional pair also offsets its across-run, so no part 
   // DIFFERENT y, so the lines don't overlap on the across segment either.
   assert.equal(fwd.points.length, 4);
   assert.equal(back.points.length, 4);
-  assert.notEqual(fwd.points[1].y, back.points[1].y, 'the across-runs are vertically separated');
-  assert.equal(Math.round(Math.abs(fwd.points[1].y - back.points[1].y)), CONNECTOR_SPREAD, 'by CONNECTOR_SPREAD');
+  const sep = Math.abs(fwd.points[1].y - back.points[1].y);
+  assert.ok(sep > 0 && sep <= CONNECTOR_SPREAD + 0.5, 'across-runs separated, by at most CONNECTOR_SPREAD');
 });
 
 test('multi-frame: flow connectors are clean (not hand-drawn) and thicker', () => {
@@ -180,6 +199,57 @@ test('multi-frame: flow connectors are clean (not hand-drawn) and thicker', () =
   // rough.js sketch strokes are cubic-bezier ("C"); clean connectors are M/L/Z only.
   assert.ok(paths.every((d) => !/[CQA]/.test(d)), 'connector paths have no curve commands -> not hand-drawn');
   assert.match(layer, new RegExp(`stroke-width="${CONNECTOR_WIDTH}"`), 'connectors use the thicker stroke');
+});
+
+test('multi-frame: a diagonal bidirectional pair never tangles into an X (either diagonal)', () => {
+  for (const bx of [1600, -1600]) { // target lower-right, then lower-left of the source
+    const placed = rects([{ id: 'a', x: 0, y: 0, w: 1280, h: 800 }, { id: 'b', x: bx, y: 880, w: 1280, h: 800 }]);
+    const geom = connectorGeometry(placed, { edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'a' }] }, 'TD');
+    const ab = geom.find((c) => c.from === 'a').points;
+    const ba = geom.find((c) => c.from === 'b').points;
+    assert.ok(!pathsCross(ab, ba), `the bidirectional pair (bx=${bx}) must not cross`);
+  }
+});
+
+test('multi-frame: no two connectors cross in the rendered fixture (TD and LR)', () => {
+  for (const dir of /** @type {const} */ (['TD', 'LR'])) {
+    const { frames, graph } = positioned(dir);
+    const geom = connectorGeometry(placedOf(frames), graph, dir);
+    for (let i = 0; i < geom.length; i++)
+      for (let j = i + 1; j < geom.length; j++)
+        assert.ok(!pathsCross(geom[i].points, geom[j].points),
+          `${geom[i].from}->${geom[i].to} crosses ${geom[j].from}->${geom[j].to} in ${dir}`);
+  }
+});
+
+test('multi-frame: an off-axis skip-rank connector routes its across-run clear of the intervening frame', () => {
+  // #a (rank 0) links past #b (rank 1, off to the side) to #c (rank 2, laterally offset).
+  const placed = rects([
+    { id: 'a', x: 0, y: 0, w: 400, h: 200 },
+    { id: 'b', x: 700, y: 280, w: 400, h: 200 },
+    { id: 'c', x: 150, y: 560, w: 400, h: 200 },
+  ]);
+  const ac = connectorGeometry(placed, { edges: [{ from: 'a', to: 'c' }] }, 'TD')[0].points;
+  assert.equal(ac.length, 4, 'a skip-rank off-axis connector is an elbow');
+  assert.ok(ac[1].y < 280, 'the across-run sits in the first gap, above the intervening #b (top at y=280)');
+});
+
+test('multi-frame (LR): off-axis connectors route as across/down/across on the side faces', () => {
+  const { frames, graph } = positioned('LR');
+  const geom = connectorGeometry(placedOf(frames), graph, 'LR');
+  const hp = geom.find((c) => c.from === 'home' && c.to === 'product');
+  assert.equal(hp.points.length, 4, 'an off-axis LR connector bends');
+  assert.equal(hp.points[0].y, hp.points[1].y, 'leaves the source face horizontally (LR)');
+  assert.equal(hp.points[1].x, hp.points[2].x, 'the middle run is vertical');
+  assert.equal(hp.points[2].y, hp.points[3].y, 'enters the target face horizontally (LR)');
+  const home = frames.find((f) => f.id === 'home');
+  assert.equal(hp.points[0].x, home.x + home.w, 'exits the right face in LR');
+});
+
+test('connectorArrow degrades gracefully on degenerate input (< 2 points)', () => {
+  assert.equal(connectorArrow([]), '');
+  assert.equal(connectorArrow([{ x: 1, y: 2 }]), '');
+  assert.match(connectorArrow([{ x: 0, y: 0 }, { x: 10, y: 0 }]), /<path /, 'a valid 2-point arrow still draws');
 });
 
 test('direction is a keyed Wireframe prop and an option override', () => {

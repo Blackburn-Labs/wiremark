@@ -1,7 +1,7 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { COLORS, escape, connectorArrow, centeredLabel } from './draw.js';
-import { measureText, ARROW_HEAD, CONNECTOR_SPREAD } from './metrics.js';
+import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './metrics.js';
 
 /**
  * Stage (5) -- RENDER.  laid-out boxes -> hand-drawn SVG string.
@@ -202,9 +202,9 @@ export function connectorGeometry(placed, graph, dir) {
     });
   }
 
-  // Within each pair, give every edge a signed offset around its slot, applied the
-  // SAME way at both ends -- so a bidirectional pair reads as two close parallel
-  // lines. A lone edge gets 0 (stays on its slot).
+  // Within each pair, give every edge a signed ANCHOR offset around its slot, applied
+  // the SAME way at both ends -- so a bidirectional pair reads as two close parallel
+  // lines. A lone edge gets 0 (stays centred on its slot).
   const offset = edges.map(() => 0);
   /** @type {Map<string, number[]>} */
   const byPair = new Map();
@@ -214,8 +214,8 @@ export function connectorGeometry(placed, graph, dir) {
     else byPair.set(edge.pair, [i]);
   });
   for (const idxs of byPair.values()) {
-    idxs.sort((a, b) => (edgeKey(edges[a].e) < edgeKey(edges[b].e) ? -1 : 1));
-    idxs.forEach((i, t) => { offset[i] = (t - (idxs.length - 1) / 2) * CONNECTOR_SPREAD; });
+    [...idxs].sort((a, b) => (edgeKey(edges[a].e) < edgeKey(edges[b].e) ? -1 : 1))
+      .forEach((i, t) => { offset[i] = (t - (idxs.length - 1) / 2) * CONNECTOR_SPREAD; });
   }
 
   // On each (frame, face), order the distinct pairs by aim and hand each a slot.
@@ -241,10 +241,31 @@ export function connectorGeometry(placed, graph, dir) {
   const fracOf = (/** @type {string} */ fk, /** @type {string} */ pair) =>
     /** @type {Map<string, number>} */ (slot.get(fk)).get(pair) ?? 0.5;
 
+  // Anchor every edge, then lane the elbow BENDS by each connector's average
+  // cross-position: the leftmost path bends nearest the top of the gap, the rightmost
+  // nearest the bottom, so two opposite-direction elbows nest rather than tangle into
+  // an X -- regardless of where the asymmetric slots placed the anchors.
+  const anchors = edges.map((edge, i) => ({
+    tail: anchorOn(edge.s, edge.sFace, fracOf(`${edge.s.frame.id}|${edge.sFace}`, edge.pair), offset[i]),
+    head: anchorOn(edge.d, edge.dFace, fracOf(`${edge.d.frame.id}|${edge.dFace}`, edge.pair), offset[i]),
+  }));
+  const avgCross = (/** @type {number} */ i) => (crossCoord(anchors[i].tail, dir) + crossCoord(anchors[i].head, dir)) / 2;
+  const bend = edges.map(() => 0);
+  for (const idxs of byPair.values()) {
+    const sorted = [...idxs].sort((a, b) => avgCross(a) - avgCross(b) || a - b);
+    sorted.forEach((i, t) => { bend[i] = (t - (sorted.length - 1) / 2) * CONNECTOR_SPREAD; });
+    // A bidirectional pair's correct bend order depends on the diagonal; both
+    // orderings are cheap to test, so flip if the chosen one tangles into an X.
+    if (sorted.length === 2) {
+      const [i, j] = sorted;
+      const el = (/** @type {number} */ k, /** @type {number} */ b) => elbow(anchors[k].tail, anchors[k].head, dir, b);
+      if (pathsCross(el(i, bend[i]), el(j, bend[j]))) { const t = bend[i]; bend[i] = bend[j]; bend[j] = t; }
+    }
+  }
+
   return edges.map((edge, i) => {
-    const tail = anchorOn(edge.s, edge.sFace, fracOf(`${edge.s.frame.id}|${edge.sFace}`, edge.pair), offset[i]);
-    const head = anchorOn(edge.d, edge.dFace, fracOf(`${edge.d.frame.id}|${edge.dFace}`, edge.pair), offset[i]);
-    const geom = { from: edge.e.from, to: edge.e.to, tail, head, points: elbow(tail, head, dir, offset[i]) };
+    const { tail, head } = anchors[i];
+    const geom = { from: edge.e.from, to: edge.e.to, tail, head, points: elbow(tail, head, dir, bend[i]) };
     return edge.e.label ? { ...geom, label: edge.e.label } : geom;
   });
 }
@@ -318,7 +339,7 @@ function renderConnectors(placed, graph, dir) {
     grow(tip.x - ARROW_HEAD, tip.y - ARROW_HEAD);
     grow(tip.x + ARROW_HEAD, tip.y + ARROW_HEAD);
     if (label) {
-      const lab = connectorLabel(labelCenter(points), label);
+      const lab = connectorLabel(labelCenter(points, dir), label);
       markup += lab.markup;
       grow(lab.bounds.minX, lab.bounds.minY);
       grow(lab.bounds.maxX, lab.bounds.maxY);
@@ -331,8 +352,11 @@ function renderConnectors(placed, graph, dir) {
  * Route a connector as an orthogonal elbow: straight out of the source face, one
  * right-angle bend, then straight into the target face -- so the arrowhead always
  * meets an edge square-on. Axis-aligned endpoints stay a single straight segment.
- * `bend` nudges the across-run along the flow axis (clamped to the gap) so parallel
- * connectors don't share the same across-run.
+ * The across-run sits in the inter-rank GAP immediately past the source (not the
+ * midpoint of the whole span), so a skip-rank edge doesn't sweep its horizontal run
+ * through an intervening frame; for adjacent ranks that band IS the only gap, so the
+ * run lands at the gap centre as before. `bend` nudges the run along the flow axis,
+ * clamped within that gap, so parallel connectors don't share an across-run.
  * @param {Point} tail @param {Point} head @param {'TD'|'LR'} dir @param {number} [bend]
  * @returns {Point[]}
  */
@@ -340,11 +364,15 @@ function elbow(tail, head, dir, bend = 0) {
   const EPS = 0.5;
   if (dir === 'LR') {
     if (Math.abs(tail.y - head.y) < EPS) return [tail, head];
-    const mx = between((tail.x + head.x) / 2 + bend, tail.x, head.x);
+    const dx = Math.sign(head.x - tail.x) || 1;
+    const gapEnd = tail.x + dx * Math.min(FRAME_FLOW_GAP, Math.abs(head.x - tail.x));
+    const mx = between(tail.x + dx * (FRAME_FLOW_GAP / 2) + bend, tail.x, gapEnd);
     return [tail, { x: mx, y: tail.y }, { x: mx, y: head.y }, head];
   }
   if (Math.abs(tail.x - head.x) < EPS) return [tail, head];
-  const my = between((tail.y + head.y) / 2 + bend, tail.y, head.y);
+  const dy = Math.sign(head.y - tail.y) || 1;
+  const gapEnd = tail.y + dy * Math.min(FRAME_FLOW_GAP, Math.abs(head.y - tail.y));
+  const my = between(tail.y + dy * (FRAME_FLOW_GAP / 2) + bend, tail.y, gapEnd);
   return [tail, { x: tail.x, y: my }, { x: head.x, y: my }, head];
 }
 
@@ -355,14 +383,34 @@ function between(v, a, b) {
   return Math.max(lo + pad, Math.min(hi - pad, v));
 }
 
+/** Do two connector polylines properly intersect (used to pick a non-crossing bend order)? @param {Point[]} a @param {Point[]} b @returns {boolean} */
+function pathsCross(a, b) {
+  for (let i = 0; i < a.length - 1; i++)
+    for (let j = 0; j < b.length - 1; j++)
+      if (segCross(a[i], a[i + 1], b[j], b[j + 1])) return true;
+  return false;
+}
+
+/** Proper segment intersection (endpoints touching don't count). @param {Point} p1 @param {Point} p2 @param {Point} p3 @param {Point} p4 @returns {boolean} */
+function segCross(p1, p2, p3, p4) {
+  const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+  if (Math.abs(d) < 1e-9) return false;
+  const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+  const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+  return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
+}
+
 /**
- * Where to anchor a connector's caption: the midpoint of its horizontal run (the
- * across segment of an elbow), or the segment midpoint for a straight connector --
- * keeping the label clear of the frames it joins.
- * @param {Point[]} points @returns {Point}
+ * Where to anchor a connector's caption. TD: the horizontal across-run (points[1]-[2])
+ * sits in the wide inter-rank gap -- ideal. LR: that run is the vertical stub inside the
+ * narrow column gap, so anchor on a horizontal run (points[0]-[1]) instead, keeping the
+ * caption reading along the flow rather than overflowing both frames. A straight
+ * connector uses its single segment.
+ * @param {Point[]} points @param {'TD'|'LR'} dir @returns {Point}
  */
-function labelCenter(points) {
-  const [a, b] = points.length >= 4 ? [points[1], points[2]] : [points[0], points[1]];
+function labelCenter(points, dir) {
+  if (points.length < 4) return { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+  const [a, b] = dir === 'LR' ? [points[0], points[1]] : [points[1], points[2]];
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
