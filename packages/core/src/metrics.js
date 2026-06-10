@@ -46,6 +46,9 @@ export const ARROW_SPREAD = 0.45;
  */
 export const CONNECTOR_SPREAD = 40;
 
+/** Stroke width for flow connectors -- thicker than sketch strokes so they read as a separate diagram layer. */
+export const CONNECTOR_WIDTH = 2.5;
+
 /** Per-variant font size in px (MUI-ish); the default variant is `body`. */
 export const VARIANT_FONT = {
   h1: 48, h2: 40, h3: 32, h4: 24, h5: 20, h6: 18,

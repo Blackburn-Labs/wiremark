@@ -8,7 +8,7 @@ import { parse, render, toFlowGraph } from '../src/index.js';
 import { layout } from '../src/layout.js';
 import { layoutFrames } from '../src/frame-layout.js';
 import { connectorGeometry } from '../src/render.js';
-import { PRESET_SIZES, FRAME_FLOW_GAP, CONNECTOR_SPREAD } from '../src/metrics.js';
+import { PRESET_SIZES, FRAME_FLOW_GAP, CONNECTOR_SPREAD, CONNECTOR_WIDTH } from '../src/metrics.js';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
 /** @param {string} name */
@@ -157,6 +157,29 @@ test('multi-frame: off-axis connectors route as right-angle elbows', () => {
   // An axis-aligned pair (#login -> #home) stays a single straight segment.
   const lh = geom.find((c) => c.from === 'login' && c.to === 'home');
   assert.equal(lh.points.length, 2, 'aligned frames -> straight connector');
+});
+
+test('multi-frame: a bidirectional pair also offsets its across-run, so no part coincides', () => {
+  const { frames, graph } = positioned('TD');
+  const geom = connectorGeometry(placedOf(frames), graph, 'TD');
+  const fwd = geom.find((c) => c.from === 'home' && c.to === 'details');
+  const back = geom.find((c) => c.from === 'details' && c.to === 'home');
+  // Both are elbows; their horizontal across-runs (points[1].y is the bend) sit at
+  // DIFFERENT y, so the lines don't overlap on the across segment either.
+  assert.equal(fwd.points.length, 4);
+  assert.equal(back.points.length, 4);
+  assert.notEqual(fwd.points[1].y, back.points[1].y, 'the across-runs are vertically separated');
+  assert.equal(Math.round(Math.abs(fwd.points[1].y - back.points[1].y)), CONNECTOR_SPREAD, 'by CONNECTOR_SPREAD');
+});
+
+test('multi-frame: flow connectors are clean (not hand-drawn) and thicker', () => {
+  const { svg } = render(fixture('multi-frame.wiremark'));
+  const layer = svg.match(/<g class="wm-connectors">([\s\S]*)<\/g><\/svg>$/)[1];
+  const paths = [...layer.matchAll(/<path d="([^"]*)"/g)].map((m) => m[1]);
+  assert.ok(paths.length > 0, 'connectors draw paths');
+  // rough.js sketch strokes are cubic-bezier ("C"); clean connectors are M/L/Z only.
+  assert.ok(paths.every((d) => !/[CQA]/.test(d)), 'connector paths have no curve commands -> not hand-drawn');
+  assert.match(layer, new RegExp(`stroke-width="${CONNECTOR_WIDTH}"`), 'connectors use the thicker stroke');
 });
 
 test('direction is a keyed Wireframe prop and an option override', () => {

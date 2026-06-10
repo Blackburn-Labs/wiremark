@@ -1,6 +1,6 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
-import { COLORS, escape, rarrowPath, centeredLabel } from './draw.js';
+import { COLORS, escape, connectorArrow, centeredLabel } from './draw.js';
 import { measureText, ARROW_HEAD, CONNECTOR_SPREAD } from './metrics.js';
 
 /**
@@ -171,7 +171,9 @@ function boundsOf(placed, conn) {
  *     heads toward -- so a fan-out spreads out and aims at its targets.
  *   - The edges *within* one pair (a bidirectional a->b / b->a, or repeats) stay
  *     clustered: offset by `CONNECTOR_SPREAD` around their slot, the SAME way at both
- *     ends, so they read as two close parallel lines that still touch the edges.
+ *     ends, so they read as two close parallel lines that still touch the edges. The
+ *     same offset also nudges each one's elbow bend, so even the across-runs don't
+ *     coincide.
  * A face with a single connector keeps the center. Each connector is then routed as
  * an orthogonal elbow. Pure + deterministic; exported for testing.
  * @param {Placed[]} placed
@@ -242,7 +244,7 @@ export function connectorGeometry(placed, graph, dir) {
   return edges.map((edge, i) => {
     const tail = anchorOn(edge.s, edge.sFace, fracOf(`${edge.s.frame.id}|${edge.sFace}`, edge.pair), offset[i]);
     const head = anchorOn(edge.d, edge.dFace, fracOf(`${edge.d.frame.id}|${edge.dFace}`, edge.pair), offset[i]);
-    const geom = { from: edge.e.from, to: edge.e.to, tail, head, points: elbow(tail, head, dir) };
+    const geom = { from: edge.e.from, to: edge.e.to, tail, head, points: elbow(tail, head, dir, offset[i]) };
     return edge.e.label ? { ...geom, label: edge.e.label } : geom;
   });
 }
@@ -291,9 +293,9 @@ function anchorOn(f, face, frac, off) {
 }
 
 /**
- * Draw a hand-drawn arrow for every drawable connector (see `connectorGeometry`),
- * with the edge's optional label at the midpoint. Returns the markup and the
- * bounds it occupies.
+ * Draw a clean (non-sketch) arrow for every drawable connector (see
+ * `connectorGeometry`), with the edge's optional label at the midpoint. Returns the
+ * markup and the bounds it occupies.
  * @param {Placed[]} placed
  * @param {FlowGraph} graph
  * @param {'TD'|'LR'} dir
@@ -310,7 +312,7 @@ function renderConnectors(placed, graph, dir) {
   };
 
   for (const { points, label } of connectorGeometry(placed, graph, dir)) {
-    markup += rarrowPath(points);
+    markup += connectorArrow(points);
     for (const p of points) grow(p.x, p.y);
     const tip = points[points.length - 1];
     grow(tip.x - ARROW_HEAD, tip.y - ARROW_HEAD);
@@ -329,19 +331,28 @@ function renderConnectors(placed, graph, dir) {
  * Route a connector as an orthogonal elbow: straight out of the source face, one
  * right-angle bend, then straight into the target face -- so the arrowhead always
  * meets an edge square-on. Axis-aligned endpoints stay a single straight segment.
- * @param {Point} tail @param {Point} head @param {'TD'|'LR'} dir
+ * `bend` nudges the across-run along the flow axis (clamped to the gap) so parallel
+ * connectors don't share the same across-run.
+ * @param {Point} tail @param {Point} head @param {'TD'|'LR'} dir @param {number} [bend]
  * @returns {Point[]}
  */
-function elbow(tail, head, dir) {
+function elbow(tail, head, dir, bend = 0) {
   const EPS = 0.5;
   if (dir === 'LR') {
     if (Math.abs(tail.y - head.y) < EPS) return [tail, head];
-    const mx = (tail.x + head.x) / 2;
+    const mx = between((tail.x + head.x) / 2 + bend, tail.x, head.x);
     return [tail, { x: mx, y: tail.y }, { x: mx, y: head.y }, head];
   }
   if (Math.abs(tail.x - head.x) < EPS) return [tail, head];
-  const my = (tail.y + head.y) / 2;
+  const my = between((tail.y + head.y) / 2 + bend, tail.y, head.y);
   return [tail, { x: tail.x, y: my }, { x: head.x, y: my }, head];
+}
+
+/** Clamp `v` strictly between `a` and `b` (with a small pad), keeping an elbow bend in the gap. @param {number} v @param {number} a @param {number} b @returns {number} */
+function between(v, a, b) {
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  const pad = Math.min(6, (hi - lo) / 3);
+  return Math.max(lo + pad, Math.min(hi - pad, v));
 }
 
 /**

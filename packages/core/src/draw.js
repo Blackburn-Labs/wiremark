@@ -1,6 +1,6 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH } from './metrics.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -153,51 +153,31 @@ export function rline(x1, y1, x2, y2, opts = {}) {
 }
 
 /**
- * Hand-drawn arrow: a wobbly shaft from (x1,y1) to the tip (x2,y2), plus two
- * short wing strokes forming the arrowhead at the tip. Built only from `rline`
- * (like `rcrossbox`), so the sketch aesthetic, dashing, and the geometry-derived
- * seed all come for free -- the wobble stays deterministic across runs because
- * every coordinate derives from the two endpoints. Used by the multi-frame flow
- * chart to connect frames border-to-border (SPEC ss.7.4).
- * @param {number} x1 @param {number} y1   tail
- * @param {number} x2 @param {number} y2   head (the tip)
- * @param {object} [opts]  { stroke?, strokeWidth?, head?, spread?, strokeLineDash? }
+ * A CLEAN (non-sketch) flow connector: a straight, thicker polyline through
+ * `points` plus a FILLED arrowhead at the last point. Deliberately NOT hand-drawn
+ * -- frame-to-frame navigation arrows read as a separate diagram layer, distinct
+ * from the wobbly wireframe content (SPEC ss.7.4). No rough.js, so it is crisp and
+ * inherently deterministic. The arrowhead orients along the LAST segment, so an
+ * orthogonal elbow meets a frame edge square-on.
+ * @param {{x:number,y:number}[]} points  >= 2 points
+ * @param {object} [opts]  { stroke?, strokeWidth?, head?, spread? }
  * @returns {string}
  */
-export function rarrow(x1, y1, x2, y2, opts = {}) {
-  const { head = ARROW_HEAD, spread = ARROW_SPREAD, strokeWidth = 1.4, ...rest } = opts;
-  const base = { strokeWidth, ...rest };
-  const ang = Math.atan2(y2 - y1, x2 - x1);
-  const lx = x2 - head * Math.cos(ang - spread);
-  const ly = y2 - head * Math.sin(ang - spread);
-  const rx = x2 - head * Math.cos(ang + spread);
-  const ry = y2 - head * Math.sin(ang + spread);
-  return rline(x1, y1, x2, y2, base) + rline(x2, y2, lx, ly, base) + rline(x2, y2, rx, ry, base);
-}
-
-/**
- * Hand-drawn arrow whose shaft follows a polyline (>= 2 points): a sequence of
- * `rline` segments plus an arrowhead at the LAST point, oriented along the last
- * segment. Generalizes `rarrow` to elbow/orthogonal connectors -- the head meets
- * the final segment's direction, so an elbow that arrives perpendicular to a frame
- * face gets a square-on arrowhead. Deterministic (each segment seeds from its own
- * endpoints, like `rarrow`).
- * @param {{x:number,y:number}[]} points
- * @param {object} [opts]  { stroke?, strokeWidth?, head?, spread?, strokeLineDash? }
- * @returns {string}
- */
-export function rarrowPath(points, opts = {}) {
-  const { head = ARROW_HEAD, spread = ARROW_SPREAD, strokeWidth = 1.4, ...rest } = opts;
-  const base = { strokeWidth, ...rest };
-  let out = '';
-  for (let i = 0; i < points.length - 1; i++)
-    out += rline(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, base);
+export function connectorArrow(points, opts = {}) {
+  const { stroke = COLORS.ink, strokeWidth = CONNECTOR_WIDTH, head = ARROW_HEAD, spread = ARROW_SPREAD } = opts;
+  const r = Math.round; // crisp integer coordinates -- no sub-pixel bloat in the SVG
+  const shaft = points.map((p, i) => `${i ? 'L' : 'M'}${r(p.x)} ${r(p.y)}`).join(' ');
   const a = points[points.length - 2];
   const b = points[points.length - 1];
   const ang = Math.atan2(b.y - a.y, b.x - a.x);
-  out += rline(b.x, b.y, b.x - head * Math.cos(ang - spread), b.y - head * Math.sin(ang - spread), base);
-  out += rline(b.x, b.y, b.x - head * Math.cos(ang + spread), b.y - head * Math.sin(ang + spread), base);
-  return out;
+  const lx = b.x - head * Math.cos(ang - spread);
+  const ly = b.y - head * Math.sin(ang - spread);
+  const rx = b.x - head * Math.cos(ang + spread);
+  const ry = b.y - head * Math.sin(ang + spread);
+  return (
+    `<path d="${shaft}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<path d="M${r(b.x)} ${r(b.y)} L${r(lx)} ${r(ly)} L${r(rx)} ${r(ry)} Z" fill="${stroke}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round"/>`
+  );
 }
 
 /**
