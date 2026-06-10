@@ -245,14 +245,14 @@
           "type": "enum",
           "values": ["hatch", "crosshatch"],
           "default": "hatch",
-          "keyless": false,
+          "keyless": true,
           "notes": "Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals)."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": false,
+          "keyless": true,
           "notes": "Packs the background tint's hatch lines closer together."
         }
       ]
@@ -1116,14 +1116,14 @@
           "type": "enum",
           "values": ["hatch", "crosshatch"],
           "default": "hatch",
-          "keyless": false,
+          "keyless": true,
           "notes": "Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals)."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": false,
+          "keyless": true,
           "notes": "Packs the checked switch track's hatch lines closer together."
         }
       ]

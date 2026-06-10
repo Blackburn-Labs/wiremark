@@ -114,8 +114,8 @@ No configurable properties.
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | variant | enum | regular, dense | regular | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | no |  | Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals). |
-| denseBackground | boolean |  | false | no |  | Packs the background tint's hatch lines closer together. |
+| background | enum | hatch, crosshatch | hatch | yes |  | Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals). |
+| denseBackground | boolean |  | false | yes |  | Packs the background tint's hatch lines closer together. |
 
 ### Toolbar
 
@@ -430,8 +430,8 @@ No configurable properties.
 | checked | boolean |  | false | yes |  |  |
 | disabled | boolean |  | false | yes |  |  |
 | size | enum | small, medium, large | medium | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | no |  | Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals). |
-| denseBackground | boolean |  | false | no |  | Packs the checked switch track's hatch lines closer together. |
+| background | enum | hatch, crosshatch | hatch | yes |  | Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals). |
+| denseBackground | boolean |  | false | yes |  | Packs the checked switch track's hatch lines closer together. |
 
 ### Select
 
