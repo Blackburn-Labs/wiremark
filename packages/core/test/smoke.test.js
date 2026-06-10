@@ -143,7 +143,11 @@ test('Phase 2: layout produces correct geometry for the dashboard', () => {
   const [nav, main] = body.children;
   assert.equal(nav.w, 240, 'the nav rail honors its 240px token');
   assert.ok(main.w > nav.w, `the main region flexes to fill the rest, got ${main.w}`);
-  assert.ok(Math.abs((nav.w + main.w) - contentW) <= 1, 'nav + main fill the row width');
+  // The body Stack is `row 100% * spacing=3`, so a 24px gap sits between the two
+  // children; nav + gap + main (not nav + main) fill the content width.
+  const gap = main.x - (nav.x + nav.w);
+  assert.equal(gap, 24, 'spacing=3 yields a 24px inter-child gap');
+  assert.ok(Math.abs((nav.w + gap + main.w) - contentW) <= 1, 'nav + gap + main fill the row width');
 
   // The main region holds a 3-column grid; the three cards are equal-width cells
   // laid left-to-right, and the grid has real height (cards are not collapsed).
