@@ -1,5 +1,5 @@
 // @ts-check
-import { rrect, rline, rellipse, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { rrect, rpill, rline, rellipse, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
 
 /**
  * Control -- a single selection input that subsumes the old Checkbox and Switch
@@ -74,9 +74,10 @@ export default {
       // borderless hatch + its own border, so the pill outline keeps its roughness.
       // Knob slides L->R.
       const tint = checked
-        ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, disabled ? { fill: COLORS.muted } : {})
+        ? backgroundHatch(box, node.props.background, node.props.denseBackground === true,
+            disabled ? { pill: true, fill: COLORS.muted } : { pill: true })
         : '';
-      const track = tint + rrect(box.x, box.y, box.w, box.h, { stroke: ink });
+      const track = tint + rpill(box.x, box.y, box.w, box.h, { stroke: ink });
       const d = box.h - 4;                 // knob diameter, 2px inset top & bottom
       const r = d / 2;
       const cy = box.y + box.h / 2;

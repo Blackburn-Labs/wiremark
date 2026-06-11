@@ -81,6 +81,26 @@ export function rrect(x, y, w, h, opts = {}) {
 }
 
 /**
+ * Hand-drawn pill (stadium): a rectangle whose short ends are full semicircles
+ * (e.g. Control's switch track). One closed path, so the outline wobbles
+ * continuously instead of cracking at the caps. Works in either orientation;
+ * degenerates to a circle when w === h. Same option handling as `rrect`.
+ * @param {number} x @param {number} y @param {number} w @param {number} h
+ * @param {object} [opts]  rough.js options (stroke, strokeWidth, fill, fillStyle, ...)
+ * @returns {string}
+ */
+export function rpill(x, y, w, h, opts = {}) {
+  const d = w >= h
+    ? `M${x + h / 2} ${y} L${x + w - h / 2} ${y} A${h / 2} ${h / 2} 0 0 1 ${x + w - h / 2} ${y + h} `
+      + `L${x + h / 2} ${y + h} A${h / 2} ${h / 2} 0 0 1 ${x + h / 2} ${y} Z`
+    : `M${x + w} ${y + w / 2} L${x + w} ${y + h - w / 2} A${w / 2} ${w / 2} 0 0 1 ${x} ${y + h - w / 2} `
+      + `L${x} ${y + w / 2} A${w / 2} ${w / 2} 0 0 1 ${x + w} ${y + w / 2} Z`;
+  const { strokeLineDash, ...rough } = opts;
+  return emit(generator.path(d,
+    { seed: seedOf(x, y, w, h), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...rough }), strokeLineDash);
+}
+
+/**
  * Canonical "surface": a bordered box for chrome elements (Card, AppBar, Paper,
  * TextField, ...). Use this instead of hand-rolling rrect so surfaces stay
  * consistent. Draw it across the element's FULL box; set `pad` in layoutSpec so
@@ -127,17 +147,20 @@ export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
  * 'none' })`) so the tight hatch roughness doesn't stiffen the outline.
  * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
  * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer). Pass
- * `opts.fill` to recolor the hashes (e.g. muted when disabled).
+ * `opts.fill` to recolor the hashes (e.g. muted when disabled), `opts.pill` to
+ * hatch a pill (stadium) instead of the full rectangle so the hashes don't poke
+ * past rounded end caps.
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {string} [pattern]  'hatch' | 'crosshatch'
  * @param {boolean} [dense]
- * @param {{ fill?: string }} [opts]
+ * @param {{ fill?: string, pill?: boolean }} [opts]
  * @returns {string}
  */
 export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
   const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
   const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
-  return surface(box, { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE });
+  const fill = { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE };
+  return opts.pill ? rpill(box.x, box.y, box.w, box.h, fill) : surface(box, fill);
 }
 
 /**
