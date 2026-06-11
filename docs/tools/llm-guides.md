@@ -77,7 +77,7 @@ wireframe task actually comes up, then reads the instructions, and opens the
 bundled component reference only when it needs to look something up — so it
 costs almost no context until used.
 
-Install it into a project (or use `~/.claude/skills/` for all projects):
+Install it into a single project:
 
 ```sh
 mkdir -p .claude/skills/wiremark
@@ -85,7 +85,35 @@ curl -o .claude/skills/wiremark/SKILL.md https://docs.wiremark.dev/skills/wirema
 curl -o .claude/skills/wiremark/reference.md https://docs.wiremark.dev/skills/wiremark/reference.md
 ```
 
+…or into your home directory, which makes it available in every project:
+
+```sh
+mkdir -p ~/.claude/skills/wiremark
+curl -o ~/.claude/skills/wiremark/SKILL.md https://docs.wiremark.dev/skills/wiremark/SKILL.md
+curl -o ~/.claude/skills/wiremark/reference.md https://docs.wiremark.dev/skills/wiremark/reference.md
+```
+
+| Location | Path | Applies to |
+|---|---|---|
+| Project | `.claude/skills/wiremark/` | That project only |
+| Personal | `~/.claude/skills/wiremark/` | All your projects |
+
+If the skill is installed at both levels, Claude Code uses the personal copy.
+
 The skill teaches Claude the same rules as the guides above, tells it to check
 `reference.md` before using an unfamiliar component, and to validate its work
 by rendering with `npx @wiremark/cli`. The reference is generated from the
 renderer's registry, same as the full guide's list.
+
+The download is a pinned local copy — it does not update itself. Since the
+published `reference.md` is regenerated from the registry on every docs
+deploy, re-run the `reference.md` line periodically to pick up components
+added since you installed:
+
+```sh
+curl -o .claude/skills/wiremark/reference.md https://docs.wiremark.dev/skills/wiremark/reference.md
+# or, for a personal install:
+curl -o ~/.claude/skills/wiremark/reference.md https://docs.wiremark.dev/skills/wiremark/reference.md
+```
+
+(Re-fetch `SKILL.md` the same way if you also want the latest instructions.)
