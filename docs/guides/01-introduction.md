@@ -20,12 +20,14 @@ styling, no boilerplate — just the structure.
 
 ## The mental model
 
-If you have used Material UI, you already know most of wiremark. Three ideas
-carry the whole format:
+If you have used a component-based UI library, wiremark will feel familiar.
+Three ideas carry the whole format:
 
-1. **Component names are MUI names.** `Stack`, `Box`, `Typography`, `Card`,
-   `Grid`, `Button`, `TextField`, `AppBar`, `List`, ... If you would reach for a
-   component in MUI, reach for the same name here.
+1. **Component names are familiar.** `Stack`, `Box`, `Typography`, `Card`,
+   `Grid`, `Button`, `TextField`, `AppBar`, `List`, ... The vocabulary is
+   inspired by Material UI, but it is wiremark's own set — check the
+   [component reference](../reference/components.md) rather than assuming a
+   library's name exists here.
 
 2. **Indentation is containment.** A line indented under another line is its
    child. That single rule replaces every wrapper, brace, and closing tag. The
@@ -45,8 +47,9 @@ carry the whole format:
   with `to=#id`, so a navigation graph falls out of the document for free (see
   [Frames, anchors & flow](06-frames-and-flow.md)).
 - **Working with AI agents.** The format is intentionally low-ambiguity and
-  low-token. An LLM can read, write, and reason about a wireframe with no
-  reference doc, leaning on what it already knows about MUI.
+  low-token. An LLM can read, write, and reason about a wireframe with little
+  to no setup, because the component names read the way it expects UI
+  vocabulary to read.
 
 ## What it is not
 
@@ -65,7 +68,8 @@ These shape every decision in the format, and knowing them makes the rules feel
 obvious rather than arbitrary:
 
 - **Agent-first.** Self-describing, low-ambiguity, cheap to tokenize.
-- **Borrowed semantics.** Vocabulary mirrors MUI so it is already familiar.
+- **Borrowed semantics.** Vocabulary is MUI-inspired so it feels familiar —
+  without promising name-for-name parity.
 - **Hierarchy over coordinates.** Indentation and relative sizing, never x/y.
 - **Aggressive defaulting.** Bare names render; detail is opt-in.
 - **Hand-drawn by default.** A sketch aesthetic, not a theme to configure.

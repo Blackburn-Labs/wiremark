@@ -5,9 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 wiremark is an **agent-first, markdown-embeddable wireframe DSL** — "YAML-flavored
-[MUI](https://mui.com/)-inspired". A wireframe is a hierarchy of Material UI component names,
-indented for containment, that renders to a hand-drawn (Balsamiq-like) SVG. Source
-lives inside a fenced ` ```wireframe ` block.
+[MUI](https://mui.com/)-inspired". A wireframe is a hierarchy of MUI-inspired component
+names (wiremark's own set — NOT name-for-name MUI), indented for containment, that
+renders to a hand-drawn (Balsamiq-like) SVG. Source lives inside a fenced
+` ```wireframe ` block.
 
 This is an npm-workspaces monorepo:
 
@@ -34,7 +35,7 @@ node packages/cli/bin/wiremark.js <in.wiremark> -o out.svg           # same, dir
 
 npm run build:browser --workspace @wiremark/core    # browser IIFE bundle -> packages/core/dist/wiremark.browser.js
 
-npm run docs:reference              # regenerate docs/reference/components.md from meta/element-specs.json
+npm run docs:reference              # regenerate docs/reference/components.md + the component list in site/static/wiremark-llm.md from meta/element-specs.json
 npm run icons:builtin               # regenerate the built-in icon module + docs/reference/icons.md from meta/builtin-icons.json
 cd site && npm start                # docs site dev server (regenerates the reference first)
 cd site && npm run build            # build the docs site
@@ -91,11 +92,12 @@ in the universal props.
 - **`src/elements/*` + `src/registry.js`** = what is actually *implemented* (the v0.1
   set plus a few v1.0 components used by worked examples).
 - **`meta/element-specs.json`** = the hand-maintained *full* component/property
-  coverage matrix (the whole intended MUI surface). It is the single source of truth
-  for `docs/reference/components.md`, which `scripts/generate-reference.mjs` generates.
-  **Never edit that generated markdown by hand** — change the JSON and rerun
-  `npm run docs:reference`. The Docusaurus build does this automatically via its
-  `prebuild` hook.
+  coverage matrix (the whole intended component surface). It is the single source of truth
+  for `docs/reference/components.md` AND the condensed component list inside
+  `site/static/wiremark-llm.md` (the LLM agent guide), both written by
+  `scripts/generate-reference.mjs`. **Never edit that generated markdown by hand** —
+  change the JSON and rerun `npm run docs:reference`. The Docusaurus build does this
+  automatically via its `prebuild` hook.
 
 ### The SPEC
 

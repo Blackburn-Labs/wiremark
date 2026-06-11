@@ -34,9 +34,9 @@ The shape of the text is the shape of the screen, so keep it tidy — see the
 
 ## Components
 
-The first token on a line is the component name. It is always **PascalCase**,
-mirroring MUI: `Stack`, `Box`, `Typography`, `Card`, `Grid`, `Button`,
-`TextField`, `AppBar`, `List`, `ListItem`, ... The full set is in the
+The first token on a line is the component name. It is always **PascalCase**:
+`Stack`, `Box`, `Typography`, `Card`, `Grid`, `Button`, `TextField`, `AppBar`,
+`List`, `ListItem`, ... The full set is in the
 [component reference](../reference/components.md).
 
 Some components have no properties at all and are valid as a bare name:

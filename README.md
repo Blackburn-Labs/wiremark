@@ -2,8 +2,8 @@
 
 A text-based, markdown-embeddable wireframing format. Inspired by **YAML's
 simplicity** and **[MUI](https://mui.com/)'s readability**: a hierarchy of
-familiar Material UI component names, indented to show containment, rendered
-in a hand-drawn (Balsamiq-like) style.
+familiar component names, indented to show containment, rendered in a
+hand-drawn (Balsamiq-like) style.
 
 wiremark is **agent-first** — designed to be trivial for an LLM to read, write,
 and reason about — while embedding cleanly in markdown the way Mermaid does.
@@ -28,8 +28,10 @@ Wireframe mobile
 
 ## Key ideas
 
-- **Borrowed semantics.** Component names mirror Material UI (`Stack`, `Box`,
-  `Card`, `Button`, `TextField`, ...) — if you know MUI, you know the vocabulary.
+- **Borrowed semantics.** Component names are inspired by Material UI (`Stack`,
+  `Box`, `Card`, `Button`, `TextField`, ...) — if you know MUI the vocabulary
+  feels familiar, but it is wiremark's own set (see the
+  [component reference](https://docs.wiremark.dev/reference/components)).
 - **Hierarchy over coordinates.** Indentation is the only structural mechanism;
   no manual x/y positioning.
 - **Aggressive defaulting.** A bare component name produces something sensible —

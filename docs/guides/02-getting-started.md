@@ -3,6 +3,12 @@
 This guide walks you from an empty code block to a small two-screen flow,
 explaining each piece as it appears.
 
+> **Working with an AI agent?** wiremark is agent-first by design, so an LLM
+> can usually write it with no setup at all — but a great first step for a
+> project that will use wireframes heavily is to point your agent at one of
+> the ready-made [instruction files](../tools/llm-guides.md): reference the
+> file's URL from your `CLAUDE.md`/`AGENTS.md`, or download it into the repo.
+
 ## The block
 
 A wireframe lives inside a fenced code block tagged `wireframe`. In your markdown
@@ -58,7 +64,7 @@ Take this line:
 TextField "Email" type=email required
 ```
 
-- `TextField` — the **component name** (always PascalCase, like in MUI).
+- `TextField` — the **component name** (always PascalCase).
 - `"Email"` — a **keyless property**: a quoted text literal. wiremark resolves
   it to the field's `label`, so this is the field labelled "Email".
 - `type=email` — a **keyed property**, written `key=value`.

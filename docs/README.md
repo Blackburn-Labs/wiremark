@@ -3,7 +3,7 @@
 ![wiremark](img/wiremark-icon.svg)
 
 **wiremark** is a text-based, markdown-embeddable wireframing format — think
-"YAML-flavored [MUI](https://mui.com/)": a hierarchy of familiar Material UI
+"YAML-flavored, [MUI](https://mui.com/)-inspired": a hierarchy of familiar
 component names, indented to show containment, rendered in a hand-drawn
 (Balsamiq-like) style.
 
@@ -44,6 +44,9 @@ Read in order if you are new; jump around once you know the basics.
 
 - [Rendering to SVG with the CLI](tools/cli.md) — turn a `.wiremark` file into
   a standalone SVG with `npx @wiremark/cli`, no host required.
+- [Giving wiremark to AI agents](tools/llm-guides.md) — ready-made instruction
+  files (full and compact) to reference from an agent's `CLAUDE.md`/`AGENTS.md`,
+  plus a downloadable Claude skill.
 
 ## Reference
 

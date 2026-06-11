@@ -80,9 +80,10 @@ Indentation is the whole structure, so treat it with care:
 
 wiremark is designed to be easy for LLMs, and the same habits help humans:
 
-- **Use the obvious MUI name.** If you would use `Card` in MUI, use `Card` here.
-  Do not invent components; check the [reference](../reference/components.md) if
-  unsure.
+- **Use the component list's name.** The vocabulary is MUI-inspired but not
+  identical (`Control`, not `Checkbox`/`Switch`; no `Container` or
+  `IconButton`). Do not invent or assume components; check the
+  [reference](../reference/components.md) if unsure.
 - **Do not over-specify.** Every extra prop is a token and a decision. Omit
   anything the default already handles.
 - **Prefer precise filler** (`~Nw`, `~Nl`) when length carries meaning, so the
