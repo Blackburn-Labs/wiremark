@@ -1,4 +1,8 @@
-# @wiremark/cli
+# Wiremark CLI
+
+[![npm version](https://img.shields.io/npm/v/@wiremark/cli)](https://www.npmjs.com/package/@wiremark/cli)
+[![license](https://img.shields.io/npm/l/@wiremark/cli)](https://github.com/Blackburn-Labs/wiremark/blob/main/packages/cli/LICENSE)
+[![node](https://img.shields.io/node/v/@wiremark/cli)](https://www.npmjs.com/package/@wiremark/cli)
 
 Command-line renderer for [wiremark](https://wiremark.dev) — turn a `.wiremark`
 file into a hand-drawn SVG.
