@@ -19,7 +19,7 @@ Every component the renderer implements, with its props. Legend:
 <!-- BEGIN GENERATED: component-list (source: the live element registry, packages/core/src/elements; regenerate with `npm run docs:reference`) -->
 ```
 LAYOUT
-Stack [c] [w h] -- direction:(row|row-reverse|column|col|column-reverse)=column*, spacing|gap:N=0, divider:B*, elevation:N=0, outline:(none|solid|dashed|dotted)=none*
+Stack [c] [w h] -- direction:(row|row-reverse|column|column-reverse)=column*, spacing|gap:N=0, divider:B*, elevation:N=0, outline:(none|solid|dashed|dotted)=none*
 Box [c] [w h] -- elevation:N=0, outline:(none|solid|dashed|dotted)=none*
 Grid [c] [w h] -- columns|cols:N=12, spacing|gap:N=0
 Spacer [w h]

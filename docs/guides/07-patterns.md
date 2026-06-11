@@ -11,7 +11,7 @@ action that navigates, and some filler below.
 
 ```wireframe
 Wireframe #login mobile
-  Stack col gap=2
+  Stack column gap=2
     Typography h4 "Sign in"
     TextField "Email" type=email
     TextField "Password" type=password
@@ -25,7 +25,7 @@ Wireframe #login mobile
     Typography ~2
 ```
 
-Techniques: a `Stack col` for the form; a nested `Stack row` with a `Spacer` to
+Techniques: a `Stack column` for the form; a nested `Stack row` with a `Spacer` to
 push the link to the right; `to=#…` links that seed the navigation graph; a
 bare `Typography ~2` for two lines of placeholder fine print.
 
@@ -87,7 +87,7 @@ Wireframe #shell landscape visible=false
 ````markdown
 ```wireframe
 Wireframe #reports landscape background=#shell
-  Stack col gap=2
+  Stack column gap=2
     Typography h4 "Reports"
     Grid cols=2 gap=2
       Card
@@ -123,12 +123,12 @@ latter linking onward.
 
 ## A form
 
-Forms are just a `Stack col` of inputs. Use `value=` to show a filled-in field,
+Forms are just a `Stack column` of inputs. Use `value=` to show a filled-in field,
 `required` to flag required ones, and `multiline` for text areas.
 
 ```wireframe
 Wireframe #new-account mobile
-  Stack col gap=2
+  Stack column gap=2
     Typography h4 "Create account"
     TextField "Full name" required
     TextField "Email" type=email required value="you@example.com"
@@ -147,7 +147,7 @@ screen.
 
 ```wireframe
 Wireframe #settings mobile
-  Stack col
+  Stack column
     AppBar
       Toolbar
         Typography h6 "Settings"

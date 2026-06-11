@@ -45,7 +45,7 @@ The precise control is `~N` with an optional unit suffix:
 - `~Nl` — N lines.
 
 ```wireframe
-Stack col
+Stack column
   Typography h4 ~4w        // a ~4-word heading
   Typography ~2            // ~2 sentences of body
   Typography ~3l           // ~3 lines
@@ -59,7 +59,7 @@ A run of underscores is a lazy, *visual* length hint — the source roughly "loo
 like" the length it produces:
 
 ```wireframe
-Stack col
+Stack column
   Typography h5 __         // medium-length heading
   Typography ___           // long line of body filler
 ```

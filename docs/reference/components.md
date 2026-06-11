@@ -36,7 +36,7 @@ This reference is generated from [`meta/element-specs.json`](../../meta/element-
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| direction | enum | row, row-reverse, column, col, column-reverse | column | yes |  |  |
+| direction | enum | row, row-reverse, column, column-reverse | column | yes |  |  |
 | spacing | numeric |  | 0 | no | gap |  |
 | divider | boolean |  | false | yes |  |  |
 | width | size |  | content | yes | w |  |

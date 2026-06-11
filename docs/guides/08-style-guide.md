@@ -41,7 +41,7 @@ Filler is not just a placeholder — its *length* communicates. A short heading 
 a long paragraph read as exactly that, even with no real words:
 
 ```wireframe
-Stack col gap=1
+Stack column gap=1
   Typography h4 ~3w      // a short title
   Typography ~4          // a substantial body block
   Typography caption ~6w // a one-line caption

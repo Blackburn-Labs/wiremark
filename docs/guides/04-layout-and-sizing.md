@@ -8,7 +8,7 @@ is no x/y positioning — you nest and size, and the renderer lays things out.
 
 | Component   | What it does                                                        |
 |-------------|---------------------------------------------------------------------|
-| `Stack`     | Arranges children in a line. `Stack row` or `Stack col` (default `col`). Gap with `gap=`. |
+| `Stack`     | Arranges children in a line. `Stack row` or `Stack column` (default `column`). Gap with `gap=`. |
 | `Box`       | A generic sized container. Its keyless tokens are `width height`.    |
 | `Grid`      | A uniform grid; children flow into cells. `cols=` sets columns, `gap=` the spacing. |
 | `Container` | A centered, max-width wrapper. `max=` sets the width.                |
@@ -26,7 +26,7 @@ Stack row gap=2
 ```
 
 ```wireframe
-Stack col gap=2
+Stack column gap=2
   TextField "Email"
   TextField "Password" type=password
   Button "Sign in" primary
