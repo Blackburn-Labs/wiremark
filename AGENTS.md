@@ -29,7 +29,7 @@ npm test --workspace @wiremark/core  # run only core's tests (what CI runs befor
 node --test packages/core/test/elements/Button.test.js   # a single test file
 node --test --test-name-pattern="navigation graph"        # tests matching a name
 
-npm run render --workspace @wiremark/cli -- <in.wiremark> [out.svg]   # CLI: render a file to SVG
+npm run render --workspace @wiremark/cli -- <inputs...> [-o out.svg | -d out-dir]   # CLI: render to SVG
 node packages/cli/bin/wiremark.js <in.wiremark> -o out.svg           # same, directly
 
 npm run docs:reference              # regenerate docs/reference/components.md from meta/element-specs.json

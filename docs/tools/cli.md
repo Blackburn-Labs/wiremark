@@ -14,15 +14,15 @@ wireframe source, no markdown and no fence:
 
 ```wireframe
 Wireframe #login mobile
-  Stack col gap=2
+  Stack column gap=2
     Typography h4 "Sign in"
     TextField "Email" type=email
     TextField "Password" type=password
-    Button "Sign in" primary to=#dashboard
+    Button "Sign in" contained to=#dashboard
 ```
 
-Save that as `login.wiremark`. As everywhere in v0.1, one file holds one
-`Wireframe` frame, so one file renders to one SVG.
+Save that as `login.wiremark`. Each input file renders to one SVG — a file
+holding several frames renders them together as a single flow-chart SVG.
 
 ## One-off rendering with npx
 
@@ -33,12 +33,39 @@ npx @wiremark/cli login.wiremark
 ```
 
 This writes `login.svg` next to the input (same name, `.svg` extension) and
-prints the path it wrote. To choose the output path yourself, pass it as a
-second argument or with `-o`:
+prints the path it wrote. To choose the output path yourself, pass `-o`:
 
 ```sh
 npx @wiremark/cli login.wiremark -o assets/login.svg
 ```
+
+## Rendering many files
+
+Every positional argument is an input, so the shell's glob expansion renders
+a whole directory in one go:
+
+```sh
+npx @wiremark/cli screens/*.wiremark
+```
+
+Each input writes its own `<name>.svg` next to its source. To collect the
+SVGs somewhere else, pass `-d`/`--out-dir`, which is created if missing:
+
+```sh
+npx @wiremark/cli screens/*.wiremark -d build/wireframes
+```
+
+(`-o` names a single output file, so it works with a single input only — use
+`-d` for many.) A failing input doesn't stop the others: every file is
+processed, failures are reported per file, and the exit code is non-zero if
+any input failed. If two inputs would write to the same output — say
+`a/login.wiremark` and `b/login.wiremark` with one `--out-dir` — the CLI
+refuses up front, before writing anything.
+
+One caveat for Windows users: `cmd.exe` and PowerShell don't expand `*`
+wildcards for programs, and wiremark deliberately doesn't either — globs are
+the shell's job. Use Git Bash (or another POSIX shell), or list the files
+explicitly.
 
 ## Installing the CLI
 
@@ -60,7 +87,7 @@ npm install --save-dev @wiremark/cli
 ```json
 {
   "scripts": {
-    "wireframes": "wiremark docs/login.wiremark -o docs/img/login.svg"
+    "wireframes": "wiremark docs/wireframes/*.wiremark -d docs/img"
   }
 }
 ```
@@ -76,8 +103,10 @@ The CLI follows the language's two failure modes:
   points at a frame that doesn't exist — also print to stderr, but the SVG is
   still written, rendered with a graceful fallback.
 
-So an exit code of 0 means "an SVG was produced", even if warnings were
-printed along the way.
+With several inputs, every file is processed even when one fails, and each
+error or warning line is prefixed with the file it came from. So an exit code
+of 0 means "every input produced an SVG", even if warnings were printed along
+the way.
 
 ## Output is deterministic
 

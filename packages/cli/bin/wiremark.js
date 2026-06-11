@@ -3,7 +3,7 @@
 /**
  * @wiremark/cli — command-line renderer for wiremark.
  *
- *   npx @wiremark/cli <in.wiremark> [out.svg]    (also: -o out.svg)
+ *   npx @wiremark/cli <input.wiremark...> [-o out.svg | -d out-dir]
  *
  * Thin wrapper over @wiremark/core's CLI runner; all rendering lives in core.
  */
