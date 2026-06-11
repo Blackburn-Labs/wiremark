@@ -16,9 +16,10 @@ Wireframe #home mobile
 ````
 
 The host adapter (Obsidian, markdown-it, the editor, ...) spots that block and
-hands its contents to the wiremark core, which draws it. From here on we show
-just the wireframe source — the part *inside* the fence — and assume the fence
-around it.
+hands its contents to the wiremark core, which draws it. No host handy? The
+[command-line renderer](../tools/cli.md) turns a file of wireframe source
+straight into an SVG. From here on we show just the wireframe source — the
+part *inside* the fence — and assume the fence around it.
 
 > **One frame per block.** In v0.1 each block holds exactly one `Wireframe`.
 > That keeps every block independently renderable. To draw several screens, use

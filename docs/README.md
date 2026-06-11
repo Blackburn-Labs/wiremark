@@ -37,6 +37,11 @@ Read in order if you are new; jump around once you know the basics.
 7. [Patterns & recipes](guides/07-patterns.md) — worked examples for the layouts you'll build most.
 8. [Style & best practices](guides/08-style-guide.md) — conventions, agent-first tips, and common mistakes.
 
+## Tools
+
+- [Rendering to SVG with the CLI](tools/cli.md) — turn a `.wiremark` file into
+  a standalone SVG with `npx @wiremark/cli`, no host required.
+
 ## Reference
 
 - [Component library reference](reference/components.md) — every supported
