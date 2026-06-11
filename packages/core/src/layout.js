@@ -76,6 +76,9 @@ function specFor(node) {
  * parent will give it -- that is what lets an aspect-locked leaf (Img `ratio=`)
  * and the containers above it reserve the correct height; without it the measure
  * pass and the place pass disagree and aspect children overflow their parent.
+ * It is also forwarded to leaf `intrinsic(node, avail)` so a width-aware leaf
+ * (Typography word-wrap) can report the height it will actually draw at that
+ * width; most leaves ignore the extra argument.
  * @param {ResolvedNode} node
  * @param {{ w?: number, h?: number }} [avail]
  * @returns {{ w: number, h: number }}
@@ -89,7 +92,7 @@ export function measure(node, avail) {
     const ratio = typeof s.aspect === 'function' ? s.aspect(node) : undefined;
     if (ratio && avail && Number.isFinite(avail.w)) base = { w: /** @type {number} */ (avail.w), h: /** @type {number} */ (avail.w) / ratio };
     else if (ratio && avail && Number.isFinite(avail.h)) base = { w: /** @type {number} */ (avail.h) * ratio, h: /** @type {number} */ (avail.h) };
-    else if (typeof s.intrinsic === 'function') base = s.intrinsic(node);
+    else if (typeof s.intrinsic === 'function') base = s.intrinsic(node, avail);
     else base = { w: 0, h: 0 };
   }
 

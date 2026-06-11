@@ -17,8 +17,11 @@ ListItem "Settings" to=#settings
 
 Quoting is mandatory for text (see [the quoting rule](03-syntax-and-structure.md#the-quoting-rule)).
 
-Text that would overflow its box is trimmed with a trailing `…` — give the
-element (or its container) more width to show the full string.
+Typography labels word-wrap to their container's width, like real MUI
+Typography; add `noWrap` to pin a single line trimmed with a trailing `…`
+instead. Other text (buttons, table cells, labels in rows) is single-line and
+trims with `…` when its box is too narrow — give the element (or its
+container) more width to show the full string.
 
 ## Filler: when the words do not matter yet
 

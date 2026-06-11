@@ -34,7 +34,7 @@
  * --- Layout/render strategy (stages 4 & 5; the facade in layout.js / render.js
  *     dispatches to whichever of these an element supplies) ---
  * @property {(node: ResolvedNode) => LayoutSpec} [layoutSpec]  // CONTAINERS: how to arrange children
- * @property {(node: ResolvedNode) => Size2D} [intrinsic]       // LEAVES: natural content size
+ * @property {(node: ResolvedNode, avail?: { w?: number, h?: number }) => Size2D} [intrinsic]  // LEAVES: natural content size; `avail` is the space the parent will give when known -- a width-aware leaf (Typography word-wrap) reports the height it draws at that width, most leaves ignore it
  * @property {boolean} [block]      // stretch to the container's cross axis (default: containers yes, leaves no)
  * @property {(node: ResolvedNode) => (number|undefined)} [aspect] // LEAVES: w/h ratio; engine derives cross from main (Img ratio=)
  * @property {boolean} [flex]       // consumes leftover main-axis space when unsized (Spacer)
@@ -59,7 +59,10 @@
  * Each element default-exports ONE object that is both its schema and its
  * strategy. Define exactly one of:
  *   - layoutSpec(node) -> { axis, pad?, gap?, cols? }  => you are a CONTAINER
- *   - intrinsic(node)  -> { w, h }                      => you are a LEAF
+ *   - intrinsic(node, avail?) -> { w, h }               => you are a LEAF
+ *       (`avail` = the space the parent will give, when known; a width-aware
+ *       leaf may wrap to `avail.w` and report the resulting height -- see
+ *       Typography. Most leaves take only `node`.)
  * Optional on either:
  *   - render(node, box) -> string   Draw THIS element's own chrome via draw.js
  *       helpers (surface / centeredLabel / rrect / rcrossbox / ...). OMIT it

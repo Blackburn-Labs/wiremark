@@ -1,7 +1,7 @@
 // @ts-check
 import { FILLER_STYLES } from './common.js';
 import { text, fillerRows, COLORS } from '../draw.js';
-import { fontSizeOf, textOf, measureText, fillerLines, LINE_HEIGHT, LOREM } from '../metrics.js';
+import { fontSizeOf, textOf, measureText, wrapText, fillerLines, LINE_HEIGHT, LOREM } from '../metrics.js';
 
 /**
  * Typography -- text. Keyless slots are the text literal (-> label) and the
@@ -11,9 +11,11 @@ import { fontSizeOf, textOf, measureText, fillerLines, LINE_HEIGHT, LOREM } from
  * `align` (keyed) places the line within the box -- left/justify/inherit anchor
  * at the left edge, center at the midpoint, right at the trailing edge -- via the
  * `text` helper's text-anchor (justify degrades to left at sketch fidelity).
- * `noWrap` (keyed) parses for MUI parity but is redundant at sketch fidelity:
- * every text leaf is single-line, and a label wider than its box trims to a
- * trailing `…` by default (the `maxW` passed to `text`).
+ * `noWrap` (keyed) pins the MUI single-line form: one line, trimmed to the box
+ * with a trailing `…`. Without it (the default) a label that can't fit on one
+ * line word-wraps to the box width like a real Typography -- in containers
+ * that know their width (columns, grids). Rows measure children without a
+ * width, so a row item keeps the single-line + ellipsis form either way.
  *
  * Reference strategy (text leaf): `block` so it spans the container's cross axis
  * (like a real Typography); intrinsic height grows with filler line count; draws
@@ -55,6 +57,14 @@ function loremRows(node, box, fs) {
 }
 
 /**
+ * Headings draw bold; the wrap/trim math must track the drawn weight.
+ * @param {import('../resolve.js').ResolvedNode} node @returns {number}
+ */
+function weightOf(node) {
+  return /^h[1-6]$/.test(node.props.variant ?? '') ? 700 : 400;
+}
+
+/**
  * Map an `align` value to the `text` anchor + the x within `box` to anchor at.
  * @param {string} align @param {{x:number,w:number}} box
  * @returns {{ anchor: 'start'|'middle'|'end', x: number }}
@@ -91,12 +101,21 @@ export default {
   notes: 'Bare -> filler at the variant size (ss.6); align + noWrap are keyed.',
 
   block: true,
-  intrinsic: (node) => {
+  intrinsic: (node, avail) => {
     const fs = fontSizeOf(node);
     if (node.props.label == null && node.filler) {
       return { w: 160, h: Math.ceil(fs * LINE_HEIGHT * fillerLines(node)) };
     }
-    return measureText(textOf(node), fs);
+    const single = measureText(textOf(node), fs);
+    // Wrap (the MUI default) when the parent's width is known and one line
+    // can't fit; `noWrap` pins the single-line form. Rows measure without a
+    // width, so row items stay single-line.
+    if (node.props.noWrap === true || !avail || !Number.isFinite(avail.w) || single.w <= /** @type {number} */ (avail.w)) {
+      return single;
+    }
+    const w = /** @type {number} */ (avail.w);
+    const lines = wrapText(textOf(node), fs, w, weightOf(node));
+    return { w: Math.min(single.w, w), h: Math.ceil(fs * LINE_HEIGHT) * lines.length };
   },
   render: (node, box) => {
     const fs = fontSizeOf(node);
@@ -104,8 +123,21 @@ export default {
       if (node.props.filler === 'lorem') return loremRows(node, box, fs);
       return fillerRows(box.x, box.y, box.w, fillerLines(node), fs);
     }
-    const weight = /^h[1-6]$/.test(node.props.variant ?? '') ? 700 : 400;
+    const weight = weightOf(node);
     const { anchor, x } = placement(node.props.align ?? 'inherit', box);
-    return text(x, box.y + fs, textOf(node), { fontSize: fs, weight, anchor, maxW: box.w });
+    const str = textOf(node);
+    const lines = node.props.noWrap === true ? [str] : wrapText(str, fs, box.w, weight);
+    // Clamp to the rows the box can seat (a px-pinned height gives fewer; it
+    // also re-syncs the rare wrap/measure disagreement on wide-glyph strings).
+    // A dropped tail re-joins the last kept line so its `…` marks the cut.
+    const lineH = Math.ceil(fs * LINE_HEIGHT);
+    const maxLines = Math.max(1, Math.floor((box.h + 0.01) / lineH));
+    const kept = lines.length > maxLines ? lines.slice(0, maxLines) : lines;
+    if (kept.length < lines.length) kept[kept.length - 1] = lines.slice(kept.length - 1).join(' ');
+    let out = '';
+    for (let i = 0; i < kept.length; i++) {
+      out += text(x, box.y + fs + lineH * i, kept[i], { fontSize: fs, weight, anchor, maxW: box.w });
+    }
+    return out;
   },
 };

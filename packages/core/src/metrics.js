@@ -123,6 +123,35 @@ export function textRunWidth(str, fontSize, weight = 400) {
 }
 
 /**
+ * Greedy word-wrap of `str` into lines whose per-glyph `textRunWidth` fits
+ * `maxW` px. Whitespace collapses to single spaces; a lone word wider than
+ * `maxW` keeps its own line (the renderer's per-line `maxW` ellipsizes it).
+ * Layout and render MUST wrap at the same width so measured height matches the
+ * drawn line count -- this is the one shared implementation (Typography).
+ * @param {string} str @param {number} fontSize @param {number} maxW
+ * @param {string|number} [weight]
+ * @returns {string[]}  at least one line
+ */
+export function wrapText(str, fontSize, maxW, weight = 400) {
+  const words = str.split(/\s+/).filter(Boolean);
+  if (words.length === 0 || !Number.isFinite(maxW) || maxW <= 0) return [str];
+  /** @type {string[]} */
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && textRunWidth(candidate, fontSize, weight) > maxW) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  lines.push(line);
+  return lines;
+}
+
+/**
  * Truncate `str` to fit within `maxW` px, replacing the cut tail with a single
  * ellipsis. Two-stage fit test: a string whose `measureText` width fits is
  * returned untouched (layout sized its box by that estimate, so sufficient

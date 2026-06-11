@@ -113,22 +113,38 @@ test('noWrap parses both as a bare flag and keyed', () => {
   assert.equal(parse('Wireframe w=400 h=300\n  Typography "Hi" noWrap=true').frames[0].children[0].props.noWrap, true);
 });
 
-test('a label wider than its box is trimmed with a trailing ellipsis', () => {
+test('a label wider than its box word-wraps onto multiple lines (the MUI default)', () => {
   const long = 'An extremely long heading that cannot possibly fit';
-  const { svg } = render(`Wireframe w=320 h=200\n  Typography h4 "${long}"`);
-  assert.match(svg, /…</, 'overflowing label should end in …');
-  assert.doesNotMatch(svg, new RegExp(long), 'the full string should not be emitted');
+  const src = `Wireframe w=320 h=200\n  Typography h4 "${long}"`;
+  const { svg } = render(src);
+  const lines = (svg.match(/<text /g) ?? []).length;
+  assert.ok(lines >= 2, `expected multiple wrapped lines, got ${lines}`);
+  assert.doesNotMatch(svg, /…/, 'wrapping should not need an ellipsis');
+  for (const word of long.split(' ')) assert.match(svg, new RegExp(word));
+  // The laid-out box grows to seat the wrapped lines.
+  const box = layout(parse(src))[0].root.children[0];
+  assert.ok(box.h >= 2 * Math.ceil(24 * 1.4), `box should be at least two h4 lines tall, got ${box.h}`);
 });
 
-test('a label that fits renders verbatim, untrimmed', () => {
+test('noWrap pins the single-line + ellipsis form', () => {
+  const long = 'An extremely long heading that cannot possibly fit';
+  const { svg } = render(`Wireframe w=320 h=200\n  Typography h4 "${long}" noWrap`);
+  assert.equal((svg.match(/<text /g) ?? []).length, 1, 'noWrap should draw exactly one line');
+  assert.match(svg, /…</, 'the single line should trim with …');
+  assert.doesNotMatch(svg, new RegExp(long));
+});
+
+test('a label that fits renders verbatim on one line', () => {
   const { svg } = render('Wireframe w=400 h=300\n  Typography "Sign in"');
   assert.match(svg, />Sign in</);
   assert.doesNotMatch(svg, /…/);
+  assert.equal((svg.match(/<text /g) ?? []).length, 1);
 });
 
-test('truncation keeps the align anchor', () => {
+test('wrapped lines keep the align anchor', () => {
   const long = 'An extremely long right-aligned line of text that overflows';
   const { svg } = render(`Wireframe w=320 h=200\n  Typography "${long}" align=right`);
-  assert.match(svg, /text-anchor="end"/);
-  assert.match(svg, /…</);
+  const anchors = (svg.match(/text-anchor="end"/g) ?? []).length;
+  assert.ok(anchors >= 2, `every wrapped line should anchor end, got ${anchors}`);
+  assert.doesNotMatch(svg, /…/);
 });
