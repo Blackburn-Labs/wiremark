@@ -9,9 +9,9 @@ import { rrect, rline, rellipse, backgroundHatch, COLORS } from '../draw.js';
  *
  *  - linear (the default form): a thin horizontal BAR. As a `block` leaf the bar
  *    stretches to the container's cross axis (its width comes from the parent,
- *    like Divider/Slider); the filled run is a crosshatched sub-rectangle from
- *    the left edge whose width is the value fraction of the track (hand-drawn
- *    hashes, never a solid block -- the wireframe tint convention).
+ *    like Divider/Slider); the filled run is a densely crosshatched sub-rectangle
+ *    from the left edge whose width is the value fraction of the track
+ *    (hand-drawn hashes, never a solid block -- the wireframe tint convention).
  *  - circular: a FIXED square footprint (does NOT stretch, like Icon/Avatar) with
  *    a hand-drawn ring (`rellipse`); the value fraction is shown as a filled arc
  *    swept clockwise from 12 o'clock, approximated by short chords so it stays a
@@ -33,7 +33,7 @@ import { rrect, rline, rellipse, backgroundHatch, COLORS } from '../draw.js';
  */
 
 /** Linear bar height (px) per `thickness`; also the box's short-axis extent. */
-const BAR_H = { small: 5, medium: 8, large: 12 };
+const BAR_H = { small: 10, medium: 18, large: 28 };
 /** Minimum bar length (px) so a Progress with no parent stretch still reads. */
 const MIN_LEN = 120;
 /** Circular ring diameter (px); MUI's default CircularProgress is 40x40. */
@@ -41,9 +41,9 @@ const RING = 40;
 /** Circular stroke widths (px) per `thickness`: the muted track ring and the
  *  ink value arc (the arc stays a touch heavier so it reads as the fill). */
 const RING_STROKE = {
-  small: { track: 1.2, arc: 1.5 },
-  medium: { track: 2, arc: 2.5 },
-  large: { track: 3.2, arc: 4 },
+  small: { track: 2.5, arc: 3 },
+  medium: { track: 5, arc: 6 },
+  large: { track: 8, arc: 9.5 },
 };
 
 /** The `thickness` prop with the strategy-applied default. */
@@ -128,11 +128,11 @@ export default {
         + arc(cx, cy, r, frac, stroke.arc);
     }
 
-    // Linear: a crosshatched run from the left whose width is the value fraction
-    // (omitted entirely when empty), under the track outline across the full box
-    // (tint first, border after, so the outline keeps its own roughness).
+    // Linear: a densely crosshatched run from the left whose width is the value
+    // fraction (omitted entirely when empty), under the track outline across the
+    // full box (tint first, border after, so the outline keeps its own roughness).
     let out = frac > 0
-      ? backgroundHatch({ x: box.x, y: box.y, w: box.w * frac, h: box.h }, 'crosshatch')
+      ? backgroundHatch({ x: box.x, y: box.y, w: box.w * frac, h: box.h }, 'crosshatch', true)
       : '';
     return out + rrect(box.x, box.y, box.w, box.h, { stroke: COLORS.muted, strokeWidth: 1.2 });
   },

@@ -293,8 +293,12 @@ Wireframe #library w=1600 h=4800
   Grid cols=3 gap=3
     Stack column spacing=1
       Typography subtitle2 "Progress (linear / circular)"
-      Progress linear 65
-      Progress circular 65
+      Progress linear small 35
+      Progress linear medium 65
+      Progress linear large 100
+      Progress circular small 35
+      Progress circular medium 65
+      Progress circular large 65
     Stack column spacing=1
       Typography subtitle2 "Skeleton (text / circular / rectangular / rounded)"
       Skeleton text 200px 16px

@@ -233,8 +233,8 @@ test('thickness never changes the circular footprint, only its stroke width', ()
   // medium ring never uses.
   const large = render('Wireframe\n  Progress circular value=50 large').svg;
   const medium = render('Wireframe\n  Progress circular value=50').svg;
-  assert.match(large, /stroke-width="3.2"/); // the large track ring
-  assert.match(large, /stroke-width="4"/); // the large value arc
-  assert.doesNotMatch(medium, /stroke-width="3.2"/);
-  assert.doesNotMatch(medium, /stroke-width="4"/);
+  assert.match(large, /stroke-width="8"/); // the large track ring
+  assert.match(large, /stroke-width="9.5"/); // the large value arc
+  assert.doesNotMatch(medium, /stroke-width="8"/);
+  assert.doesNotMatch(medium, /stroke-width="9.5"/);
 });
