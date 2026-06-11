@@ -132,21 +132,22 @@ test('every variant lays out to a finite, positive box', () => {
 /** Total drawn path length across all rendered <path> elements (a fill proxy). */
 const pathChars = (svg) => svg.match(/<path/g)?.length ?? 0;
 
-test('linear renders a hand-drawn track and a tinted fill when value > 0', () => {
+test('linear renders a hand-drawn track and a crosshatched fill when value > 0', () => {
   const { svg } = render('Wireframe\n  Progress linear value=50');
   assert.match(svg, /<path/);
-  // The filled run uses the accent fill colour.
-  assert.match(svg, /fill="#cfe0ee"/);
-});
-
-test('linear at value=0 draws the track but NO tinted fill', () => {
-  const svg = render('Wireframe\n  Progress linear value=0').svg;
-  assert.match(svg, /<path/); // the track still draws
+  // The filled run is hand-drawn gray crosshatch (the wireframe tint), never solid.
+  assert.match(svg, /stroke="#c4c4c4"/); // COLORS.hatch
   assert.doesNotMatch(svg, /fill="#cfe0ee"/);
 });
 
+test('linear at value=0 draws the track but NO crosshatched fill', () => {
+  const svg = render('Wireframe\n  Progress linear value=0').svg;
+  assert.match(svg, /<path/); // the track still draws
+  assert.doesNotMatch(svg, /stroke="#c4c4c4"/);
+});
+
 test('a higher linear value paints a wider fill (more path geometry) than a lower one', () => {
-  // The accent-filled sub-rect grows with value; rough.js emits more fill paths
+  // The crosshatched sub-rect grows with value; rough.js emits more hatch paths
   // for a larger area, so the full-value render has at least as many paths.
   const low = render('Wireframe\n  Progress linear value=10').svg;
   const high = render('Wireframe\n  Progress linear value=90').svg;
@@ -187,11 +188,53 @@ test('value is clamped to the range: an over-max value draws like a full bar', (
 test('min==max degrades to an empty fill rather than dividing by zero', () => {
   const svg = render('Wireframe\n  Progress linear value=5 min=5 max=5').svg;
   assert.match(svg, /<path/);
-  assert.doesNotMatch(svg, /fill="#cfe0ee"/); // no fill since the fraction is 0
+  assert.doesNotMatch(svg, /stroke="#c4c4c4"/); // no fill since the fraction is 0
 });
 
 test('custom min/max scales the fill: value at the midpoint fills about half', () => {
   // With min=0 max=10 value=5, the fraction is 0.5 -- the fill is non-empty.
   const svg = render('Wireframe\n  Progress linear value=5 min=0 max=10').svg;
-  assert.match(svg, /fill="#cfe0ee"/);
+  assert.match(svg, /stroke="#c4c4c4"/);
+});
+
+// --- thickness: a keyless enum scaling the bar height / ring stroke -----------
+
+test('thickness is a keyless enum, order-independent with variant and value', () => {
+  for (const src of [
+    'Wireframe\n  Progress linear 50 large',
+    'Wireframe\n  Progress large linear 50',
+    'Wireframe\n  Progress 50 large linear',
+  ]) {
+    const doc = parse(src);
+    assert.deepEqual(doc.diagnostics, [], `${src} should parse cleanly`);
+    const p = doc.frames[0].children[0];
+    assert.equal(p.props.thickness, 'large');
+    assert.equal(p.props.variant, 'linear');
+    assert.equal(p.props.value, 50);
+  }
+  assert.equal(firstChild('Wireframe\n  Progress thickness=small').props.thickness, 'small');
+});
+
+test('linear bar height grows with thickness; medium is the default height', () => {
+  const h = (t) => firstBox(`Wireframe\n  Progress linear ${t}`).h;
+  assert.ok(h('small') < h('medium'), `small (${h('small')}) < medium (${h('medium')})`);
+  assert.ok(h('medium') < h('large'), `medium (${h('medium')}) < large (${h('large')})`);
+  assert.equal(firstBox('Wireframe\n  Progress linear').h, h('medium'), 'omitted thickness should match medium');
+});
+
+test('thickness never changes the circular footprint, only its stroke width', () => {
+  const def = firstBox('Wireframe\n  Progress circular');
+  for (const t of ['small', 'medium', 'large']) {
+    const box = firstBox(`Wireframe\n  Progress circular ${t}`);
+    assert.equal(box.w, def.w, `${t} should keep the ring width`);
+    assert.equal(box.h, def.h, `${t} should keep the ring height`);
+  }
+  // The stroke weight is what changes: large draws the ring/arc with widths a
+  // medium ring never uses.
+  const large = render('Wireframe\n  Progress circular value=50 large').svg;
+  const medium = render('Wireframe\n  Progress circular value=50').svg;
+  assert.match(large, /stroke-width="3.2"/); // the large track ring
+  assert.match(large, /stroke-width="4"/); // the large value arc
+  assert.doesNotMatch(medium, /stroke-width="3.2"/);
+  assert.doesNotMatch(medium, /stroke-width="4"/);
 });

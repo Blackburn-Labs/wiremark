@@ -294,7 +294,7 @@ Wireframe #library w=1600 h=4800
     Stack column spacing=1
       Typography subtitle2 "Progress (linear / circular)"
       Progress linear 65
-      Progress circular
+      Progress circular 65
     Stack column spacing=1
       Typography subtitle2 "Skeleton (text / circular / rectangular / rounded)"
       Skeleton text 200px 16px

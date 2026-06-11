@@ -1439,6 +1439,14 @@
           "type": "numeric",
           "default": 100,
           "keyless": false
+        },
+        {
+          "name": "thickness",
+          "type": "enum",
+          "values": ["small", "medium", "large"],
+          "default": "medium",
+          "keyless": true,
+          "notes": "Bar height for linear; ring/arc stroke width for circular."
         }
       ]
     },

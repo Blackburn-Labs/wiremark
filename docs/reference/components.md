@@ -554,6 +554,7 @@ No configurable properties.
 | value | numeric |  | 0 | yes | n, v, val |  |
 | min | numeric |  | 0 | no |  |  |
 | max | numeric |  | 100 | no |  |  |
+| thickness | enum | small, medium, large | medium | yes |  | Bar height for linear; ring/arc stroke width for circular. |
 
 ### Skeleton
 
