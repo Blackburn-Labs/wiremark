@@ -1,5 +1,5 @@
 // @ts-check
-import { rrect, rellipse, rcrossbox, rline, centeredLabel } from '../draw.js';
+import { rrect, rroundrect, rellipse, rline, centeredLabel } from '../draw.js';
 import { textOf } from '../metrics.js';
 
 /**
@@ -12,7 +12,7 @@ import { textOf } from '../metrics.js';
  * intrinsic size wherever it sits, like Icon. The `variant` keyless enum picks
  * the chrome shape, and the three values draw GENUINELY different silhouettes:
  *  - circular (default): a hand-drawn circle (`rellipse`).
- *  - rounded:            a rectangle with its corners visibly chamfered.
+ *  - rounded:            a rounded rectangle (`rroundrect`).
  *  - square:             a plain sharp-cornered rectangle.
  *
  * Content precedence: a real `src=` always draws the crossed-box image
@@ -32,8 +32,9 @@ const SIZE = 40;
 /** Font size (px) for the centered initials -- snug inside the 40px shape. */
 const LABEL_FONT = 16;
 
-/** Corner chamfer length (px) used to round the `rounded` variant's corners. */
-const CHAMFER = 9;
+/** Corner radius (px) of the `rounded` variant -- big enough to read as rounded
+ *  at hand-drawn fidelity, small enough to stay distinct from `circular`. */
+const RADIUS = 9;
 
 /**
  * Draw the `variant` shape's outline across the full box.
@@ -44,22 +45,14 @@ const CHAMFER = 9;
 function shape(variant, box) {
   const { x, y, w, h } = box;
   if (variant === 'square') return rrect(x, y, w, h);
-  if (variant === 'rounded') {
-    // Chamfer each corner so `rounded` reads distinctly from `square`.
-    const c = Math.min(CHAMFER, w / 2, h / 2);
-    return rrect(x, y, w, h)
-      + rline(x, y + c, x + c, y, { strokeWidth: 1.2 })
-      + rline(x + w - c, y, x + w, y + c, { strokeWidth: 1.2 })
-      + rline(x + w, y + h - c, x + w - c, y + h, { strokeWidth: 1.2 })
-      + rline(x + c, y + h, x, y + h - c, { strokeWidth: 1.2 });
-  }
+  if (variant === 'rounded') return rroundrect(x, y, w, h, RADIUS);
   // circular (default + fallback): a hand-drawn circle filling the box.
   return rellipse(x + w / 2, y + h / 2, w, h);
 }
 
 /**
  * The crossed-box image placeholder's two diagonals across `box` (the same pair
- * `rcrossbox` draws, reused so a circular avatar can keep its round outline).
+ * `rcrossbox` draws, reused so every variant keeps its own outline around them).
  * @param {import('../layout.js').Box} box
  * @returns {string}
  */
@@ -87,14 +80,9 @@ export default {
   render: (node, box) => {
     const variant = typeof node.props.variant === 'string' ? node.props.variant : 'circular';
     // A real image source -> the crossed-box placeholder INSTEAD of the plain
-    // shape, mirroring Img (a wireframe never renders the actual image). A
-    // circular avatar keeps its circle outline with the image cross drawn inside;
-    // square/rounded use the rectangular crossbox.
-    if (typeof node.props.src === 'string') {
-      return variant === 'circular'
-        ? shape('circular', box) + cross(box)
-        : rcrossbox(box.x, box.y, box.w, box.h);
-    }
+    // shape, mirroring Img (a wireframe never renders the actual image). Each
+    // variant keeps its own outline with the image cross drawn inside.
+    if (typeof node.props.src === 'string') return shape(variant, box) + cross(box);
     // No image: the shape, plus the initials if any were given.
     let out = shape(variant, box);
     if (typeof node.props.label === 'string') {

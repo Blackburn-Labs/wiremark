@@ -81,23 +81,36 @@ export function rrect(x, y, w, h, opts = {}) {
 }
 
 /**
- * Hand-drawn pill (stadium): a rectangle whose short ends are full semicircles
- * (e.g. Control's switch track). One closed path, so the outline wobbles
- * continuously instead of cracking at the caps. Works in either orientation;
- * degenerates to a circle when w === h. Same option handling as `rrect`.
+ * Hand-drawn rounded rectangle: corner radius `r` (clamped to the half-extents),
+ * drawn as ONE closed path so the outline wobbles continuously through the
+ * corner arcs -- overlaying separate corner strokes on a sharp `rrect` reads as
+ * both corners at once. Same option handling as `rrect`.
+ * @param {number} x @param {number} y @param {number} w @param {number} h
+ * @param {number} r  corner radius (px)
+ * @param {object} [opts]  rough.js options (stroke, strokeWidth, fill, fillStyle, ...)
+ * @returns {string}
+ */
+export function rroundrect(x, y, w, h, r, opts = {}) {
+  const k = Math.max(0, Math.min(r, w / 2, h / 2));
+  const d = `M${x + k} ${y} L${x + w - k} ${y} A${k} ${k} 0 0 1 ${x + w} ${y + k} `
+    + `L${x + w} ${y + h - k} A${k} ${k} 0 0 1 ${x + w - k} ${y + h} `
+    + `L${x + k} ${y + h} A${k} ${k} 0 0 1 ${x} ${y + h - k} `
+    + `L${x} ${y + k} A${k} ${k} 0 0 1 ${x + k} ${y} Z`;
+  const { strokeLineDash, ...rough } = opts;
+  return emit(generator.path(d,
+    { seed: seedOf(x, y, w, h, k), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...rough }), strokeLineDash);
+}
+
+/**
+ * Hand-drawn pill (stadium): a rounded rect at full radius, so the short ends
+ * are complete semicircles (e.g. Control's switch track). Works in either
+ * orientation; degenerates to a circle when w === h.
  * @param {number} x @param {number} y @param {number} w @param {number} h
  * @param {object} [opts]  rough.js options (stroke, strokeWidth, fill, fillStyle, ...)
  * @returns {string}
  */
 export function rpill(x, y, w, h, opts = {}) {
-  const d = w >= h
-    ? `M${x + h / 2} ${y} L${x + w - h / 2} ${y} A${h / 2} ${h / 2} 0 0 1 ${x + w - h / 2} ${y + h} `
-      + `L${x + h / 2} ${y + h} A${h / 2} ${h / 2} 0 0 1 ${x + h / 2} ${y} Z`
-    : `M${x + w} ${y + w / 2} L${x + w} ${y + h - w / 2} A${w / 2} ${w / 2} 0 0 1 ${x} ${y + h - w / 2} `
-      + `L${x} ${y + w / 2} A${w / 2} ${w / 2} 0 0 1 ${x + w} ${y + w / 2} Z`;
-  const { strokeLineDash, ...rough } = opts;
-  return emit(generator.path(d,
-    { seed: seedOf(x, y, w, h), stroke: COLORS.ink, strokeWidth: 1.2, roughness: 1.1, bowing: 1, ...rough }), strokeLineDash);
+  return rroundrect(x, y, w, h, Math.min(w, h) / 2, opts);
 }
 
 /**

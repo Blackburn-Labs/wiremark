@@ -114,13 +114,13 @@ test('circular draws an ellipse; square/rounded draw a rectangle (variant chrome
   assert.notEqual(circular, rounded, 'circular and rounded should render differently');
 });
 
-test('rounded differs from square (the chamfered corners add strokes square lacks)', () => {
-  // `rounded` cuts each corner with an extra diagonal stroke, so it emits strictly
-  // more <path> elements than the plain square rectangle.
+test('rounded differs from square (rounded corners, not a sharp rectangle)', () => {
+  // `rounded` draws one closed rounded-rect path (corner arcs baked into the
+  // outline), not a sharp `rrect` -- so its geometry differs from square's even
+  // though both emit a single outline path.
   const square = render('Wireframe\n  Avatar square').svg;
   const rounded = render('Wireframe\n  Avatar rounded').svg;
-  const paths = (s) => (s.match(/<path/g) || []).length;
-  assert.ok(paths(rounded) > paths(square), `rounded (${paths(rounded)} paths) should have more than square (${paths(square)})`);
+  assert.notEqual(rounded, square, 'rounded and square should render differently');
 });
 
 test('src= flips the chrome to an image placeholder (crossed strokes), not initials', () => {
