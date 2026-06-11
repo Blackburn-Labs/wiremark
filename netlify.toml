@@ -5,19 +5,25 @@
 #
 # base = "site" makes Netlify install and build inside site/. The build runs
 # site's `prebuild` hook first (node ../scripts/generate-reference.mjs), which
-# regenerates ../docs/reference/components.md from meta/element-specs.json,
-# so the published reference is always in sync with the source of truth.
+# regenerates ../docs/reference/components.md from meta/element-specs.json and
+# the condensed component lists in the agent guides from the LIVE element
+# registry (packages/core/src/elements), so the published reference is always
+# in sync with the source of truth.
+#
+# Because the generator imports packages/core (which depends on roughjs), the
+# workspace root's dependencies must be installed too -- Netlify only installs
+# site/'s by default with base = "site" -- hence the `npm ci --prefix ..`.
 
 [build]
   base = "site"
-  command = "npm run build"
+  command = "npm ci --prefix .. && npm run build"
   publish = "build"
   # Skip the deploy unless something the docs site actually consumes changed:
-  # the site app itself, the docs content, the element-spec matrix it is
-  # generated from, the generator script, or this config. Commits touching
-  # only packages/* never affect the published site. Exit 0 = skip build.
+  # the site app itself, the docs content, the element-spec matrix, core's src
+  # (the agent-guide component lists are generated from the live registry),
+  # the generator script, or this config. Exit 0 = skip build.
   # Note: with base = "site", this command runs FROM site/, hence the ../ paths.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ../site ../docs ../meta ../scripts/generate-reference.mjs ../netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ../site ../docs ../meta ../packages/core/src ../scripts/generate-reference.mjs ../netlify.toml"
 
 [build.environment]
   NODE_VERSION = "20"
