@@ -48,6 +48,32 @@ test('a bare Typography ~N renders squiggle filler, not a label', () => {
   assert.match(svg, /<path/);  // squiggle rows are drawn as hand-drawn paths
 });
 
+test('filler=lorem draws real-ish lorem words instead of squiggles (ss.6)', () => {
+  const { svg } = render('Wireframe w=400 h=300\n  Typography ~3 filler=lorem');
+  assert.match(svg, /Lorem ipsum/);
+  assert.equal((svg.match(/<text/g) ?? []).length, 3, 'one <text> row per filler line');
+});
+
+test('filler=lorem honors an exact ~Nw word count on a single line', () => {
+  const { svg } = render('Wireframe w=400 h=300\n  Typography ~4w filler=lorem');
+  assert.match(svg, />Lorem ipsum dolor sit</);
+  assert.equal((svg.match(/<text/g) ?? []).length, 1);
+});
+
+test('a frame-level filler= is inherited by text descendants (ss.6, two levels)', () => {
+  const src = 'Wireframe w=400 h=300 filler=lorem\n  Stack column\n    Typography ~2';
+  const t = parse(src).frames[0].children[0].children[0];
+  assert.equal(t.props.filler, 'lorem', 'the frame default reaches a nested Typography');
+  assert.match(render(src).svg, /Lorem ipsum/);
+});
+
+test("a node's own filler= wins over the frame default", () => {
+  const src = 'Wireframe w=400 h=300 filler=lorem\n  Typography ~2 filler=squiggle';
+  const t = parse(src).frames[0].children[0];
+  assert.equal(t.props.filler, 'squiggle');
+  assert.doesNotMatch(render(src).svg, /Lorem/);
+});
+
 test('variant defaults to body1 when omitted (strategy applies the default)', () => {
   // The resolver does not inject PropDef defaults; an unset variant is absent and
   // the strategy treats it as body1.

@@ -92,7 +92,7 @@ text-displaying component (`Typography`, a `TextField` value, `Link`, `Chip`,
 ```wireframe
 Wireframe #screen filler=squiggle
   Typography h3                 // squiggle (inherits the frame default)
-  Typography body filler=lorem  // lorem (local override)
+  Typography body1 filler=lorem // lorem (local override)
   TextField "Notes" filler=blocks
 ```
 

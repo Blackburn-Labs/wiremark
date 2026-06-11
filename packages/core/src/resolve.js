@@ -266,6 +266,20 @@ function resolveNode(raw) {
 }
 
 /**
+ * Push a frame-level `filler=` style down to every text-bearing descendant that
+ * doesn't carry its own (SPEC ss.6: the style is set "at two levels", element
+ * over frame). Element strategies render from their own props, so the inherited
+ * default is materialized here at resolve time.
+ * @param {ResolvedNode[]} nodes @param {string} style
+ */
+function inheritFillerStyle(nodes, style) {
+  for (const node of nodes) {
+    if (getComponent(node.component)?.text && node.props.filler == null) node.props.filler = style;
+    inheritFillerStyle(node.children, style);
+  }
+}
+
+/**
  * Resolve a top-level `Wireframe` node into a Frame (SPEC ss.5.1).
  * @param {RawNode} raw
  * @returns {Frame}
@@ -293,7 +307,9 @@ function resolveFrame(raw) {
     throw new WiremarkError(`Wireframe: unexpected token \`${v}\` (expected #id or a preset: ${PRESETS.join(', ')})`, loc);
   }
 
-  return { id, preset, props, children: raw.children.map(resolveNode), line: raw.line };
+  const children = raw.children.map(resolveNode);
+  if (typeof props.filler === 'string') inheritFillerStyle(children, props.filler);
+  return { id, preset, props, children, line: raw.line };
 }
 
 /**

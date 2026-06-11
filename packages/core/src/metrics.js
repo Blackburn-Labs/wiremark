@@ -144,4 +144,6 @@ export function textOf(node, fallback = 'Text') {
   return fallback;
 }
 
-const LOREM = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit'];
+/** The lorem word bank: cycled by word fillers and `filler=lorem` rows (SPEC ss.6). */
+export const LOREM = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit',
+  'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
