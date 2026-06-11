@@ -196,10 +196,19 @@ const SHELL = [
   '  AppBar',
   '    Toolbar',
   '      Typography h6 "Acme"',
-  '  Box 240px *',
+  '  Stack row 100% *',
+  '    Box 240px *',
+  '    Anchor #content',
 ].join('\n');
 const SCREEN_BG = [
   'Wireframe #screen landscape background=#shell',
+  '  Grid cols=3',
+  '    Card',
+  '    Card',
+  '    Card',
+].join('\n');
+const SCREEN_ANCHORED = [
+  'Wireframe #screen background=#shell anchor=#content',
   '  Grid cols=3',
   '    Card',
   '    Card',
@@ -215,6 +224,16 @@ test('Phase 3 (composition): a visible frame paints over its background= chain (
   assert.match(svg, /Acme/, "the shell's chrome is painted beneath the screen");
   // shell is visible=false, so only the one visible frame stands alone in the output.
   assert.equal((svg.match(/<g transform/g) ?? []).length, 1, 'only the visible frame renders standalone');
+});
+
+test('Phase 3 (composition): anchor= composes the foreground into a shell region, warning-free (tasks/FOREGROUND.md)', () => {
+  const { svg, diagnostics } = render(`${SHELL}\n\n${SCREEN_ANCHORED}`);
+  assert.deepEqual(diagnostics, [], 'a resolvable background+anchor pair warns about nothing');
+  assert.match(svg, /Acme/, "the shell's chrome still paints beneath");
+  assert.equal((svg.match(/<g transform/g) ?? []).length, 1, 'only the visible frame renders standalone');
+  // Region adoption at render level: the anchored screen has no preset of its
+  // own, yet its canvas (the clip rect) is the shell's landscape canvas.
+  assert.match(svg, /<clipPath id="wm-clip-0"><rect x="0" y="0" width="1280" height="800"\/>/);
 });
 
 test('Phase 3 (composition): an unresolved background= warns but still renders (ss.5.1.1)', () => {

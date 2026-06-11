@@ -2,8 +2,13 @@ Wireframe #shell landscape visible=false
   AppBar
     Toolbar
       Typography h6 "Acme"
-  Box 240px *
-    Spacer #content
+  Stack row 100% *
+    Box 240px *
+      List
+        ListItem "Home"
+        ListItem "Reports"
+      Anchor #side
+    Anchor #content
 
 Wireframe #login landscape
   Stack column spacing=2
@@ -19,20 +24,20 @@ Wireframe #login landscape
     Divider
     Typography ~2
 
-Wireframe #home landscape background=#shell
+Wireframe #home background=#shell anchor=#content
   Typography h1 "Dashboard"
   Grid cols=3
     Card to=#details
     Card to=#details
     Card to=#product
 
-Wireframe #details landscape background=#shell
+Wireframe #details background=#shell anchor=#content
   Stack column spacing=3
     Link "Back" to=#home
     Typography h1 "Item Details"
   Typography ~16
 
-Wireframe #product landscape background=#shell
+Wireframe #product background=#shell anchor=#content
   Card
     Img ratio=16:9
     CardContent

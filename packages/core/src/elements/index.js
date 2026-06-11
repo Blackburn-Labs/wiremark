@@ -12,6 +12,7 @@ import Stack from './Stack.js';
 import Box from './Box.js';
 import Grid from './Grid.js';
 import Spacer from './Spacer.js';
+import Anchor from './Anchor.js';
 import Divider from './Divider.js';
 import Card from './Card.js';
 import CardContent from './CardContent.js';
@@ -67,7 +68,7 @@ import Skeleton from './Skeleton.js';
 /** Every element definition, grouped by category. @type {import('./common.js').ComponentDef[]} */
 export const ELEMENTS = [
   Wireframe,
-  Stack, Box, Grid, Spacer, Divider,
+  Stack, Box, Grid, Spacer, Anchor, Divider,
   Card, CardHeader, CardContent, CardActions, AppBar, Toolbar,
   AccordionHeader, AccordionBody,
   Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,

@@ -329,6 +329,59 @@ function backgroundChain(frame, byId, diags) {
 }
 
 /**
+ * Depth-first search of a laid-out box tree for the element carrying `#id`.
+ * Document order: the first declaration wins, matching resolve's duplicate-id
+ * warning. (The synthetic frame-root node never carries an element id.)
+ * @param {Box} box @param {string} id @returns {Box|null}
+ */
+function findAnchorBox(box, id) {
+  if (box.node.id === id) return box;
+  for (const child of box.children) {
+    const hit = findAnchorBox(child, id);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Third pass -- anchored composition (tasks/FOREGROUND.md; SPEC ss.5.1.2
+ * proposed). A frame with `background=#B anchor=#a` adopts the laid-out box of
+ * the element `#a` found in its background chain (nearest background first,
+ * shadowing deeper frames) and takes its DIRECT background's canvas w/h as its
+ * own. Frames re-place shortest-chain-first: a chain strictly extends its
+ * background's chain, so a transitively anchored background is already in
+ * final coordinates before its foreground searches it. All failures are soft
+ * warnings; the frame keeps its legacy top-left layout.
+ * @param {LaidOutFrame[]} frames
+ * @param {import('./errors.js').Diagnostic[]} diags
+ */
+function placeAnchored(frames, diags) {
+  const anchored = frames
+    .filter((f) => typeof f.frame.props.anchor === 'string')
+    .sort((a, b) => a.backgroundChain.length - b.backgroundChain.length); // backgrounds re-place first
+  for (const f of anchored) {
+    const anchorId = /** @type {string} */ (f.frame.props.anchor);
+    if (!f.frame.props.background) {
+      diags.push(diagnostic('warning', `anchor "#${anchorId}" requires background=`, { line: f.frame.line }));
+      continue;
+    }
+    let hit = null; // nearest background first: the chain is stored deepest-first
+    for (let i = f.backgroundChain.length - 1; i >= 0 && !hit; i--)
+      hit = findAnchorBox(f.backgroundChain[i].root, anchorId);
+    if (!hit) {
+      diags.push(diagnostic('warning', `anchor "#${anchorId}" not found in background chain of "#${f.id ?? '?'}"`, { line: f.frame.line }));
+      continue; // legacy top-left layout stands
+    }
+    if (f.frame.preset !== undefined || typeof f.frame.props.w === 'number' || typeof f.frame.props.h === 'number')
+      diags.push(diagnostic('warning', `preset/size ignored: frame "#${f.id ?? '?'}" is sized by anchor "#${anchorId}"`, { line: f.frame.line }));
+    const bg = f.backgroundChain[f.backgroundChain.length - 1]; // direct background drives the canvas
+    f.w = bg.w;
+    f.h = bg.h;
+    f.root = place(f.root.node, { x: hit.x, y: hit.y, w: hit.w, h: hit.h });
+  }
+}
+
+/**
  * @param {Document} doc
  * @param {object} [options]
  * @returns {LaidOutFrame[]}
@@ -353,5 +406,6 @@ export function layout(doc, options = {}) {
 
   const byId = new Map(frames.filter((f) => f.id).map((f) => [/** @type {string} */ (f.id), f]));
   for (const f of frames) f.backgroundChain = backgroundChain(f, byId, doc.diagnostics);
+  placeAnchored(frames, doc.diagnostics);
   return frames;
 }

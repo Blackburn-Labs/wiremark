@@ -47,7 +47,7 @@ function pathsCross(a, b) {
   return false;
 }
 
-const { h: LH } = PRESET_SIZES.landscape; // every frame in the fixture is landscape
+const { h: LH } = PRESET_SIZES.landscape; // #login is landscape; the anchored frames adopt #shell's landscape canvas
 
 // The fixture: #login -> #home, then #home fans out to #details and #product, with
 // a #details -> #home back-link. (#login -> #reset and #product -> #detail are

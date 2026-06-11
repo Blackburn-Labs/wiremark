@@ -13,6 +13,7 @@ is no x/y positioning — you nest and size, and the renderer lays things out.
 | `Grid`      | A uniform grid; children flow into cells. `cols=` sets columns, `gap=` the spacing. |
 | `Container` | A centered, max-width wrapper. `max=` sets the width.                |
 | `Spacer`    | A flexible gap that pushes siblings apart.                          |
+| `Anchor`    | An invisible, named region a foreground frame can compose into — see [Frames & flow](06-frames-and-flow.md#anchor-points). |
 | `Divider`   | A plain horizontal rule. No properties.                            |
 
 `Stack` is the workhorse. Reach for it whenever you want things in a row or a
@@ -118,6 +119,11 @@ Reading the sizing:
 - `Box 240px *` — a fixed-width nav rail, full height.
 - `Box * *` — the main area fills whatever is left.
 - The `Grid cols=3` flows its cards into three columns.
+
+To reuse this shell across screens, swap the content `Box * *` for an
+`Anchor #content` region and compose each screen into it with
+`background=`/`anchor=` — see
+[Frames & flow](06-frames-and-flow.md#anchor-points).
 
 For the full set of patterns built this way, see
 [Patterns & recipes](07-patterns.md).

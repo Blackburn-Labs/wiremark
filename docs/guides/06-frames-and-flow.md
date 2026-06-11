@@ -85,9 +85,88 @@ How it behaves:
   backgrounds `#c`), painted deepest-first. A frame must not reference itself
   directly or transitively; renderers detect cycles and break them with a
   warning.
-- **Alignment and size.** The **foreground frame drives the screen size.** The
-  background is underlaid at the top-left with no scaling; if it is larger it
-  simply overflows/clips. There is no fitting behavior.
+- **Alignment and size (no anchor).** Without `anchor=`, the **foreground frame
+  drives the screen size.** The background is underlaid at the top-left with no
+  scaling; if it is larger it simply overflows/clips. There is no fitting
+  behavior. To place the foreground *inside* a region of the background, use an
+  [anchor point](#anchor-points) instead.
+
+## Anchor points
+
+`background=` underlays the shell, but both frames' content starts at the
+top-left — a dashboard composed over an app shell would paint across the
+shell's app bar and nav rail. An **anchor point** lets the background say where
+foreground content belongs.
+
+### Declaring regions: `Anchor #id`
+
+`Anchor` is an invisible, named region — a layout component that draws nothing.
+Unsized, it fills the leftover space of its container on both axes, so a bare
+`Anchor #content` means "the rest of this container". A background frame may
+declare several:
+
+```wireframe
+Wireframe #shell landscape visible=false
+  AppBar
+    Toolbar
+      Typography h6 "Acme"
+  Stack row 100% *
+    Box 240px *
+      Anchor #side         // a region inside the nav rail
+    Anchor #content        // everything right of the rail, under the bar
+```
+
+Sizing tokens pin a region explicitly — a fixed bottom strip:
+
+```wireframe
+Wireframe #base portrait visible=false
+  Anchor #main             // flexes: everything above the console
+  Anchor #console * 200px  // a fixed 200px-tall strip at the bottom
+```
+
+### Composing into a region: `anchor=#id`
+
+A foreground frame picks a region with `anchor=#id` (alias `at=`), given
+**instead of** a preset or `w=`/`h=`:
+
+```wireframe
+Wireframe #home background=#shell anchor=#content
+  Typography h1 "Dashboard"
+  Grid cols=3
+    Card to=#details
+```
+
+How it behaves:
+
+- **The anchor sizes and places the frame; the background sizes the canvas.**
+  `#home`'s content is laid out inside `#content`'s box, and its canvas — the
+  rectangle drawn, clipped, and used by the flow chart — becomes `#shell`'s.
+- **The region is a placement, not a viewport.** Normal frame padding applies
+  inside it; overflowing content is clipped at the canvas only.
+- **Shadowing.** The id is looked up in the frame's background chain only,
+  **nearest background first** — a nearer frame's `#content` shadows a deeper
+  one with the same id; within one frame, document order wins. The foreground's
+  own tree is never searched.
+- **Separate namespaces.** Element ids (`anchor=`) and frame ids
+  (`background=`, `to=`) share the `#` sigil but never mix: `anchor=` never
+  matches a frame, and `to=` stays frames-only.
+- **Chaining.** Anchored frames compose transitively: if `#page` anchors into
+  `#shell`, a third frame may use `background=#page anchor=#x` where `#x` lives
+  in `#page` *or* `#shell`.
+- **Any `#id` works.** `anchor=` may target any element carrying a `#id`
+  (e.g. a `Card #hero`), but `Anchor` is the purpose-built carrier and the
+  documented pattern.
+
+Like `background=`, anchors degrade gracefully — every failure is a soft
+warning, never a hard fail:
+
+| Condition | Warning | Fallback |
+|---|---|---|
+| `anchor=` without `background=` | `anchor "#a" requires background=` | normal standalone layout |
+| id not found in the background chain | `anchor "#a" not found in background chain of "#f"` | top-left overlay at own/preset size |
+| `anchor=` together with a preset or `w=`/`h=` | `preset/size ignored: frame "#f" is sized by anchor "#a"` | the anchor wins |
+| `Anchor` with no `#id` | `Anchor without #id can never be targeted` | laid out normally (an invisible spacer) |
+| duplicate `#id` within one frame | `duplicate id "#a" in frame "#f"` | the first declaration wins |
 
 ## Hiding a reusable frame: `visible=false`
 
@@ -149,6 +228,8 @@ always has, with no flow chrome.
 - Targets are frames only; there is no deep-linking and no `from`.
 - `background=#id` underlays a shared frame; `visible=false` keeps that shared
   frame from drawing on its own.
+- `Anchor #id` names a region inside a background frame; `anchor=#id` (alias
+  `at=`) composes a foreground frame's content into that region.
 - Several visible frames auto-arrange into a connected flow chart; `direction=TD`
   (default) or `direction=LR` sets its orientation.
 

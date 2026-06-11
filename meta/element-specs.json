@@ -166,6 +166,25 @@
       ]
     },
     {
+      "name": "Anchor",
+      "category": "Layout",
+      "children": false,
+      "properties": [
+        {
+          "name": "width",
+          "type": "size",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "keyless": true,
+          "aliases": ["h"]
+        }
+      ]
+    },
+    {
       "name": "Card",
       "category": "Surfaces",
       "children": true,

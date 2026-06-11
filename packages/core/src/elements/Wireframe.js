@@ -26,6 +26,9 @@ export default {
     w: { type: 'number' },
     h: { type: 'number' },
     background: { type: 'ref' },
+    // Compose this frame INTO a named region (`Anchor #id`) of its background
+    // frame; alias `at=` (tasks/FOREGROUND.md; SPEC ss.5.1.2 proposed).
+    anchor: { type: 'ref', aliases: ['at'] },
     visible: { type: 'boolean', default: true },
     filler: { type: 'enum', values: FILLER_STYLES },
     // Multi-frame flow-chart direction (ss.7.4). Keyed-only (`direction=LR`): no

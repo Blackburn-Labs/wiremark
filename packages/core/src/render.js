@@ -62,12 +62,19 @@ function renderFrameContent(frame, out) {
 /**
  * The frame root's own border markup, painted last and *outside* the overflow
  * clip -- so overflowing content can't cover it and its hand-drawn edge (which
- * wobbles a hair past the box) isn't itself clipped. @param {LaidOutFrame} frame @returns {string}
+ * wobbles a hair past the box) isn't itself clipped. An anchored frame's root
+ * box is the *region* it composed into (tasks/FOREGROUND.md), so the border is
+ * drawn at a synthetic CANVAS box instead; for a non-anchored frame that box
+ * equals frame.root's, keeping existing output byte-identical (rough seeds
+ * derive from geometry alone). @param {LaidOutFrame} frame @returns {string}
  */
 function frameBorder(frame) {
   const root = frame.root;
   const s = /** @type {*} */ (REGISTRY[root.node.component]) ?? {};
-  return typeof s.render === 'function' ? s.render(root.node, root) : '';
+  if (typeof s.render !== 'function') return '';
+  /** @type {Box} */
+  const canvas = { x: 0, y: 0, w: frame.w, h: frame.h, node: root.node, children: [] };
+  return s.render(root.node, canvas);
 }
 
 /**

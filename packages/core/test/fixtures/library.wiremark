@@ -35,6 +35,10 @@ Wireframe #library w=1600 h=4800
         Spacer
         Chip "Right"
     Stack column spacing=1
+      Typography subtitle2 "Anchor (invisible named region for anchor=#id)"
+      Box 420px 48px outline=dotted
+        Anchor #content-slot
+    Stack column spacing=1
       Typography subtitle2 "Divider (solid / dashed / dotted / vertical)"
       Stack column 320px spacing=2
         Divider

@@ -73,6 +73,15 @@ This reference is generated from [`meta/element-specs.json`](../../meta/element-
 | width | size |  | 1 | yes | w |  |
 | height | size |  | 1 | yes | h |  |
 
+### Anchor
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| width | size |  |  | yes | w |  |
+| height | size |  |  | yes | h |  |
+
 ## Surfaces
 
 ### Card

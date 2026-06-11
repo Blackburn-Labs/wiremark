@@ -1,5 +1,5 @@
 // @ts-check
-import { WiremarkError } from './errors.js';
+import { WiremarkError, diagnostic } from './errors.js';
 import { getComponent } from './registry.js';
 import { PRESETS } from './elements/common.js';
 
@@ -201,8 +201,8 @@ function resolveNode(raw) {
     const v = tok.value;
     // A keyless `#id` anchor is allowed on ANY element (SPEC ss.7.1), mirroring how
     // resolveFrame names a frame. The `#` sigil is unambiguous -- it can never be a
-    // size/filler/enum/flag -- so it is captured first. For now the id is only
-    // recorded (no layout/render/flow use yet); future versions consume it.
+    // size/filler/enum/flag -- so it is captured first. Layout's anchored-frame
+    // pass consumes it as an `anchor=#id` target (tasks/FOREGROUND.md).
     if (v.startsWith('#')) {
       if (id !== undefined) throw new WiremarkError(`${raw.name}: id set more than once (\`${v}\`)`, loc);
       id = v.slice(1);
@@ -313,6 +313,34 @@ function resolveFrame(raw) {
 }
 
 /**
+ * Post-walk warnings over a frame's element tree (tasks/FOREGROUND.md): an
+ * `Anchor` with no `#id` can never be targeted by `anchor=`, and a duplicate
+ * element `#id` within one frame shadows -- the first declaration wins (layout
+ * searches in document order). Soft diagnostics; resolution already succeeded.
+ * Frame ids are a separate namespace (SPEC ss.7.1) and stay out of the set.
+ * @param {Frame} frame
+ * @param {Diagnostic[]} diagnostics
+ */
+function checkElementIds(frame, diagnostics) {
+  /** @type {Set<string>} */
+  const seen = new Set();
+  /** @param {ResolvedNode[]} nodes */
+  const walk = (nodes) => {
+    for (const node of nodes) {
+      if (node.component === 'Anchor' && node.id === undefined)
+        diagnostics.push(diagnostic('warning', 'Anchor without #id can never be targeted', { line: node.line }));
+      if (node.id !== undefined) {
+        if (seen.has(node.id))
+          diagnostics.push(diagnostic('warning', `duplicate id "#${node.id}" in frame "#${frame.id ?? '?'}"`, { line: node.line }));
+        else seen.add(node.id);
+      }
+      walk(node.children);
+    }
+  };
+  walk(frame.children);
+}
+
+/**
  * @param {RawNode[]} roots
  * @param {object} [options]
  * @returns {Document}
@@ -322,5 +350,6 @@ export function resolve(roots, options = {}) {
   /** @type {Diagnostic[]} */
   const diagnostics = [];
   const frames = roots.map((r) => resolveFrame(r));
+  for (const frame of frames) checkElementIds(frame, diagnostics);
   return { frames, diagnostics };
 }
