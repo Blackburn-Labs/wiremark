@@ -1,67 +1,96 @@
-# @wiremark/core
+# Wiremark Core
 
-The pure-JS core of [wiremark](../../README.md): it turns wiremark **source**
-(the text inside a ` ```wireframe ` block) into a hand-drawn SVG, plus the parsed
-document and the navigation graph inferred from `to=#id` links.
+[![npm version](https://img.shields.io/npm/v/@wiremark/core)](https://www.npmjs.com/package/@wiremark/core)
+[![license](https://img.shields.io/npm/l/@wiremark/core)](https://github.com/Blackburn-Labs/wiremark/blob/main/packages/core/LICENSE)
+[![node](https://img.shields.io/node/v/@wiremark/core)](https://www.npmjs.com/package/@wiremark/core)
 
-Core knows nothing about markdown -- finding the fenced block is a host
-adapter's job. It has no host dependencies.
+![wiremark](https://wiremark.dev/wiremark-icon.svg)
 
-## Pipeline
+**wiremark** is a text-based, markdown-embeddable wireframing format — think
+"YAML-flavored [MUI](https://mui.com/)": a hierarchy of familiar Material UI
+component names, indented to show containment, rendered as a hand-drawn
+(Balsamiq-style) SVG. A wireframe lives inside a fenced ` ```wireframe ` block:
 
+````markdown
+```wireframe
+Wireframe mobile
+  Stack col gap=2
+    Typography h4 "Sign in"
+    TextField "Email"
+    TextField "Password"
+    Button "Sign in" primary to=#dashboard
 ```
-source --lex--> tokens --tree--> raw tree --resolve--> Document
-       --layout--> boxes --render--> SVG
-                       \--flow--> navigation graph
+````
+
+`@wiremark/core` is the engine behind that block: the parser, layout solver,
+and SVG renderer, in pure JavaScript.
+
+Full language documentation — guides, the component reference, and the icon
+gallery — lives at **[docs.wiremark.dev](https://docs.wiremark.dev/)**.
+
+## Do you need this package?
+
+wiremark is normally used through a host tool that finds the ` ```wireframe `
+block for you. The first of these is
+[`@wiremark/cli`](https://www.npmjs.com/package/@wiremark/cli), which renders
+`.wiremark` files to SVG from the command line; adapters for specific tools
+(markdown renderers, editors, and more) are forthcoming, and we'll keep adding
+them as best we can.
+
+Use `@wiremark/core` directly when you want to add wiremark to your **own**
+markdown renderer, editor, or pipeline. Core knows nothing about markdown:
+your adapter finds the fenced block, hands the text inside it to core, and
+gets back an SVG. The CLI is a worked example of exactly that — its
+[source](https://github.com/Blackburn-Labs/wiremark/tree/main/packages/cli)
+is a thin wrapper over this package.
+
+## Install
+
+```sh
+npm install @wiremark/core
 ```
 
-| Stage | File | Status |
-|-------|------|--------|
-| (1) lex      | `src/lexer.js`    | stub |
-| (2) tree     | `src/tree.js`     | stub |
-| (3) resolve  | `src/resolve.js`     | stub |
-| registry     | `src/elements/*`     | v0.1 set authored |
-| (4) layout   | `src/layout.js`      | stub |
-| (5) render   | `src/render.js`      | stub |
-| flow         | `src/flow.js`        | stub |
-
-Each component is defined in its own file under `src/elements/`
-(`Button.js`, `Card.js`, ...) so everything about an element -- its schema now,
-its measure/render functions later -- lives in one place. `src/registry.js`
-indexes them by name. Full MUI coverage is tracked in
-[`meta/element-specs.json`](../../meta/element-specs.json).
-
-## API (intended)
+## Usage
 
 ```js
-import { parse, render, toMermaid } from '@wiremark/core';
+import { render } from '@wiremark/core';
 
-const { svg } = render(source);     // wiremark source -> SVG
-const doc = parse(source);          // -> { frames, diagnostics }
-const mermaid = toMermaid(doc);     // -> inferred flow as a Mermaid flowchart
+const { svg, diagnostics } = render(source); // source = the text inside the fence
 ```
 
-## Test
+`render` takes wiremark source and returns the SVG as a string. Structural
+problems the author must fix (tabs in indentation, unknown components,
+unquoted text) throw a `WiremarkError`; anything softer (an unknown icon name,
+a missing link target) degrades gracefully and is reported in `diagnostics`.
 
-```sh
-node --test test/
+The other entry points:
+
+```js
+import { parse, toFlowGraph, toMermaid } from '@wiremark/core';
+
+const doc = parse(source);      // validated document: frames + diagnostics
+const graph = toFlowGraph(doc); // navigation graph inferred from to=#id links
+const mermaid = toMermaid(doc); // the same graph, as a Mermaid flowchart
 ```
 
-Uses Node's built-in test runner -- no dependencies.
+`render` also accepts an already-`parse`d document, and a file with several
+frames renders as a flow chart with frame-to-frame connectors.
 
-## Render the fixtures
+Icon props accept [built-in Material icon names](https://docs.wiremark.dev/reference/icons)
+out of the box. To add your own, pass `icons` (a flat name-to-SVG map or
+Iconify icon packs) or a `loadIcon` callback in the options to `render`/`parse`
+— see the [icons guide](https://docs.wiremark.dev/guides/icons).
 
-Render every `test/fixtures/*.wiremark` to a sibling `.svg` -- handy for eyeballing
-output after an engine change. The SVGs are gitignored, so this never dirties the
-tree. Run from the repo root:
+## Good to know
 
-```sh
-npm run render:fixtures
-```
+- Pure ESM, Node >= 18.
+- One runtime dependency ([roughjs](https://roughjs.com/), for the hand-drawn look).
+- Deterministic output: the same source always renders the same SVG, so it's
+  diff- and cache-friendly.
 
-To render a single file instead, use the [`@wiremark/cli`](../cli) renderer (from the
-repo root):
+## Links
 
-```sh
-node packages/cli/bin/wiremark.js packages/core/test/fixtures/login.wiremark -o /tmp/login.svg
-```
+- [Documentation](https://docs.wiremark.dev/)
+- [Component reference](https://docs.wiremark.dev/reference/components)
+- [GitHub](https://github.com/Blackburn-Labs/wiremark)
+- [`@wiremark/cli`](https://www.npmjs.com/package/@wiremark/cli)
