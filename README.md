@@ -1,8 +1,9 @@
 # wiremark
 
-A text-based, markdown-embeddable wireframing format. Think **"YAML-flavored
-[MUI](https://mui.com/)"**: a hierarchy of familiar Material UI component names,
-indented to show containment, rendered in a hand-drawn (Balsamiq-like) style.
+A text-based, markdown-embeddable wireframing format. Inspired by **YAML's
+simplicity** and **[MUI](https://mui.com/)'s readability**: a hierarchy of
+familiar Material UI component names, indented to show containment, rendered
+in a hand-drawn (Balsamiq-like) style.
 
 wiremark is **agent-first** — designed to be trivial for an LLM to read, write,
 and reason about — while embedding cleanly in markdown the way Mermaid does.
