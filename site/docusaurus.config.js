@@ -65,8 +65,7 @@ const config = {
         title: 'wiremark',
         items: [
           { href: 'https://www.wiremark.dev', label: 'Home', position: 'right' },
-          // Add once the repo URL is known:
-          // { href: 'https://github.com/blackburn-labs/wiremark', label: 'GitHub', position: 'right' },
+          { href: 'https://github.com/Blackburn-Labs/wiremark', label: 'GitHub', position: 'right' },
         ],
       },
       footer: {
