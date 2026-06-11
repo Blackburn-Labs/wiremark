@@ -70,7 +70,7 @@ const config = {
           src: 'img/wiremark-icon.svg',
         },
         items: [
-          { href: 'https://www.wiremark.dev', label: 'Home', position: 'right' },
+          { href: 'https://www.wiremark.dev', html: 'Home', position: 'right', target: '_self' },
           { href: 'https://github.com/Blackburn-Labs/wiremark', label: 'GitHub', position: 'right' },
         ],
       },
