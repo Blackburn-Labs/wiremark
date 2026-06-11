@@ -62,6 +62,6 @@ export default {
     // row. Items begin below it (the band is `pad`, so `children[0]` clears it).
     const x = box.x + SUBHEADER_H;
     const y = box.y + SUBHEADER_H / 2 + SUBHEADER_FS * 0.35;
-    return text(x, y, sub, { fontSize: SUBHEADER_FS, weight: 600, fill: COLORS.muted });
+    return text(x, y, sub, { fontSize: SUBHEADER_FS, weight: 600, fill: COLORS.muted, maxW: box.w - SUBHEADER_H - SPACING });
   },
 };

@@ -11,8 +11,9 @@ import { fontSizeOf, textOf, measureText, fillerLines, LINE_HEIGHT, LOREM } from
  * `align` (keyed) places the line within the box -- left/justify/inherit anchor
  * at the left edge, center at the midpoint, right at the trailing edge -- via the
  * `text` helper's text-anchor (justify degrades to left at sketch fidelity).
- * `noWrap` (keyed) marks the single-line/truncated intent; the leaf already draws
- * one line, so it parses without changing the sketch.
+ * `noWrap` (keyed) parses for MUI parity but is redundant at sketch fidelity:
+ * every text leaf is single-line, and a label wider than its box trims to a
+ * trailing `…` by default (the `maxW` passed to `text`).
  *
  * Reference strategy (text leaf): `block` so it spans the container's cross axis
  * (like a real Typography); intrinsic height grows with filler line count; draws
@@ -105,6 +106,6 @@ export default {
     }
     const weight = /^h[1-6]$/.test(node.props.variant ?? '') ? 700 : 400;
     const { anchor, x } = placement(node.props.align ?? 'inherit', box);
-    return text(x, box.y + fs, textOf(node), { fontSize: fs, weight, anchor });
+    return text(x, box.y + fs, textOf(node), { fontSize: fs, weight, anchor, maxW: box.w });
   },
 };

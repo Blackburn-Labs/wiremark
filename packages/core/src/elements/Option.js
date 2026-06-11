@@ -92,14 +92,18 @@ export default {
       textX += ICON + ICON_GAP;
     }
 
+    // Text runs from textX to the right inset, minus the endIcon/check slot.
+    const endReserve = (typeof node.props.endIcon === 'string' || selected) ? ICON + ICON_GAP : 0;
+    const maxW = box.x + box.w - PAD_X - endReserve - textX;
+
     const label = textOf(node, 'Option');
     if (hasSub(node)) {
       // Two stacked lines: label above its smaller secondary subtext.
-      out += text(textX, box.y + box.h / 2 - 2, label, { fontSize: LABEL_FS });
+      out += text(textX, box.y + box.h / 2 - 2, label, { fontSize: LABEL_FS, maxW });
       out += text(textX, box.y + box.h / 2 + SUB_FS + 2, node.props.subtext,
-        { fontSize: SUB_FS, fill: COLORS.muted });
+        { fontSize: SUB_FS, fill: COLORS.muted, maxW });
     } else {
-      out += text(textX, box.y + box.h / 2 + LABEL_FS * 0.35, label, { fontSize: LABEL_FS });
+      out += text(textX, box.y + box.h / 2 + LABEL_FS * 0.35, label, { fontSize: LABEL_FS, maxW });
     }
 
     // Right edge: an explicit endIcon wins; otherwise a check mark when selected.

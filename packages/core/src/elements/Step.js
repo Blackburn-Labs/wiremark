@@ -82,7 +82,7 @@ export default {
     // Label sits to the right of the circle, left-anchored, vertically centred.
     const lx = box.x + CIRCLE + GAP;
     const ly = box.y + box.h / 2 + LABEL_FONT * 0.35; // optical vertical centring
-    out += text(lx, ly, labelOf(node), { fontSize: LABEL_FONT, weight: active || completed ? 600 : 400 });
+    out += text(lx, ly, labelOf(node), { fontSize: LABEL_FONT, weight: active || completed ? 600 : 400, maxW: box.w - CIRCLE - GAP });
     return out;
   },
 };

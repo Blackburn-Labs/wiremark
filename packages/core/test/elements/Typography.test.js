@@ -112,3 +112,23 @@ test('noWrap parses both as a bare flag and keyed', () => {
   assert.equal(bare.frames[0].children[0].props.noWrap, true);
   assert.equal(parse('Wireframe w=400 h=300\n  Typography "Hi" noWrap=true').frames[0].children[0].props.noWrap, true);
 });
+
+test('a label wider than its box is trimmed with a trailing ellipsis', () => {
+  const long = 'An extremely long heading that cannot possibly fit';
+  const { svg } = render(`Wireframe w=320 h=200\n  Typography h4 "${long}"`);
+  assert.match(svg, /…</, 'overflowing label should end in …');
+  assert.doesNotMatch(svg, new RegExp(long), 'the full string should not be emitted');
+});
+
+test('a label that fits renders verbatim, untrimmed', () => {
+  const { svg } = render('Wireframe w=400 h=300\n  Typography "Sign in"');
+  assert.match(svg, />Sign in</);
+  assert.doesNotMatch(svg, /…/);
+});
+
+test('truncation keeps the align anchor', () => {
+  const long = 'An extremely long right-aligned line of text that overflows';
+  const { svg } = render(`Wireframe w=320 h=200\n  Typography "${long}" align=right`);
+  assert.match(svg, /text-anchor="end"/);
+  assert.match(svg, /…</);
+});

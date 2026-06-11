@@ -106,17 +106,20 @@ export default {
     }
 
     // Title + subheader stacked. With a subheader the pair is centered as a block;
-    // a lone title centers on the band's vertical midline.
+    // a lone title centers on the band's vertical midline. Text runs from textX
+    // to the close-icon slot (or the right inset when closeIcon opts out).
+    const limit = right - (showsClose(node) ? GLYPH + SPACING : 0);
+    const maxW = limit - textX;
     const title = typeof node.props.title === 'string' ? node.props.title : 'Title';
     if (hasSubheader(node)) {
       const blockH = TITLE_FONT + SPACING / 2 + SUB_FONT;
       const top = box.y + (box.h - blockH) / 2;
-      out += text(textX, top + TITLE_FONT, title, { fontSize: TITLE_FONT, weight: 700 });
+      out += text(textX, top + TITLE_FONT, title, { fontSize: TITLE_FONT, weight: 700, maxW });
       out += text(textX, top + TITLE_FONT + SPACING / 2 + SUB_FONT, node.props.subheader,
-        { fontSize: SUB_FONT, fill: COLORS.muted });
+        { fontSize: SUB_FONT, fill: COLORS.muted, maxW });
     } else {
       out += text(textX, box.y + box.h / 2 + TITLE_FONT * 0.35, title,
-        { fontSize: TITLE_FONT, weight: 700 });
+        { fontSize: TITLE_FONT, weight: 700, maxW });
     }
     return out;
   },

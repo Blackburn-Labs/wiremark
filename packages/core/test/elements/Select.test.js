@@ -150,3 +150,13 @@ test('composed Select + Option: a full dropdown lays out and renders', () => {
   assert.match(svg, /#cfe0ee/);   // the selected option's accent tint
   assert.match(svg, /MX/);        // the subtext line
 });
+
+test('the closed field asks for enough width to show its value untrimmed', () => {
+  // In a row (no cross-axis stretch on the main axis) an optionless Select used
+  // to measure just 2*pad wide, trimming its own value; the minSize floor seats
+  // the text + insets + caret instead.
+  const src = 'Wireframe w=800 h=300\n  Stack row\n    Select v="50 rows"';
+  const { svg } = render(src);
+  assert.match(svg, />50 rows</);
+  assert.doesNotMatch(svg, /…/);
+});

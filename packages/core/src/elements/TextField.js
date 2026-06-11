@@ -141,7 +141,7 @@ export default {
 
     // Label row.
     let out = text(box.x, box.y + FS, labelText(node),
-      { fontSize: FS, fill: muted ? COLORS.muted : COLORS.ink });
+      { fontSize: FS, fill: muted ? COLORS.muted : COLORS.ink, maxW: box.w });
 
     // Field box + a `select` caret on the right edge.
     out += fieldBox(node, box.x, fieldY, box.w, fieldH);
@@ -155,13 +155,13 @@ export default {
     if (ft) {
       const fill = ft.faint || muted ? COLORS.muted : COLORS.ink;
       out += text(box.x + PAD_X, fieldY + fieldHeight(node) / 2 + FS * 0.35, ft.str,
-        { fontSize: FS, fill });
+        { fontSize: FS, fill, maxW: box.w - 2 * PAD_X - (node.props.select ? 12 : 0) });
     }
 
     // Helper line below the field (red on error, else muted).
     if (typeof node.props.helperText === 'string') {
       out += text(box.x, fieldY + fieldH + GAP + FS, node.props.helperText,
-        { fontSize: FS, fill: node.props.error ? ERROR_INK : COLORS.muted });
+        { fontSize: FS, fill: node.props.error ? ERROR_INK : COLORS.muted, maxW: box.w });
     }
     return out;
   },

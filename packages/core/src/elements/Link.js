@@ -46,7 +46,7 @@ export default {
   render: (node, box) => {
     const fs = fontSizeOf(node);
     const label = textOf(node, 'link');
-    const glyph = text(box.x, box.y + fs, label, { fontSize: fs, fill: COLORS.ink });
+    const glyph = text(box.x, box.y + fs, label, { fontSize: fs, fill: COLORS.ink, maxW: box.w });
     if ((node.props.underline ?? 'always') === 'none') return glyph;
     return glyph
       + rline(box.x, box.y + fs + 2, box.x + box.w, box.y + fs + 2, { stroke: COLORS.ink, strokeWidth: 1 });

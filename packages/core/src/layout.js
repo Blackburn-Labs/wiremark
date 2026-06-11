@@ -218,15 +218,25 @@ function arrangeLinear(children, content, spec) {
   // reversing here only mirrors visual order (Stack `-reverse` directions, ss.5.2).
   const order = spec.reverse ? [...items].reverse() : items;
   let cursor = horiz ? content.x : content.y;
+  const end = content.x + content.w;
   for (const i of order) {
     const cross = crossExtent(i.child, horiz, crossAvail);
+    // A row clamps each child to the space remaining inside the parent: an
+    // overcrowded row squeezes its trailing children (whose labels then trim to
+    // an ellipsis) instead of letting boxes spill past the right edge. Columns
+    // are left to overflow vertically -- there is no vertical analogue of text
+    // truncation, so squashing heights would pile glyphs up instead. The
+    // sub-pixel tolerance keeps fitting rows (e.g. equal-flex cells) at their
+    // exact computed sizes despite accumulated float error in `cursor`.
+    const remaining = end - cursor;
+    const main = horiz && i.main > remaining + 1e-6 ? Math.max(0, remaining) : i.main;
     // Row items center on the cross (vertical) axis, matching MUI; column items
     // align to the start. Block children fill the cross axis either way.
     const region = horiz
-      ? { x: cursor, y: content.y + (crossAvail - cross) / 2, w: i.main, h: cross }
-      : { x: content.x, y: cursor, w: cross, h: i.main };
+      ? { x: cursor, y: content.y + (crossAvail - cross) / 2, w: main, h: cross }
+      : { x: content.x, y: cursor, w: cross, h: main };
     boxes.push(place(i.child, region));
-    cursor += i.main + gap;
+    cursor += main + gap;
   }
   return boxes;
 }

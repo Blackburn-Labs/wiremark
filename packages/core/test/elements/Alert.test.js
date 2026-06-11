@@ -156,3 +156,11 @@ test('Alert renders a hand-drawn path and its message', () => {
   assert.match(svg, /<path/);
   assert.match(svg, /Saved/);
 });
+
+test('a message wider than the alert box is trimmed; the severity glyph is not', () => {
+  const long = 'A very long alert message that cannot possibly fit in a narrow frame';
+  const svg = svgOf(`Wireframe w=240 h=120\n  Alert success "${long}"`);
+  assert.match(svg, /…</, 'overflowing message should end in …');
+  assert.doesNotMatch(svg, new RegExp(long), 'the full string should not be emitted');
+  assert.match(svg, />✓</, 'the severity glyph renders untrimmed');
+});

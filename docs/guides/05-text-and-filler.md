@@ -17,6 +17,9 @@ ListItem "Settings" to=#settings
 
 Quoting is mandatory for text (see [the quoting rule](03-syntax-and-structure.md#the-quoting-rule)).
 
+Text that would overflow its box is trimmed with a trailing `…` — give the
+element (or its container) more width to show the full string.
+
 ## Filler: when the words do not matter yet
 
 Omit the text and a text-bearing component draws placeholder filler at the

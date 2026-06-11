@@ -224,3 +224,22 @@ test('composed: the selected row emits a tint the unselected rows do not', () =>
   assert.match(tinted, /#c4c4c4/, 'selected row should emit a hatch tint');
   assert.doesNotMatch(plain, /#c4c4c4/, 'plain row should not emit a hatch tint');
 });
+
+test('cell labels wider than their column share are trimmed with a trailing ellipsis', () => {
+  // Equal-flex cells split the row; four long labels in a mobile frame each get
+  // far less than their intrinsic width, so every one must trim to its cell.
+  const labels = [
+    'First unreasonably long column header',
+    'Second unreasonably long column header',
+    'Third unreasonably long column header',
+    'Fourth unreasonably long column header',
+  ];
+  const svg = render([
+    'Wireframe mobile', '  Table', '    TableRow',
+    ...labels.map((l) => `      TableCell "${l}"`),
+  ].join('\n')).svg;
+  assert.equal((svg.match(/…</g) ?? []).length, 4, 'all four cells should end in …');
+  for (const l of labels) {
+    assert.doesNotMatch(svg, new RegExp(l), `full string should not be emitted: ${l}`);
+  }
+});

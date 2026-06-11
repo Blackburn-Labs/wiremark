@@ -63,6 +63,6 @@ export default {
     const fs = fontSizeOf(node);
     const { anchor, x } = placement(node.props.align ?? 'left', box);
     return text(x, box.y + box.h / 2 + fs * 0.35, textOf(node, 'Cell'),
-      { fontSize: fs, anchor, fill: COLORS.ink });
+      { fontSize: fs, anchor, fill: COLORS.ink, maxW: box.w - 2 * PAD_X });
   },
 };

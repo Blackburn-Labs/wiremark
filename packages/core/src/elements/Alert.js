@@ -94,7 +94,8 @@ export default {
     // Leading severity glyph, then the message, both vertically centered.
     const cy = box.y + box.h / 2 + FS * 0.35;
     out += text(box.x + PAD_X, cy, glyph, { fontSize: FS + 2, weight: 700 });
-    out += text(box.x + PAD_X + GLYPH_W, cy, textOf(node, 'Alert'), { fontSize: FS });
+    out += text(box.x + PAD_X + GLYPH_W, cy, textOf(node, 'Alert'),
+      { fontSize: FS, maxW: box.w - 2 * PAD_X - GLYPH_W });
     return out;
   },
 };

@@ -6,7 +6,7 @@
  *
  * Numbers here fill gaps the SPEC leaves to the renderer: preset pixel sizes,
  * per-variant font sizes, spacing, and a crude single-line text measurer (good
- * enough for sketch fidelity; no real font shaping).
+ * enough for sketch fidelity; no real font shaping) plus its truncation inverse.
  */
 
 /** MUI spacing unit; `gap=N` resolves to N * SPACING px. */
@@ -76,6 +76,84 @@ export function fontSizeOf(node) {
  */
 export function measureText(str, fontSize) {
   return { w: Math.ceil(str.length * fontSize * CHAR_W), h: Math.ceil(fontSize * LINE_HEIGHT) };
+}
+
+/** The truncation marker -- a single ellipsis glyph. */
+export const ELLIPSIS = '…';
+
+/**
+ * Per-glyph advance ratios (advance / fontSize) for ASCII 32..126, measured
+ * from Comic Sans MS -- the sketch stack's primary face, and on average its
+ * widest common member, so the estimate errs safe on fallback faces. Canvas
+ * advances at 64px, stored as thousandths. These drive WHERE truncateText cuts;
+ * `measureText`'s flat CHAR_W average stays the layout-time sizer, so intrinsic
+ * geometry is unchanged.
+ */
+const GLYPH_W = ('299,238,424,843,693,820,654,388,366,366,530,480,277,417,249,512,610,450,610,610,'
+  + '610,610,610,610,610,610,299,299,381,510,381,524,931,731,630,603,722,625,607,680,768,546,665,'
+  + '611,551,883,797,798,521,876,628,693,680,737,650,1040,724,635,693,376,550,376,581,627,556,512,'
+  + '593,514,587,548,508,531,578,280,403,540,274,777,523,526,535,520,480,487,471,520,486,684,590,'
+  + '521,538,366,421,366,598').split(',').map((n) => Number(n) / 1000);
+/** Advance ratio of the ELLIPSIS glyph itself (same at 400 and 700 weight). */
+const ELLIPSIS_W = 0.675;
+/** Comic Sans bold runs ~6% wider per glyph on average. */
+const BOLD_FACTOR = 1.06;
+/** Headroom for viewers that fall back to slightly wider faces in the stack. */
+const SAFETY = 1.03;
+
+/** @param {string} ch  one code point @returns {number} advance ratio */
+function glyphRatio(ch) {
+  const c = /** @type {number} */ (ch.codePointAt(0));
+  if (c >= 32 && c <= 126) return GLYPH_W[c - 32];
+  if (c === 0x2026) return ELLIPSIS_W;
+  return c < 0x2e80 ? 0.62 : 1.1; // accented Latin etc. near-average; CJK & beyond full-width-ish
+}
+
+/**
+ * Width (px) of `str` as actually rendered by the sketch font -- a per-glyph
+ * estimate, unlike `measureText`'s flat average. Render-time concerns only
+ * (truncation); layout keeps sizing by `measureText`.
+ * @param {string} str @param {number} fontSize @param {string|number} [weight]
+ * @returns {number}
+ */
+export function textRunWidth(str, fontSize, weight = 400) {
+  let run = 0;
+  for (const ch of str) run += glyphRatio(ch);
+  return run * fontSize * (Number(weight) >= 600 ? BOLD_FACTOR : 1);
+}
+
+/**
+ * Truncate `str` to fit within `maxW` px, replacing the cut tail with a single
+ * ellipsis. Two-stage fit test: a string whose `measureText` width fits is
+ * returned untouched (layout sized its box by that estimate, so sufficient
+ * space NEVER alters output), and so is one whose per-glyph `textRunWidth`
+ * fits (the flat average over-estimates prose by ~25%, which would cut far
+ * short of the box edge). The cut itself is per-glyph too, so the kept prefix
+ * runs to just shy of `maxW` as rendered.
+ * Degenerates: bare ELLIPSIS when only it fits, '' when not even that.
+ * @param {string} str @param {number} fontSize @param {number} [maxW]
+ * @param {string|number} [weight]
+ * @returns {string}
+ */
+export function truncateText(str, fontSize, maxW, weight = 400) {
+  if (!Number.isFinite(maxW)) return str;
+  const w = /** @type {number} */ (maxW);
+  if (measureText(str, fontSize).w <= w) return str;
+  const scale = fontSize * (Number(weight) >= 600 ? BOLD_FACTOR : 1) * SAFETY;
+  let run = 0;
+  for (const ch of str) run += glyphRatio(ch);
+  if (run * scale <= w) return str;
+  const budget = w / scale - ELLIPSIS_W; // glyph-ratio room left beside the ellipsis
+  let out = '';
+  let used = 0;
+  for (const ch of str) {
+    const g = glyphRatio(ch);
+    if (used + g > budget) break;
+    used += g;
+    out += ch;
+  }
+  if (out) return out + ELLIPSIS;
+  return ELLIPSIS_W * scale <= w ? ELLIPSIS : '';
 }
 
 /**

@@ -33,7 +33,7 @@ export default {
   render: (node, box) => {
     const fs = fontSizeOf(node);
     const label = textOf(node, 'List item');
-    return text(box.x + 8, box.y + box.h / 2 + fs * 0.35, label, { fontSize: fs })
+    return text(box.x + 8, box.y + box.h / 2 + fs * 0.35, label, { fontSize: fs, maxW: box.w - 16 })
       + rline(box.x, box.y + box.h, box.x + box.w, box.y + box.h,
         { stroke: COLORS.muted, strokeWidth: 1 });
   },

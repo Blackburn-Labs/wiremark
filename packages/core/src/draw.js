@@ -1,6 +1,6 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText } from './metrics.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -302,31 +302,39 @@ export function drawIcon(node, key, x, y, s, opts = {}) {
 }
 
 /**
- * A `<text>` element in the sketch font.
+ * A `<text>` element in the sketch font. `maxW` is the available run (px) from
+ * the anchor in the text's direction; the string is trimmed to a '…'-terminated
+ * prefix (metrics.truncateText, the same CHAR_W estimator measurement uses)
+ * when it would measure wider. Omit it for unconstrained text (single glyphs,
+ * pre-wrapped filler).
  * @param {number} x @param {number} y  baseline-ish anchor
  * @param {string} str
- * @param {{ fontSize?: number, weight?: string|number, anchor?: 'start'|'middle'|'end', fill?: string }} [opts]
+ * @param {{ fontSize?: number, weight?: string|number, anchor?: 'start'|'middle'|'end', fill?: string, maxW?: number }} [opts]
  * @returns {string}
  */
 export function text(x, y, str, opts = {}) {
-  const { fontSize = 16, weight = 400, anchor = 'start', fill = COLORS.ink } = opts;
+  const { fontSize = 16, weight = 400, anchor = 'start', fill = COLORS.ink, maxW } = opts;
+  const s = truncateText(str, fontSize, maxW, weight);
   return `<text x="${x}" y="${y}" font-family="${SKETCH_FONT}" font-size="${fontSize}" `
-    + `font-weight="${weight}" text-anchor="${anchor}" fill="${fill}">${escape(str)}</text>`;
+    + `font-weight="${weight}" text-anchor="${anchor}" fill="${fill}">${escape(s)}</text>`;
 }
 
 /**
  * A label centered within `box` (the common case for Button / Chip / ListItem /
- * inputs). Saves every leaf from re-deriving the optical baseline.
+ * inputs). Saves every leaf from re-deriving the optical baseline. The label is
+ * trimmed to the full box width by default (no inset -- Fab's extended label box
+ * is carved to the measured text exactly, so any inset would cut a fitting
+ * label); pass `maxW` to constrain tighter.
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {string} str
- * @param {{ fontSize?: number, weight?: string|number, fill?: string }} [opts]
+ * @param {{ fontSize?: number, weight?: string|number, fill?: string, maxW?: number }} [opts]
  * @returns {string}
  */
 export function centeredLabel(box, str, opts = {}) {
-  const { fontSize = 16, weight = 400, fill = COLORS.ink } = opts;
+  const { fontSize = 16, weight = 400, fill = COLORS.ink, maxW = box.w } = opts;
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2 + fontSize * 0.35; // optical vertical centering
-  return text(cx, cy, str, { fontSize, weight, anchor: 'middle', fill });
+  return text(cx, cy, str, { fontSize, weight, anchor: 'middle', fill, maxW });
 }
 
 /**

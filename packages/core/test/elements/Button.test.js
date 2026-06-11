@@ -233,3 +233,12 @@ test('disabled mutes the label color', () => {
   const svg = render('Wireframe\n  Button "A" disabled').svg;
   assert.match(svg, /fill="#9aa7b2"/); // COLORS.muted on the label
 });
+
+test('a label wider than the button box is trimmed with a trailing ellipsis', () => {
+  // fullWidth in a narrow frame squeezes the box below the label's intrinsic
+  // width (centeredLabel trims to box.w by default).
+  const long = 'A very long button label indeed';
+  const svg = render(`Wireframe w=160 h=200\n  Button "${long}" fullWidth`).svg;
+  assert.match(svg, /…</, 'overflowing label should end in …');
+  assert.doesNotMatch(svg, new RegExp(long), 'the full string should not be emitted');
+});

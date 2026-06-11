@@ -70,7 +70,8 @@ export default {
 
     // Title, left-padded and vertically centered.
     const fs = 16;
-    out += text(box.x + SPACING, box.y + box.h / 2 + fs * 0.35, titleOf(node), { fontSize: fs, fill: ink });
+    out += text(box.x + SPACING, box.y + box.h / 2 + fs * 0.35, titleOf(node),
+      { fontSize: fs, fill: ink, maxW: box.w - 3 * SPACING - GLYPH });
 
     // Icon slot pinned to the right, drawn through the shared `drawIcon`: the
     // resolved artwork (a real ChevronRight by default) as clean vectors, or the

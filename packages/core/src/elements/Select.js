@@ -1,5 +1,6 @@
 // @ts-check
 import { surface, text, rline, backgroundHatch, COLORS } from '../draw.js';
+import { measureText } from '../metrics.js';
 
 /**
  * Select -- a dropdown form control. Keyless text is the `label`; keyless
@@ -31,6 +32,8 @@ const FIELD_H = 40;
 /** Field text size and inner horizontal padding (px). */
 const FS = 13;
 const PAD_X = 10;
+/** Run reserved at the right inset for the end-anchored ▾ caret (+ a small gap). */
+const CARET_W = measureText('▾', FS).w + 4;
 
 /** The text shown inside the closed field: `value` wins, else `label`. */
 function fieldContent(node) {
@@ -70,6 +73,11 @@ export default {
     pad: FIELD_H,
     gap: 0,
   }),
+  // The closed field seats its shown text plus the inner insets and the caret
+  // slot -- mirroring how TextField's intrinsic tracks its label, so a Select
+  // inside a content-sized surface (a Dialog, a row) asks for enough width to
+  // show its value untrimmed instead of the bare 2*pad of an optionless column.
+  minSize: (node) => ({ w: measureText(fieldContent(node).str, FS).w + 2 * PAD_X + CARET_W, h: 0 }),
 
   render: (node, box) => {
     const variant = node.props.variant === 'filled' || node.props.variant === 'standard'
@@ -95,7 +103,7 @@ export default {
     // The chosen value (or label) text, faint when it's only a placeholder.
     const fc = fieldContent(node);
     out += text(fx + PAD_X, midY + FS * 0.35, fc.str,
-      { fontSize: FS, fill: fc.faint ? COLORS.muted : COLORS.ink });
+      { fontSize: FS, fill: fc.faint ? COLORS.muted : COLORS.ink, maxW: fw - 2 * PAD_X - CARET_W });
 
     // A ▾ caret at the right edge, the classic dropdown affordance (cf. TextField
     // `select`).
