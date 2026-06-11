@@ -62,6 +62,20 @@ test('variant and size (two keyless enums) resolve independent of token order', 
   }
 });
 
+test('background is a third keyless enum accepting each value', () => {
+  for (const bg of ['hatch', 'crosshatch']) {
+    const doc = parse(`Wireframe\n  Button "Go" contained ${bg}`);
+    assert.deepEqual(doc.diagnostics, [], `Button ${bg} should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.background, bg);
+  }
+  // Its domain is disjoint from variant and size, so the slots stay order-independent.
+  const b = firstChild('Wireframe\n  Button crosshatch "Save" large contained');
+  assert.deepEqual(
+    { variant: b.props.variant, size: b.props.size, background: b.props.background },
+    { variant: 'contained', size: 'large', background: 'crosshatch' }
+  );
+});
+
 test('variant and size default to undefined when omitted (strategy applies defaults)', () => {
   // The resolver does not inject PropDef defaults; an unset prop is absent and the
   // strategy treats it as variant=text / size=medium.

@@ -3,9 +3,9 @@ import { surface, centeredLabel, drawIcon, backgroundHatch, BACKGROUNDS, COLORS 
 import { textIntrinsic, textOf } from '../metrics.js';
 
 /**
- * Button -- keyless text (-> label) plus TWO keyless enums, `variant` and `size`
- * (disjoint domains, CONVENTION s.2.1), so `Button "Save" contained large` parses
- * in any order. The filled look comes from `variant=contained` (there is no
+ * Button -- keyless text (-> label) plus THREE keyless enums, `variant`, `size`
+ * and `background` (disjoint domains, CONVENTION s.2.1), so
+ * `Button "Save" contained large crosshatch` parses in any order. The filled look comes from `variant=contained` (there is no
  * `primary` flag); `to=#id` / `href=#id` make it navigate (universal `to`, s.7).
  * (SPEC ss.5.4)
  *
@@ -66,6 +66,7 @@ export default {
     { kind: 'literal', to: 'label' },
     { kind: 'enum', to: 'variant' },
     { kind: 'enum', to: 'size' },
+    { kind: 'enum', to: 'background' },
   ],
   notes: 'Filled look = variant=contained. Filler default label "Button".',
 
