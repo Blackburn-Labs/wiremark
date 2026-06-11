@@ -75,7 +75,7 @@ export default {
       // Knob slides L->R.
       const tint = checked
         ? backgroundHatch(box, node.props.background, node.props.denseBackground === true,
-            disabled ? { pill: true, fill: COLORS.muted } : { pill: true })
+            disabled ? { shape: 'pill', fill: COLORS.muted } : { shape: 'pill' })
         : '';
       const track = tint + rpill(box.x, box.y, box.w, box.h, { stroke: ink });
       const d = box.h - 4;                 // knob diameter, 2px inset top & bottom

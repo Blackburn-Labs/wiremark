@@ -1,5 +1,5 @@
 // @ts-check
-import { surface, backgroundHatch, rellipse, fillerRows, COLORS } from '../draw.js';
+import { surface, backgroundHatch, rellipse, rroundrect, fillerRows, COLORS } from '../draw.js';
 import { LINE_HEIGHT } from '../metrics.js';
 
 /**
@@ -14,10 +14,11 @@ import { LINE_HEIGHT } from '../metrics.js';
  * and each variant draws assertably different placeholder geometry:
  *  - text:        muted filler lines (no box) -- the stand-in for a line of copy.
  *  - rectangular: a hatch-tinted bordered rect (the default block placeholder).
- *  - rounded:     a CROSS-hatch-tinted bordered rect -- denser fill distinguishes
- *                 it from rectangular (rough.js bakes corners into path geometry,
- *                 so a heavier tint, not a literal radius, marks the rounded box).
- *  - circular:    a hatch-tinted ellipse; `intrinsic` is square so a bare circular
+ *  - rounded:     a CROSS-hatch-tinted rounded rect (a real corner radius via
+ *                 `rroundrect`); the denser fill keeps it distinct from
+ *                 rectangular at a glance even when the radius is subtle.
+ *  - circular:    a hatch-tinted ellipse -- the tint hachures the ellipse itself,
+ *                 not its bounding box; `intrinsic` is square so a bare circular
  *                 skeleton is a circle (an explicit non-square px is the author's).
  *
  * `block:false` -- like a real Skeleton it sizes to itself rather than stretching
@@ -30,6 +31,8 @@ import { LINE_HEIGHT } from '../metrics.js';
 const BASE = { w: 120, h: 16 };
 /** Natural diameter (px) for a bare `circular` skeleton. */
 const CIRCLE = 40;
+/** Corner radius (px) of the `rounded` variant's box. */
+const RADIUS = 6;
 
 /** @param {import('./common.js').ResolvedNode} node */
 const variantOf = (node) =>
@@ -65,17 +68,23 @@ export default {
       return fillerRows(box.x, box.y, box.w, lines, BASE.h);
     }
 
-    const tint = backgroundHatch(box, variant === 'rounded' ? 'crosshatch' : 'hatch');
-
     if (variant === 'circular') {
-      // Tint clipped visually by the ellipse border; an ellipse (not a rect) is
-      // the only border drawn, so circular never emits rect-corner geometry.
+      // The tint hachures the ellipse itself (never the square bounding box),
+      // under the muted circle border.
       const cx = box.x + box.w / 2;
       const cy = box.y + box.h / 2;
-      return tint + rellipse(cx, cy, box.w, box.h, { stroke: COLORS.muted });
+      return backgroundHatch(box, 'hatch', false, { shape: 'ellipse' })
+        + rellipse(cx, cy, box.w, box.h, { stroke: COLORS.muted });
     }
 
-    // rectangular (default) + rounded: tint under a muted bordered rect.
-    return tint + surface(box, { stroke: COLORS.muted });
+    if (variant === 'rounded') {
+      // A real corner radius: cross-hatch clipped to the rounded box, under a
+      // matching rounded border.
+      return backgroundHatch(box, 'crosshatch', false, { shape: RADIUS })
+        + rroundrect(box.x, box.y, box.w, box.h, RADIUS, { stroke: COLORS.muted });
+    }
+
+    // rectangular (default): hatch tint under a muted bordered rect.
+    return backgroundHatch(box) + surface(box, { stroke: COLORS.muted });
   },
 };

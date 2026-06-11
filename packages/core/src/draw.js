@@ -160,20 +160,24 @@ export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
  * 'none' })`) so the tight hatch roughness doesn't stiffen the outline.
  * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
  * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer). Pass
- * `opts.fill` to recolor the hashes (e.g. muted when disabled), `opts.pill` to
- * hatch a pill (stadium) instead of the full rectangle so the hashes don't poke
- * past rounded end caps.
+ * `opts.fill` to recolor the hashes (e.g. muted when disabled), and `opts.shape`
+ * to hatch non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
+ * rounded rect with that corner radius) -- so the hashes never poke past a
+ * curved outline.
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {string} [pattern]  'hatch' | 'crosshatch'
  * @param {boolean} [dense]
- * @param {{ fill?: string, pill?: boolean }} [opts]
+ * @param {{ fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
  * @returns {string}
  */
 export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
   const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
   const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
   const fill = { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE };
-  return opts.pill ? rpill(box.x, box.y, box.w, box.h, fill) : surface(box, fill);
+  if (opts.shape === 'pill') return rpill(box.x, box.y, box.w, box.h, fill);
+  if (opts.shape === 'ellipse') return rellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, fill);
+  if (typeof opts.shape === 'number') return rroundrect(box.x, box.y, box.w, box.h, opts.shape, fill);
+  return surface(box, fill);
 }
 
 /**
