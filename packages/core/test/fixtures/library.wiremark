@@ -3,7 +3,7 @@ Wireframe #library w=1600 h=4800
   Typography body2 "Every implemented component with common variants, grouped by category."
   Divider
   Typography h4 "Layout"
-  Grid cols=3
+  Grid cols=3 gap=3
     Stack column spacing=1
       Typography subtitle2 "Stack (row / column)"
       Stack row spacing=2 outline=dashed
@@ -45,7 +45,7 @@ Wireframe #library w=1600 h=4800
         Divider vertical
         Typography body2 "B"
   Typography h4 "Surfaces"
-  Grid cols=2
+  Grid cols=2 gap=3
     Stack column spacing=1
       Typography subtitle2 "Card + CardHeader / CardContent / CardActions"
       Card
@@ -290,7 +290,7 @@ Wireframe #library w=1600 h=4800
       Alert "Standard variant" info standard
       Alert "Filled variant" info filled
       Alert "Outlined variant" info outlined
-  Grid cols=3
+  Grid cols=3 gap=3
     Stack column spacing=1
       Typography subtitle2 "Progress (linear / circular)"
       Progress linear 65
