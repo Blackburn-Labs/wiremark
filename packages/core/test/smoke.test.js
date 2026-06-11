@@ -75,6 +75,18 @@ test('fixture corpus loads and each fixture is a frame', () => {
   }
 });
 
+test('library fixture demos every registered component and renders clean', () => {
+  // The component reference sheet: one labeled demo per component, sized with an
+  // explicit `w=`/`h=` frame (no preset is big enough to hold the whole set).
+  const src = fixture('library.wiremark');
+  for (const name of Object.keys(REGISTRY)) {
+    assert.match(src, new RegExp(`^\\s*${name}\\b`, 'm'), `library.wiremark should demo <${name}>`);
+  }
+  const { svg, diagnostics } = render(src);
+  assert.deepEqual(diagnostics, [], 'the reference sheet renders without diagnostics');
+  assert.match(svg, /width="1600" height="4800"/, 'manual w=/h= sizing reaches the SVG canvas');
+});
+
 // --- pipeline status: front-end + prototype render landed; later phases pending ---
 
 test('Phase 1: parse the login fixture to a stable AST', () => {

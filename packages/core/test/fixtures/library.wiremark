@@ -1,0 +1,315 @@
+Wireframe #library w=1600 h=4800
+  Typography h3 "wiremark component reference"
+  Typography body2 "Every implemented component with common variants, grouped by category."
+  Divider
+  Typography h4 "Layout"
+  Grid cols=3
+    Stack column spacing=1
+      Typography subtitle2 "Stack (row / column)"
+      Stack row spacing=2 outline=dashed
+        Box 96px 40px outline=solid
+        Box 96px 40px outline=solid
+        Box 96px 40px outline=solid
+      Stack column spacing=1 outline=dashed
+        Box 96px 28px outline=solid
+        Box 96px 28px outline=solid
+    Stack column spacing=1
+      Typography subtitle2 "Box (outline variants)"
+      Stack row spacing=2
+        Box 110px 56px outline=solid
+        Box 110px 56px outline=dashed
+        Box 110px 56px outline=dotted
+    Stack column spacing=1
+      Typography subtitle2 "Grid cols=3"
+      Grid cols=3
+        Box 130px 40px outline=solid
+        Box 130px 40px outline=solid
+        Box 130px 40px outline=solid
+        Box 130px 40px outline=solid
+        Box 130px 40px outline=solid
+        Box 130px 40px outline=solid
+    Stack column spacing=1
+      Typography subtitle2 "Spacer (pushes siblings apart)"
+      Stack row 420px 48px spacing=2 outline=dotted
+        Chip "Left"
+        Spacer
+        Chip "Right"
+    Stack column spacing=1
+      Typography subtitle2 "Divider (solid / dashed / dotted / vertical)"
+      Stack column 320px spacing=2
+        Divider
+        Divider dashed
+        Divider dotted
+      Stack row 320px 32px spacing=2
+        Typography body2 "A"
+        Divider vertical
+        Typography body2 "B"
+  Typography h4 "Surfaces"
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Card + CardHeader / CardContent / CardActions"
+      Card
+        CardHeader "Card title" subheader="Card subheader" icon="MoreVert"
+        Img ratio=16:9
+        CardContent
+          Typography body2 "Card body copy lives in CardContent."
+          Typography ~2
+        CardActions
+          Button "Share"
+          Button "Learn more" contained
+    Stack column spacing=1
+      Typography subtitle2 "AccordionHeader + AccordionBody"
+      AccordionHeader "Expanded section" expanded
+      AccordionBody
+        Typography ~3
+      AccordionHeader "Collapsed section"
+      AccordionHeader "Disabled section" disabled
+  Stack column spacing=1
+    Typography subtitle2 "AppBar + Toolbar"
+    AppBar
+      Toolbar
+        Typography h6 "Acme Studio"
+        Spacer
+        Icon "Search"
+        Icon "Notifications"
+        Avatar "JD"
+  Typography h4 "Navigation"
+  Grid cols=3
+    Stack column spacing=1
+      Typography subtitle2 "Link"
+      Link "Standard link" to=#library
+      Link "Forgot password?"
+    Stack column spacing=1
+      Typography subtitle2 "Breadcrumbs (default / custom separator)"
+      Breadcrumbs
+        Link "Home" to=#library
+        Link "Catalog"
+        Typography "Item"
+      Breadcrumbs ">"
+        Link "Docs"
+        Typography "Reference"
+    Stack column spacing=1
+      Typography subtitle2 "Pagination"
+      Pagination count=8 page=3
+    Stack column spacing=1
+      Typography subtitle2 "Menubar + MenuItem"
+      Menubar
+        MenuItem "File" selected
+        MenuItem "Edit"
+        MenuItem "Help" disabled
+    Stack column spacing=1
+      Typography subtitle2 "Tabs + Tab (standard / fullWidth)"
+      Tabs
+        Tab "Overview"
+        Tab "Activity"
+        Tab "Settings"
+      Tabs fullWidth
+        Tab "One"
+        Tab "Two"
+        Tab "Three"
+    Stack column spacing=1
+      Typography subtitle2 "Stepper + Step"
+      Stepper
+        Step "Cart" completed
+        Step "Shipping" active
+        Step "Payment"
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Drawer (left permanent open)"
+      Stack row spacing=3
+        Drawer left permanent open
+          List
+            ListItem "Inbox"
+            ListItem "Starred"
+            ListItem "Archive"
+        Box 200px 120px outline=dashed
+    Stack column spacing=1
+      Typography subtitle2 "BottomNavigation + BottomNavigationAction"
+      BottomNavigation showLabels
+        BottomNavigationAction "Home" icon="Home"
+        BottomNavigationAction "Search" icon="Search"
+        BottomNavigationAction "Profile" icon="Person"
+  Typography h4 "Content"
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Typography (headings)"
+      Typography h1 "h1. Heading"
+      Typography h2 "h2. Heading"
+      Typography h3 "h3. Heading"
+      Typography h4 "h4. Heading"
+      Typography h5 "h5. Heading"
+      Typography h6 "h6. Heading"
+    Stack column spacing=1
+      Typography subtitle2 "Typography (text styles + ~filler: squiggle / lorem)"
+      Typography subtitle1 "subtitle1. Lorem ipsum dolor sit amet"
+      Typography subtitle2 "subtitle2. Lorem ipsum dolor sit amet"
+      Typography body1 "body1. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      Typography body2 "body2. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      Typography caption "caption text"
+      Typography overline "OVERLINE"
+      Typography button "BUTTON TEXT"
+      Typography ~2
+      Typography ~2 filler=lorem
+      Typography caption ~6w filler=lorem
+  Grid cols=3
+    Stack column spacing=1
+      Typography subtitle2 "Button (variants / sizes / states)"
+      Stack row spacing=2
+        Button "Text"
+        Button "Outlined" outlined
+        Button "Contained" contained
+      Stack row spacing=2
+        Button "Small" contained small
+        Button "Medium" contained
+        Button "Large" contained large
+      Stack row spacing=2
+        Button "Disabled" disabled
+        Button "Link" outlined to=#library
+    Stack column spacing=1
+      Typography subtitle2 "TextField (variants / value / password)"
+      TextField "Outlined"
+      TextField "Filled" filled
+      TextField "Standard" standard
+      TextField "With value" value="Jane Doe"
+      TextField "Password" type=password size=small
+    Stack column spacing=1
+      Typography subtitle2 "Chip / Avatar / Icon / Badge"
+      Stack row spacing=2
+        Chip "Filled"
+        Chip "Outlined" outlined
+        Chip "Small" small
+      Stack row spacing=2
+        Avatar "JD"
+        Avatar "AB" rounded
+        Avatar "CD" square
+      Stack row spacing=2
+        Icon "Home"
+        Icon "Search"
+        Icon "Favorite" size=large
+        Icon "Settings" size=small
+      Stack row spacing=3
+        Badge "3"
+          Avatar "JD"
+        Badge dot
+          Icon "Mail"
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Img (ratio=16:9 / bare)"
+      Stack column 320px spacing=2
+        Img ratio=16:9
+        Img
+    Stack column spacing=1
+      Typography subtitle2 "List + ListItem (default / dense)"
+      List
+        ListItem "Inbox" to=#library
+        ListItem "Drafts"
+      List dense
+        ListItem "Dense item one"
+        ListItem "Dense item two"
+  Stack column spacing=1
+    Typography subtitle2 "Table + TableHead / TableBody / TableFooter / TableRow / TableCell"
+    Table medium
+      TableHead
+        TableRow
+          TableCell "Name"
+          TableCell "Role"
+          TableCell "Seats" align=right
+      TableBody
+        TableRow
+          TableCell "Ada Lovelace"
+          TableCell "Engineering"
+          TableCell "3" align=right
+        TableRow selected
+          TableCell "Grace Hopper"
+          TableCell "Research"
+          TableCell "5" align=right
+      TableFooter
+        TableRow
+          TableCell "2 users"
+          TableCell "Total"
+          TableCell "8" align=right
+  Typography h4 "Inputs"
+  Grid cols=3
+    Stack column spacing=1
+      Typography subtitle2 "Control (checkbox / radio / switch)"
+      Stack row spacing=2
+        Control checkbox checked
+        Control checkbox
+        Control radio checked
+        Control radio
+        Control switch checked
+        Control switch
+      Stack row spacing=2
+        Control checkbox disabled
+        Typography body2 "disabled"
+    Stack column spacing=1
+      Typography subtitle2 "Select + Option"
+      Select "Country" outlined value="United States"
+        Option "United States" selected
+        Option "Canada"
+        Option "Mexico" subtext="MX"
+    Stack column spacing=1
+      Typography subtitle2 "Rating"
+      Rating 4 max=5
+      Rating 2 max=3 icon="Favorite"
+    Stack column spacing=1
+      Typography subtitle2 "Slider (horizontal / vertical)"
+      Slider 40 min=0 max=100
+      Slider 70 vertical
+    Stack column spacing=1
+      Typography subtitle2 "ToggleButtonGroup + ToggleButton"
+      ToggleButtonGroup
+        ToggleButton "Standard" selected
+        ToggleButton "Express"
+        ToggleButton "Overnight" large
+    Stack column spacing=1
+      Typography subtitle2 "ButtonGroup (outlined / contained)"
+      ButtonGroup outlined
+        Button "One"
+        Button "Two"
+        Button "Three"
+      ButtonGroup contained
+        Button "Save"
+        Button "Cancel"
+    Stack column spacing=1
+      Typography subtitle2 "Fab (circular / extended / small)"
+      Stack row spacing=2
+        Fab "Add"
+        Fab "Edit" extended
+        Fab "Add" small
+  Typography h4 "Feedback"
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Alert (severities)"
+      Alert "Success alert" success
+      Alert "Info alert" info
+      Alert "Warning alert" warning
+      Alert "Error alert" error
+    Stack column spacing=1
+      Typography subtitle2 "Alert (variants)"
+      Alert "Standard variant" info standard
+      Alert "Filled variant" info filled
+      Alert "Outlined variant" info outlined
+  Grid cols=3
+    Stack column spacing=1
+      Typography subtitle2 "Progress (linear / circular)"
+      Progress linear 65
+      Progress circular
+    Stack column spacing=1
+      Typography subtitle2 "Skeleton (text / circular / rectangular / rounded)"
+      Skeleton text 200px 16px
+      Skeleton circular 48px 48px
+      Skeleton rectangular 320px 80px
+      Skeleton rounded 320px 80px
+    Stack column spacing=1
+      Typography subtitle2 "Snackbar (inline)"
+      Snackbar "Settings saved" inline
+  Grid cols=2
+    Stack column spacing=1
+      Typography subtitle2 "Dialog (sm)"
+      Dialog sm
+        Typography h6 "Discard draft?"
+        Typography body2 "This action cannot be undone."
+        Stack row spacing=2
+          Button "Cancel"
+          Button "Discard" contained
