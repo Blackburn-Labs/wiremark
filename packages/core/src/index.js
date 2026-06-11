@@ -17,6 +17,7 @@ import { resolve } from './resolve.js';
 import { layout } from './layout.js';
 import { layoutFrames } from './frame-layout.js';
 import { renderSVG } from './render.js';
+import { setTheme } from './draw.js';
 import { toFlowGraph, toMermaid } from './flow.js';
 
 export { REGISTRY, getComponent, isKnownComponent } from './registry.js';
@@ -52,6 +53,8 @@ export function parse(source, options = {}) {
  * @param {string|import('./resolve.js').Document} input
  * @param {object} [options]
  * @param {'TD'|'LR'} [options.direction]   flow direction override (default: TD)
+ * @param {'light'|'dark'} [options.theme]  color palette (default 'light'; any
+ *   unknown value falls back to light, never throws)
  * @param {*} [options.icons]               injected icons (see `parse`)
  * @param {(src: string) => *} [options.loadIcon]  host icon-file loader (see `parse`)
  * @returns {{ svg: string, diagnostics: import('./errors.js').Diagnostic[] }}
@@ -62,8 +65,19 @@ export function render(input, options = {}) {
   const graph = toFlowGraph(doc);
   const direction = resolveDirection(doc, options);
   layoutFrames(frames, graph, { direction });
-  const svg = renderSVG(frames, { ...options, graph, direction });
-  return { svg, diagnostics: doc.diagnostics };
+  // Only the SVG stage reads colors: swap the palette around it and always
+  // restore, so a theme can never leak into the next render (tasks/THEME.md).
+  // The options spread is built BEFORE the swap so no caller code (accessor
+  // getters on `options`) can run -- and re-entrantly render -- inside the
+  // themed window.
+  const renderOptions = { ...options, graph, direction };
+  setTheme(options.theme);
+  try {
+    const svg = renderSVG(frames, renderOptions);
+    return { svg, diagnostics: doc.diagnostics };
+  } finally {
+    setTheme('light');
+  }
 }
 
 /**

@@ -28,15 +28,53 @@ function seedOf(...nums) {
   return (Math.abs(h) % 2147483647) || 1;
 }
 
-/** Sketch palette. */
-export const COLORS = {
-  ink: '#22303f',     // strokes & text
-  paper: '#ffffff',   // background
-  muted: '#9aa7b2',   // secondary strokes / placeholders
-  fill: '#eef2f5',    // subtle surface fill
-  accent: '#cfe0ee',  // primary-ish fill
-  hatch: '#c4c4c4',   // true gray -- default background hatch strokes
+/**
+ * Sketch palettes, one per `theme` render option (tasks/THEME.md). LIGHT IS
+ * FROZEN: its values are byte-stable public output -- the existing element
+ * tests and the browser-bundle equality test are the light regression suite.
+ * Dark may be tuned between releases.
+ */
+export const PALETTES = {
+  light: Object.freeze({
+    ink: '#22303f',     // strokes & text
+    paper: '#ffffff',   // background
+    muted: '#9aa7b2',   // secondary strokes / placeholders
+    fill: '#eef2f5',    // subtle surface fill
+    accent: '#cfe0ee',  // primary-ish fill
+    hatch: '#c4c4c4',   // true gray -- default background hatch strokes
+    error: '#c2473d',   // error-state ink (TextField)
+  }),
+  dark: Object.freeze({
+    ink: '#d4dde6',
+    paper: '#1e2127',
+    muted: '#6b7782',
+    fill: '#2a313a',
+    accent: '#2f4a5e',
+    hatch: '#3a3f47',
+    error: '#e0685a',
+  }),
 };
+
+/** The ACTIVE sketch palette. Mutable on purpose: `setTheme` swaps values in
+ *  place so every call-time `COLORS.*` read across draw.js and the elements
+ *  follows the theme with zero plumbing. Starts as -- and is always restored
+ *  to -- light. */
+export const COLORS = { ...PALETTES.light };
+
+/**
+ * Swap the active palette in place. Internal machinery: `render()` scopes it
+ * per call (swap before renderSVG, restore in `finally`); exported for the
+ * render facade and tests, NOT re-exported from index.js. Anything that is
+ * not the literal string name of an own PALETTES key means light -- matching
+ * render()'s "unknown theme -> light, never throw" contract (the hasOwn +
+ * string guard keeps inherited keys like 'constructor' and coercing values
+ * like ['dark'] out).
+ * @param {*} [theme]
+ */
+export function setTheme(theme) {
+  Object.assign(COLORS,
+    typeof theme === 'string' && Object.hasOwn(PALETTES, theme) ? PALETTES[theme] : PALETTES.light);
+}
 
 /** Handwriting-ish font stack for the sketch look (no font embedding). */
 export const SKETCH_FONT =

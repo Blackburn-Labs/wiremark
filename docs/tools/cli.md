@@ -91,6 +91,17 @@ drawing (scripts, styles, event handlers). An icon file that can't be read is
 a soft warning — the wireframe still renders, with the placeholder glyph in
 that slot.
 
+## Dark mode
+
+`--theme dark` renders with a dark palette — light ink on dark paper — for
+embedding in dark UIs. The default is light, and the wireframe source is
+unchanged either way: theming is the host's render choice, not part of the
+language.
+
+```sh
+npx @wiremark/cli login.wiremark -o login-dark.svg --theme dark
+```
+
 ## Installing the CLI
 
 For regular use, install the package globally; it provides a `wiremark`

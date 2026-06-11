@@ -12,9 +12,6 @@ const GAP = 4;                 // label->field and field->helper vertical gap
 const PAD_X = 10;              // inner horizontal padding for field text
 const MULTILINE_ROWS = 3;      // default rows for a multiline field without `rows=`
 
-/** A muted red for the `error` state -- field-specific, so kept local (not a palette color). */
-const ERROR_INK = '#c2473d';
-
 /** size enum -> field height (medium default). @param {*} node */
 const fieldHeight = (node) => FIELD_H[node.props.size === 'small' ? 'small' : 'medium'];
 
@@ -57,7 +54,7 @@ function fieldText(node) {
  * @returns {{ stroke: string, fill: string }}
  */
 function fieldState(node) {
-  const stroke = node.props.error ? ERROR_INK : node.props.disabled ? COLORS.muted : COLORS.ink;
+  const stroke = node.props.error ? COLORS.error : node.props.disabled ? COLORS.muted : COLORS.ink;
   const fill = node.props.disabled ? COLORS.fill
     : node.props.variant === 'filled' ? COLORS.fill
     : 'none';
@@ -161,7 +158,7 @@ export default {
     // Helper line below the field (red on error, else muted).
     if (typeof node.props.helperText === 'string') {
       out += text(box.x, fieldY + fieldH + GAP + FS, node.props.helperText,
-        { fontSize: FS, fill: node.props.error ? ERROR_INK : COLORS.muted, maxW: box.w });
+        { fontSize: FS, fill: node.props.error ? COLORS.error : COLORS.muted, maxW: box.w });
     }
     return out;
   },

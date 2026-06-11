@@ -110,6 +110,13 @@ Pack icons resolve by bare name (`Icon "feather"`) and by an explicit
 `pack:name` spelling (`Icon "lucide:feather"`) when sets collide. Precedence,
 lowest to highest: built-in → injected → document `Icons` block.
 
+Hosts pick the color palette through the same options object:
+`render(source, { theme: 'dark' })` re-inks the whole sketch — strokes, paper,
+fills — for dark UIs (default `'light'`; unrecognized values fall back to it).
+Built-in icons and `currentColor` artwork follow the themed ink automatically;
+artwork with hardcoded colors renders exactly as authored — one more reason to
+keep custom icons single-color.
+
 ## Custom icons from the CLI
 
 The CLI wires both host-side doors for you:

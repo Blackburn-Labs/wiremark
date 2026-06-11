@@ -24,13 +24,14 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve as resolvePath, dirname, basename, join, extname } from 'node:path';
 import { render } from './index.js';
 
-const USAGE = `Usage: wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir]
+const USAGE = `Usage: wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir] [--theme light|dark]
 
 Render .wiremark files to hand-drawn SVGs, one SVG per input.
 
   -o, --out <file>     output path (exactly one input)
   -d, --out-dir <dir>  write each <input>.svg into <dir>, created if missing
   --icons <dir>        register every <name>.svg in <dir> as a custom icon "name"
+  --theme <name>       color palette: light (default) or dark
   -h, --help           show this help
 `;
 
@@ -40,6 +41,7 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
  * @property {string|null} output  -o/--out value
  * @property {string|null} outDir  -d/--out-dir value
  * @property {string|null} iconDir --icons value
+ * @property {string|null} theme   --theme value, handed to render() verbatim
  * @property {boolean} help
  * @property {string|null} error   first argv-level problem, printable as-is
  */
@@ -47,17 +49,18 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
 /** @param {string[]} argv @returns {Args} */
 function parseArgs(argv) {
   /** @type {Args} */
-  const out = { inputs: [], output: null, outDir: null, iconDir: null, help: false, error: null };
+  const out = { inputs: [], output: null, outDir: null, iconDir: null, theme: null, help: false, error: null };
   let positionalOnly = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (positionalOnly || a === '-' || !a.startsWith('-')) out.inputs.push(a);
     else if (a === '--') positionalOnly = true;
-    else if (a === '-o' || a === '--out' || a === '-d' || a === '--out-dir' || a === '--icons') {
+    else if (a === '-o' || a === '--out' || a === '-d' || a === '--out-dir' || a === '--icons' || a === '--theme') {
       const value = argv[++i];
       if (value === undefined) out.error ??= `error: ${a} requires a value`;
       else if (a === '-o' || a === '--out') out.output = value;
       else if (a === '--icons') out.iconDir = value;
+      else if (a === '--theme') out.theme = value;
       else out.outDir = value;
     } else if (a === '-h' || a === '--help') out.help = true;
     else out.error ??= `error: unknown option ${a}`;
@@ -158,9 +161,10 @@ function outputPathFor(inputPath, args) {
  * @param {string} inputPath   resolved input path
  * @param {string} outputPath  resolved output path
  * @param {Record<string, *>} [icons]  injected icons shared by all inputs (--icons)
+ * @param {string} [theme]  --theme value, passed through verbatim (core falls back to light)
  * @returns {boolean} true if the SVG was written
  */
-function renderOne(inputPath, outputPath, icons) {
+function renderOne(inputPath, outputPath, icons, theme) {
   let source;
   try {
     source = readFileSync(inputPath, 'utf8');
@@ -182,7 +186,7 @@ function renderOne(inputPath, outputPath, icons) {
 
   let result;
   try {
-    result = render(source, { icons, loadIcon });
+    result = render(source, { icons, loadIcon, theme });
   } catch (err) {
     // WiremarkError messages already carry " (line N)".
     process.stderr.write(`${inputPath}: error: ${/** @type {Error} */ (err).message}\n`);
@@ -273,7 +277,7 @@ export function run(argv) {
 
   let failed = false;
   for (let i = 0; i < inputs.length; i++) {
-    if (!renderOne(inputs[i], outputs[i], icons)) failed = true;
+    if (!renderOne(inputs[i], outputs[i], icons, args.theme ?? undefined)) failed = true;
   }
   if (failed) process.exitCode = 1;
 }

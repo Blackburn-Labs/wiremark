@@ -76,6 +76,13 @@ const mermaid = toMermaid(doc); // the same graph, as a Mermaid flowchart
 `render` also accepts an already-`parse`d document, and a file with several
 frames renders as a flow chart with frame-to-frame connectors.
 
+For dark-mode hosts, pass `theme`: `render(source, { theme: 'dark' })`
+switches the whole palette (strokes, paper, fills) while geometry and the
+hand-drawn look stay identical. The default is `'light'`, and any unrecognized
+value falls back to it — never an error. The dark background is opaque;
+embedders that want a seamless surround should match the dark paper color,
+`#1e2127`.
+
 Icon props accept [built-in Material icon names](https://docs.wiremark.dev/reference/icons)
 out of the box. To add your own, pass `icons` (a flat name-to-SVG map or
 Iconify icon packs) or a `loadIcon` callback in the options to `render`/`parse`

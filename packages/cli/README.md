@@ -20,16 +20,18 @@ parsing, layout, and rendering live there.
 ## Usage
 
 ```
-wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir]
+wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir] [--theme light|dark]
 
   -o, --out <file>     output path (exactly one input)
   -d, --out-dir <dir>  write each <input>.svg into <dir>, created if missing
   --icons <dir>        register every <name>.svg in <dir> as a custom icon "name"
+  --theme <name>       color palette: light (default) or dark
 ```
 
 Custom icon files are resolved by the CLI: `--icons <dir>` injects a directory
 of SVGs, and `Icons`-block `src=./logo.svg` entries load relative to their
-input file. Built-in Material icon names need nothing.
+input file. Built-in Material icon names need nothing. `--theme dark` renders
+with the dark palette for dark-mode hosts; the default is light.
 
 Run on demand with `npx @wiremark/cli …`, or install globally for a `wiremark`
 command:
