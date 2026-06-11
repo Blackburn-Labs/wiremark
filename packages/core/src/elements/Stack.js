@@ -3,8 +3,9 @@ import { SPACING } from '../metrics.js';
 import { surfaceWith, rline, COLORS } from '../draw.js';
 
 /**
- * Stack -- flex container. `Stack row` / `Stack column` (default `column`), plus
- * the reversed variants `row-reverse` / `column-reverse`; `spacing=` (alias
+ * Stack -- flex container. `Stack row` / `Stack column` (default `column`,
+ * shorthand `col`), plus the reversed variants `row-reverse` / `column-reverse`;
+ * `spacing=` (alias
  * `gap=`) sets the inter-child gap in MUI spacing units. Bare-number children are
  * flex weights and `Spacer` flexes -- both handled by the engine's main-axis
  * distribution (ss.4.2).
@@ -15,7 +16,7 @@ import { surfaceWith, rline, COLORS } from '../draw.js';
  * numeric `elevation` shadow (mirrors Box) -- plus `divider`, a keyless flag that
  * draws a rule in each gap between children.
  *
- * `direction` maps column->axis 'col' and row->axis 'row'; the `-reverse` variants
+ * `direction` maps column/col->axis 'col' and row->axis 'row'; the `-reverse` variants
  * keep that axis and additionally emit `reverse:true` in the layoutSpec, which the
  * layout facade honors (arrangeLinear mirrors the children's placement order along
  * the main axis -- flex weights and gaps are computed order-independently, so only
@@ -34,7 +35,7 @@ export default {
     // width/height (+ w/h aliases) are realized by `sizing: true` (CONVENTION ss.4).
     direction: {
       type: 'enum',
-      values: ['row', 'row-reverse', 'column', 'column-reverse'],
+      values: ['row', 'row-reverse', 'column', 'col', 'column-reverse'],
       default: 'column',
     },
     spacing: { type: 'number', default: 0, aliases: ['gap'] },

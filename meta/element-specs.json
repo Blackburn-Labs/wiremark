@@ -42,7 +42,7 @@
         {
           "name": "direction",
           "type": "enum",
-          "values": ["row", "row-reverse", "column", "column-reverse"],
+          "values": ["row", "row-reverse", "column", "col", "column-reverse"],
           "default": "column",
           "keyless": true
         },

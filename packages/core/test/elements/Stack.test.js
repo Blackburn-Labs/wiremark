@@ -32,7 +32,7 @@ test('Stack parses with clean diagnostics and resolves direction + spacing', () 
 });
 
 test('direction is keyless: each enum value resolves, and omitting it defaults to column', () => {
-  for (const dir of ['row', 'row-reverse', 'column', 'column-reverse']) {
+  for (const dir of ['row', 'row-reverse', 'column', 'col', 'column-reverse']) {
     const src = `Wireframe\n  Stack ${dir}\n    Typography "A"`;
     const doc = parse(src);
     assert.deepEqual(doc.diagnostics, [], `${dir} parses clean`);
@@ -96,6 +96,16 @@ test('default direction (omitted) lays out as a column', () => {
   const stack = laidStack('Wireframe w=400 h=200\n  Stack spacing=2\n    Typography "A"\n    Typography "B"');
   const [a, b] = stack.children;
   assert.ok(b.y > a.y && b.x === a.x, 'omitted direction behaves as column (advances along y)');
+});
+
+test('`col` is shorthand for `column`: lays out identically', () => {
+  const col = laidStack('Wireframe w=400 h=200\n  Stack col spacing=2\n    Typography "A"\n    Typography "B"');
+  const column = laidStack(COL_SRC);
+  assert.deepEqual(
+    col.children.map((c) => [c.x, c.y, c.w, c.h]),
+    column.children.map((c) => [c.x, c.y, c.w, c.h]),
+    'col produces the same child geometry as column'
+  );
 });
 
 // `-reverse` emits `reverse:true` in the layoutSpec, which the engine honors by

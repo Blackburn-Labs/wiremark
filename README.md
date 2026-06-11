@@ -18,11 +18,11 @@ A wireframe lives inside a fenced ` ```wireframe ` block:
 ````markdown
 ```wireframe
 Wireframe mobile
-  Stack col gap=2
+  Stack column gap=2
     Typography h4 "Sign in"
     TextField "Email"
     TextField "Password"
-    Button "Sign in" primary to=#dashboard
+    Button "Sign in" contained to=#dashboard
 ```
 ````
 
