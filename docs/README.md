@@ -1,5 +1,7 @@
 # wiremark documentation
 
+![wiremark](img/wiremark-icon.svg)
+
 **wiremark** is a text-based, markdown-embeddable wireframing format — think
 "YAML-flavored [MUI](https://mui.com/)": a hierarchy of familiar Material UI
 component names, indented to show containment, rendered in a hand-drawn
@@ -9,11 +11,11 @@ A wireframe lives inside a fenced ` ```wireframe ` block:
 
 ````markdown
 ```wireframe
-Wireframe #login mobile
+Wireframe mobile
   Stack col gap=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
+    TextField "Email"
+    TextField "Password"
     Button "Sign in" primary to=#dashboard
 ```
 ````

@@ -18,6 +18,8 @@ const config = {
   url: process.env.DOCS_URL || 'https://docs.wiremark.dev',
   baseUrl: process.env.DOCS_BASE_URL || '/',
 
+  favicon: 'img/favicon.svg',
+
   organizationName: 'blackburn-labs',
   projectName: 'wiremark',
 
@@ -63,6 +65,10 @@ const config = {
       },
       navbar: {
         title: 'wiremark',
+        logo: {
+          alt: 'wiremark logo',
+          src: 'img/wiremark-icon.svg',
+        },
         items: [
           { href: 'https://www.wiremark.dev', label: 'Home', position: 'right' },
           { href: 'https://github.com/Blackburn-Labs/wiremark', label: 'GitHub', position: 'right' },
