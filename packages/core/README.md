@@ -81,6 +81,24 @@ out of the box. To add your own, pass `icons` (a flat name-to-SVG map or
 Iconify icon packs) or a `loadIcon` callback in the options to `render`/`parse`
 — see the [icons guide](https://docs.wiremark.dev/guides/icons).
 
+## Browser bundle
+
+The package also ships a self-contained, dependency-free IIFE build for
+script-tag and webview embedders (IDE preview panels, browser extensions),
+exposing the same API as a `wiremark` global:
+
+```html
+<script src="wiremark.browser.js"></script>
+<script>
+  const { svg, diagnostics } = wiremark.render(source);
+</script>
+```
+
+From Node tooling, resolve its path with
+`require.resolve('@wiremark/core/browser')` (it lives at
+`dist/wiremark.browser.js` inside the package). It needs no DOM — rendering is
+pure string-in, string-out.
+
 ## Good to know
 
 - Pure ESM, Node >= 18.

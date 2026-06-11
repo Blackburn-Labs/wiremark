@@ -18,13 +18,17 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./cli": "./src/cli.js"
+    "./cli": "./src/cli.js",
+    "./browser": "./dist/wiremark.browser.js"
   },
   "files": [
-    "src"
+    "src",
+    "dist/wiremark.browser.js"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "build:browser": "node scripts/build-browser.mjs",
+    "prepack": "npm run build:browser"
   },
   "keywords": [
     "wireframe",
@@ -44,5 +48,8 @@
   },
   "dependencies": {
     "roughjs": "^4.6.6"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }

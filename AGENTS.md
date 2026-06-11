@@ -32,15 +32,22 @@ node --test --test-name-pattern="navigation graph"        # tests matching a nam
 npm run render --workspace @wiremark/cli -- <inputs...> [-o out.svg | -d out-dir]   # CLI: render to SVG
 node packages/cli/bin/wiremark.js <in.wiremark> -o out.svg           # same, directly
 
+npm run build:browser --workspace @wiremark/core    # browser IIFE bundle -> packages/core/dist/wiremark.browser.js
+
 npm run docs:reference              # regenerate docs/reference/components.md from meta/element-specs.json
 npm run icons:builtin               # regenerate the built-in icon module + docs/reference/icons.md from meta/builtin-icons.json
 cd site && npm start                # docs site dev server (regenerates the reference first)
 cd site && npm run build            # build the docs site
 ```
 
-There is **no separate build, lint, or typecheck step.** Core ships its `src/` as-is
-(ESM, Node ≥18). Files use `// @ts-check` + JSDoc, so type errors surface in an
-editor/IDE only — there is no `tsc` in the project.
+There is **no lint or typecheck step.** Core ships its `src/` as-is (ESM, Node ≥18).
+Files use `// @ts-check` + JSDoc, so type errors surface in an editor/IDE only —
+there is no `tsc` in the project. The one build artifact is the **browser bundle**
+(`dist/wiremark.browser.js`, a self-contained IIFE exposing the public API as a
+`wiremark` global, for script-tag/webview embedders like IDE plugins). It is
+gitignored and rebuilt automatically on every `npm pack`/`npm publish` via core's
+`prepack` hook; `test/browser-bundle.test.js` guards that the render path stays
+free of `node:` imports (only `src/cli.js` may use Node APIs).
 
 ## Architecture
 
