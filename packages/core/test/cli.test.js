@@ -192,3 +192,85 @@ test('cli: duplicate inputs are deduped, not a collision', (t) => {
   assert.equal(res.status, 0);
   assert.equal(res.stdout, `${join(dir, 'a.svg')}\n`);
 });
+
+// --- custom icons: the HOST side of ICONS.md ss.4c lives in this CLI ---------
+
+/** A custom icon SVG whose path is easy to assert on, with hostile bits the
+ *  host boundary must strip (script + event handler). */
+const LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+  + '<script>alert(1)</script><path d="M1 1L9 9" onclick="alert(2)"/></svg>';
+const USES_LOGO = 'Wireframe\n  Icon "logo"\n';
+
+test('cli: the icon sanitizer survives evasive markup (unclosed/unquoted/URI/external vectors)', (t) => {
+  // Each vector was a demonstrated bypass class: unclosed <script> (no closing
+  // tag to anchor the strip), unquoted/backtick on* handler values, SMIL
+  // onbegin, javascript: hrefs, external <use>, <style>/<foreignObject>
+  // payloads. Everything not same-document `#`-referencing must be gone.
+  const dir = tmpProject(t);
+  mkdirSync(join(dir, 'icons'));
+  writeFileSync(join(dir, 'icons/evil.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+    + '<style>*{display:none}</style>'
+    + '<foreignObject><body>html!</body></foreignObject>'
+    + '<rect width="24" height="24" onload=alert(1)></rect>'
+    + '<set onbegin=alert(2) attributeName=x to=1/>'
+    + '<a xlink:href="javascript:alert(3)"><circle r="4"/></a>'
+    + '<use href="http://evil.example/x.svg#p"/>'
+    + '<use href="#local"/>'
+    + '<path d="M1 1L9 9"/>'
+    + '<script>alert(4)//unclosed</svg>');
+  writeFileSync(join(dir, 'a.wiremark'), 'Wireframe\n  Icon "evil"\n');
+  const res = runCLI(['a.wiremark', '--icons', 'icons'], dir);
+  assert.equal(res.status, 0);
+  const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
+  assert.ok(svg.includes('M1 1L9 9'), 'legitimate artwork survives');
+  assert.ok(svg.includes('href="#local"'), 'same-document references survive');
+  for (const bad of ['<script', '<style', '<foreignObject', 'onload', 'onbegin', 'javascript:', 'evil.example']) {
+    assert.ok(!svg.includes(bad), `"${bad}" must not reach the output`);
+  }
+});
+
+test('cli: --icons <dir> injects <name>.svg files as icons', (t) => {
+  const dir = tmpProject(t);
+  mkdirSync(join(dir, 'icons'));
+  writeFileSync(join(dir, 'icons/logo.svg'), LOGO_SVG);
+  writeFileSync(join(dir, 'a.wiremark'), USES_LOGO);
+  const res = runCLI(['a.wiremark', '--icons', 'icons'], dir);
+  assert.equal(res.status, 0);
+  assert.equal(res.stderr, '');
+  const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
+  assert.ok(svg.includes('M1 1L9 9'), 'custom icon artwork must reach the output');
+  assert.ok(!svg.includes('<script'), 'scripts must be stripped at the host boundary');
+  assert.ok(!svg.includes('onclick'), 'event handlers must be stripped at the host boundary');
+});
+
+test('cli: --icons with an unreadable directory is an argv-level error', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), GOOD);
+  const res = runCLI(['a.wiremark', '--icons', 'no-such-dir'], dir);
+  assert.equal(res.status, 1);
+  assert.match(res.stderr, /error: cannot read icons directory .*no-such-dir/);
+  assert.ok(!existsSync(join(dir, 'a.svg')));
+});
+
+test('cli: Icons-block src= loads relative to the input file', (t) => {
+  const dir = tmpProject(t);
+  mkdirSync(join(dir, 'doc/art'), { recursive: true });
+  writeFileSync(join(dir, 'doc/art/logo.svg'), LOGO_SVG);
+  writeFileSync(join(dir, 'doc/a.wiremark'), 'Icons\n  logo src=./art/logo.svg\n\n' + USES_LOGO);
+  const res = runCLI(['doc/a.wiremark'], dir);
+  assert.equal(res.status, 0);
+  assert.equal(res.stderr, '');
+  const svg = readFileSync(join(dir, 'doc/a.svg'), 'utf8');
+  assert.ok(svg.includes('M1 1L9 9'));
+  assert.ok(!svg.includes('<script'));
+});
+
+test('cli: a missing src= icon degrades to a placeholder + warning, not a failure', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), 'Icons\n  logo src=./missing.svg\n\n' + USES_LOGO);
+  const res = runCLI(['a.wiremark'], dir);
+  assert.equal(res.status, 0, 'soft diagnostics never fail the run (ss.5.1.1)');
+  assert.ok(existsSync(join(dir, 'a.svg')));
+  assert.ok(res.stderr.includes(`${join(dir, 'a.wiremark')}: warning: icon "logo": cannot load "./missing.svg"`));
+});

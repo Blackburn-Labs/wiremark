@@ -1,5 +1,5 @@
 // @ts-check
-import { rline, text, iconGlyph, backgroundHatch, COLORS } from '../draw.js';
+import { rline, text, drawIcon, backgroundHatch, COLORS } from '../draw.js';
 import { textOf, measureText } from '../metrics.js';
 
 /**
@@ -8,17 +8,19 @@ import { textOf, measureText } from '../metrics.js';
  *
  * Strategy (full-width menu-row leaf): `block` so every option fills the Select's
  * cross axis (like ListItem). Fixed row height; a taller row when a `subtext`
- * secondary line is present. Draws, left to right: an optional `startIcon` glyph,
+ * secondary line is present. Draws, left to right: an optional `startIcon`,
  * the label (with `subtext` beneath it), and at the far right either an optional
- * `endIcon` glyph or, when `selected`, a check mark. A `selected` row also gets a
+ * `endIcon` or, when `selected`, a check mark. A `selected` row also gets a
  * hand-drawn accent hatch tint across the box (matching the house state-highlight
  * look used by ToggleButton/TableRow/Chip -- never a solid fill, which would read
  * as finished UI). The `to=` link wrapper is the facade's job.
  *
- * The `startIcon`/`endIcon` props are icon NAMES: the spec types them `icon`, but
- * `PropType` has no `'icon'`, so they are declared `string` and drawn with the
- * same placeholder glyph Icon uses -- a bordered box with a diagonal stroke
- * (FAMILIES icon ruling). The icon NAME itself is decorative at wireframe fidelity.
+ * The `startIcon`/`endIcon` props are real icon NAMES (`type: 'icon'`, per
+ * tasks/ICONS.md ss.3, superseding the elements2 FAMILIES "icon->string,
+ * placeholder-only" ruling): the resolver annotates the artwork onto
+ * `node.icons` and each slot draws through `drawIcon` -- clean inked vectors
+ * for a known name, the classic placeholder glyph (bordered box + diagonal)
+ * for an unknown or unresolved one.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -29,9 +31,9 @@ const ROW_H = 40;
 const ROW_H_SUB = 52;
 /** Horizontal inset for content (px). */
 const PAD_X = 12;
-/** Placeholder icon glyph extent (px). */
+/** Icon slot extent (px). */
 const ICON = 18;
-/** Gap between an icon glyph and the adjacent text (px). */
+/** Gap between an icon slot and the adjacent text (px). */
 const ICON_GAP = 8;
 /** Primary / secondary label font sizes (px). */
 const LABEL_FS = 14;
@@ -45,20 +47,20 @@ export default {
   tier: 'v1.0',
   category: 'inputs',
   props: {
-    // No `default` on the string props: the resolver does not inject PropDef
-    // defaults, so an unset prop is simply absent (undefined), which the render
-    // checks for with `typeof === 'string'`. `selected` keeps its documented
-    // boolean baseline.
+    // No `default` on the string/icon props: the resolver does not inject
+    // PropDef defaults into `props`, so an unset prop is simply absent
+    // (undefined), which the render checks for with `typeof === 'string'`.
+    // `selected` keeps its documented boolean baseline.
     label: { type: 'string', aliases: ['text'] },
     subtext: { type: 'string' },
     selected: { type: 'boolean', default: false },
-    startIcon: { type: 'string' },
-    endIcon: { type: 'string' },
+    startIcon: { type: 'icon' },
+    endIcon: { type: 'icon' },
   },
   keyless: [
     { kind: 'literal', to: 'label' },
   ],
-  notes: 'startIcon/endIcon are icon names (spec type `icon`) declared `string` and drawn as Icon\'s placeholder glyph; the name is decorative.',
+  notes: 'startIcon/endIcon are icon-typed props (tasks/ICONS.md): a known name renders real artwork via drawIcon; an unknown name falls back to the placeholder glyph with a soft diagnostic.',
 
   block: true,
   intrinsic: (node) => {
@@ -83,10 +85,10 @@ export default {
       out += backgroundHatch(box, 'hatch', false, { fill: COLORS.accent });
     }
 
-    // Left edge of the text column, after an optional leading icon glyph.
+    // Left edge of the text column, after an optional leading icon slot.
     let textX = box.x + PAD_X;
     if (typeof node.props.startIcon === 'string') {
-      out += iconGlyph(box.x + PAD_X, box.y + (box.h - ICON) / 2, ICON);
+      out += drawIcon(node, 'startIcon', box.x + PAD_X, box.y + (box.h - ICON) / 2, ICON);
       textX += ICON + ICON_GAP;
     }
 
@@ -100,10 +102,10 @@ export default {
       out += text(textX, box.y + box.h / 2 + LABEL_FS * 0.35, label, { fontSize: LABEL_FS });
     }
 
-    // Right edge: an explicit endIcon glyph wins; otherwise a check mark when selected.
+    // Right edge: an explicit endIcon wins; otherwise a check mark when selected.
     const rightX = box.x + box.w - PAD_X - ICON;
     if (typeof node.props.endIcon === 'string') {
-      out += iconGlyph(rightX, box.y + (box.h - ICON) / 2, ICON);
+      out += drawIcon(node, 'endIcon', rightX, box.y + (box.h - ICON) / 2, ICON);
     } else if (selected) {
       // A hand-drawn check mark (two strokes) reads as the "chosen" marker.
       const cy = box.y + box.h / 2;

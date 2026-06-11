@@ -263,9 +263,9 @@ Wireframe #library w=1600 h=4800
     Stack column spacing=1
       Typography subtitle2 "ToggleButtonGroup + ToggleButton"
       ToggleButtonGroup
-        ToggleButton "Standard" selected
-        ToggleButton "Express"
-        ToggleButton "Overnight" large
+        ToggleButton "LocalShipping" selected
+        ToggleButton "Bolt"
+        ToggleButton "Schedule" large
     Stack column spacing=1
       Typography subtitle2 "ButtonGroup (outlined / contained)"
       ButtonGroup outlined

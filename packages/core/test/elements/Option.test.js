@@ -44,14 +44,17 @@ test('subtext is a keyed string secondary line', () => {
   assert.equal(opt.props.subtext, 'MX');
 });
 
-test('startIcon and endIcon are keyed icon-name strings', () => {
-  const opt = optNode('Option "Home" startIcon="House" endIcon="ChevronRight"');
-  assert.equal(opt.props.startIcon, 'House');
+test('startIcon and endIcon are keyed icon-typed props (values are the names)', () => {
+  const opt = optNode('Option "Home" startIcon="Home" endIcon="ChevronRight"');
+  assert.equal(opt.props.startIcon, 'Home');
   assert.equal(opt.props.endIcon, 'ChevronRight');
 });
 
-test('an unquoted icon name is a hard error (icon names are strings, must be quoted)', () => {
-  assert.throws(() => parse(wrap('Option "Home" startIcon=House')), /must be quoted/);
+test('icon names may be given bare -- icon-typed props accept unquoted values', () => {
+  // type:'icon' parses like a string but takes BARE or quoted spellings
+  // (tasks/ICONS.md ss.3): startIcon=Check === startIcon="Check".
+  const opt = optNode('Option "Home" startIcon=Check');
+  assert.equal(opt.props.startIcon, 'Check');
 });
 
 test('a duplicate keyed prop is an error', () => {
@@ -97,12 +100,44 @@ test('subtext text appears in the rendered SVG', () => {
   assert.match(svg, /MX/);
 });
 
-test('startIcon/endIcon each add a placeholder glyph (extra paths) to the render', () => {
+test('unknown startIcon/endIcon names each add a placeholder glyph (extra paths) to the render', () => {
   const plain = render(wrap('Option "Plain"')).svg;
-  const withIcons = render(wrap('Option "Iconed" startIcon="A" endIcon="B"')).svg;
+  const withIcons = render(wrap('Option "Iconed" startIcon="NoSuchIconAaa" endIcon="NoSuchIconBbb"')).svg;
   const count = (s) => (s.match(/<path/g) || []).length;
   assert.ok(count(withIcons) > count(plain),
     `icons should add paths (${count(withIcons)} vs ${count(plain)})`);
+});
+
+test('a known built-in icon renders clean vectors in place of the placeholder', () => {
+  // 'Check' resolves at parse time onto node.icons and drawIcon emits a clean
+  // <g translate/scale> wrapping the real artwork (the M9 16.17... check mark).
+  const { svg, diagnostics } = render(wrap('Option "Done" startIcon=Check'));
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /<g transform="translate\([^)]+\) scale\([^)]+\)" fill="/);
+  assert.match(svg, /M9 16.17/);
+});
+
+test('a known endIcon renders clean vectors too (and still suppresses the selected check)', () => {
+  const { svg, diagnostics } = render(wrap('Option "Next" selected endIcon=ArrowForward'));
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /<g transform="translate\([^)]+\) scale\([^)]+\)" fill="/);
+  // endIcon wins the right slot over the selected check mark, whose two
+  // hand-drawn strokes are the only strokeWidth-1.6 marks Option ever draws.
+  assert.doesNotMatch(svg, /stroke-width="1\.6"/, 'an explicit endIcon suppresses the selected check');
+});
+
+test('an unknown icon name renders the placeholder and warns at resolve time', () => {
+  const doc = parse(wrap('Option "Hm" startIcon=NoSuchIconXyz'));
+  // Annotated null (unresolved) + a soft "unknown icon" diagnostic.
+  assert.equal(optNode('Option "Hm" startIcon=NoSuchIconXyz').icons.startIcon, null);
+  assert.ok(
+    doc.diagnostics.some((d) => /unknown icon "NoSuchIconXyz"/.test(d.message)),
+    `diagnostics should warn about the unknown icon, got ${JSON.stringify(doc.diagnostics)}`,
+  );
+  // The fallback is the classic bordered square -- no clean-vector <g> appears.
+  const { svg } = render(wrap('Option "Hm" startIcon=NoSuchIconXyz'));
+  assert.doesNotMatch(svg, /scale\([^)]+\)" fill="/);
+  assert.match(svg, /<path/);
 });
 
 test('an unlabeled Option falls back to a default label, no filler input', () => {

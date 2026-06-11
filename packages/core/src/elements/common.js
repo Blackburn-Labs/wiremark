@@ -5,7 +5,10 @@
  * Leaf module: it imports nothing else from core, so every `elements/*.js` file
  * can depend on it with no risk of an import cycle.
  *
- * @typedef {'string'|'enum'|'boolean'|'number'|'id'|'ref'|'ratio'} PropType
+ * @typedef {'string'|'enum'|'boolean'|'number'|'id'|'ref'|'ratio'|'icon'} PropType
+ *   // 'icon': an icon NAME (ICONS.md ss.3) -- parses like 'string' but accepts
+ *   // bare or quoted values, and the resolver resolves it against the icon
+ *   // lookup chain onto `node.icons` for draw.js's drawIcon.
  *
  * @typedef {Object} PropDef
  * @property {PropType} type

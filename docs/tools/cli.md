@@ -67,6 +67,30 @@ wildcards for programs, and wiremark deliberately doesn't either — globs are
 the shell's job. Use Git Bash (or another POSIX shell), or list the files
 explicitly.
 
+## Custom icons
+
+Built-in [icon names](../guides/09-icons.md) need nothing — `Icon Search` just
+works. The CLI adds the two file-based doors:
+
+- **`--icons <dir>`** registers every `<name>.svg` in the directory as a
+  custom icon named `name`, available to all inputs in the run:
+
+  ```sh
+  npx @wiremark/cli screens/*.wiremark --icons ./brand-icons
+  ```
+
+- **`Icons`-block `src=` entries** load relative to their `.wiremark` file:
+
+  ```wireframe
+  Icons
+    logo src=./art/logo.svg
+  ```
+
+Either way the CLI extracts the SVG's artwork and strips anything that isn't
+drawing (scripts, styles, event handlers). An icon file that can't be read is
+a soft warning — the wireframe still renders, with the placeholder glyph in
+that slot.
+
 ## Installing the CLI
 
 For regular use, install the package globally; it provides a `wiremark`

@@ -36,6 +36,7 @@ Read in order if you are new; jump around once you know the basics.
 6. [Frames, anchors & flow](guides/06-frames-and-flow.md) — naming screens, linking them, and composing shared chrome.
 7. [Patterns & recipes](guides/07-patterns.md) — worked examples for the layouts you'll build most.
 8. [Style & best practices](guides/08-style-guide.md) — conventions, agent-first tips, and common mistakes.
+9. [Icons](guides/09-icons.md) — the built-in Material icon vocabulary, custom icons, and Iconify packs.
 
 ## Tools
 
@@ -46,13 +47,18 @@ Read in order if you are new; jump around once you know the basics.
 
 - [Component library reference](reference/components.md) — every supported
   component and property, with its keyless behavior, default, and DSL mapping.
+- [Built-in icon gallery](reference/icons.md) — every built-in icon, rendered,
+  by category.
 
-The reference is **generated** from [`meta/element-specs.json`](../meta/element-specs.json),
-which is the single source of truth for component coverage. Do not edit the
-generated markdown by hand. After changing the JSON, regenerate it:
+The reference pages are **generated** — components from
+[`meta/element-specs.json`](../meta/element-specs.json), icons from
+[`meta/builtin-icons.json`](../meta/builtin-icons.json); each JSON is the
+single source of truth for its page. Do not edit the generated markdown by
+hand. After changing a JSON, regenerate:
 
 ```sh
-npm run docs:reference
+npm run docs:reference   # components.md from element-specs.json
+npm run icons:builtin    # icons.md + the committed icon data, from builtin-icons.json
 ```
 
 ## About these docs

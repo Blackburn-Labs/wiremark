@@ -1,5 +1,5 @@
 // @ts-check
-import { surface, centeredLabel, rrect, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { surface, centeredLabel, drawIcon, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
 import { textIntrinsic, textOf } from '../metrics.js';
 
 /**
@@ -22,9 +22,12 @@ import { textIntrinsic, textOf } from '../metrics.js';
  * (read from SIZES by both intrinsic and render, so the padding can't drift) plus
  * the label font; `intrinsic` passes that font to `textIntrinsic` so the measured
  * box matches the drawn text once the shared helper honors it. `disabled` mutes
- * the whole button (chrome, icons, label). `startIcon`/`endIcon` draw a small
- * glyph before/after the label, and reserve their width (ICON + ICON_GAP) in
- * `intrinsic` so the chrome never clips. `to=` and children are the facade's job.
+ * the whole button (chrome, icons, label). `startIcon`/`endIcon` are icon-typed
+ * (ICONS.md ss.3): the resolver annotates the artwork onto `node.icons` and
+ * `drawIcon` renders the slot before/after the label -- clean vectors for a
+ * known name, the same bare bordered square (no diagonal) for an unknown one --
+ * reserving its width (ICON + ICON_GAP) in `intrinsic` so the chrome never
+ * clips. `to=` and children are the facade's job.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -36,7 +39,7 @@ const SIZES = {
   large: { padX: 22, padY: 12, fontSize: 16 },
 };
 
-/** Glyph extent + its gap to the label (px) -- shared by intrinsic + render. */
+/** Icon slot extent + its gap to the label (px) -- shared by intrinsic + render. */
 const ICON = 10;
 const ICON_GAP = 6;
 
@@ -52,8 +55,8 @@ export default {
     variant: { type: 'enum', values: ['text', 'outlined', 'contained'], default: 'text' },
     size: { type: 'enum', values: ['small', 'medium', 'large'], default: 'medium' },
     disabled: { type: 'boolean', default: false },
-    startIcon: { type: 'string' },
-    endIcon: { type: 'string' },
+    startIcon: { type: 'icon' },
+    endIcon: { type: 'icon' },
     fullWidth: { type: 'boolean', default: false },
     background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
     denseBackground: { type: 'boolean', default: false },
@@ -91,15 +94,10 @@ export default {
     // Icons sit just inside the box on each side, vertically centered. The label
     // stays centered in the box (the small glyphs read as adornments, MUI-style).
     const cy = box.y + (box.h - ICON) / 2;
-    if (node.props.startIcon) out += iconGlyph(box.x + ICON_GAP, cy, ink);
-    if (node.props.endIcon) out += iconGlyph(box.x + box.w - ICON_GAP - ICON, cy, ink);
+    if (node.props.startIcon) out += drawIcon(node, 'startIcon', box.x + ICON_GAP, cy, ICON, { ink, diagonal: false });
+    if (node.props.endIcon) out += drawIcon(node, 'endIcon', box.x + box.w - ICON_GAP - ICON, cy, ICON, { ink, diagonal: false });
 
     return out + centeredLabel(box, textOf(node, 'Button'),
       { fontSize, weight: variant === 'contained' ? 700 : 600, fill: ink });
   },
 };
-
-/** A tiny placeholder glyph (bordered square) marking a start/end icon slot. */
-function iconGlyph(x, y, ink) {
-  return rrect(x, y, ICON, ICON, { stroke: ink, strokeWidth: 1 });
-}

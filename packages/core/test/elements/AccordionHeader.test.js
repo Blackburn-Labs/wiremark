@@ -16,6 +16,14 @@ const firstBox = (src) => layout(parse(src))[0].root.children[0];
 const MUTED = '#9aa7b2';
 // COLORS.ink from draw.js -- the default ink.
 const INK = '#22303f';
+// COLORS.accent from draw.js -- the expanded-state icon tint.
+const ACCENT = '#cfe0ee';
+// The built-in ChevronRight body's opening moveto (ICONS.md built-in set) --
+// the default icon's artwork, asserted as a stable d fragment.
+const CHEVRON_D = 'M10 6L8.59';
+// iconBody's clean-vector group: translate + SCALE. (The frame chrome also
+// emits a translate-only <g>, so the scale is what distinguishes icon artwork.)
+const ICON_GROUP = /<g transform="translate\([^"]*scale\(/;
 
 test('AccordionHeader parses cleanly and resolves its keyless title', () => {
   const doc = parse(SRC);
@@ -72,17 +80,22 @@ test('title literal and the boolean flags resolve independent of order', () => {
   }
 });
 
-test('icon is a keyed string property', () => {
-  const header = firstChild('Wireframe\n  AccordionHeader "Shipping" icon="ExpandMore"');
-  assert.equal(header.props.icon, 'ExpandMore');
+test('icon is a keyed icon-typed property; bare and quoted values both work', () => {
+  // type:'icon' parses like a string but the value may be bare (ICONS.md ss.3).
+  for (const spelling of ['icon="ExpandMore"', 'icon=ExpandMore']) {
+    const doc = parse(`Wireframe\n  AccordionHeader "Shipping" ${spelling}`);
+    assert.deepEqual(doc.diagnostics, [], `${spelling} should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.icon, 'ExpandMore');
+  }
 });
 
 test('icon is keyed-only: it never absorbs a bare/keyless token', () => {
-  // icon has keyless:false, so it is reachable ONLY via the keyed `icon="..."`
-  // spelling -- a bare token can never land on it. The single keyless literal
-  // slot is the title, and (per the engine) prose literals must be QUOTED: a bare
-  // word that is neither a boolean flag nor a known enum is a hard error, not a
-  // silent icon. So `"ChevronRight"` fills the title and leaves icon unset...
+  // The single keyless LITERAL slot targets `title` (a string prop, not the
+  // icon-typed prop), so the bare-token-as-icon-name reading (ICONS.md ss.3)
+  // never applies here: icon is reachable ONLY via the keyed `icon=` spelling.
+  // Prose literals must be QUOTED, and a bare word that is neither a boolean
+  // flag nor a known enum is a hard error, not a silent icon. So
+  // `"ChevronRight"` fills the title and leaves icon unset...
   const titled = firstChild('Wireframe\n  AccordionHeader "ChevronRight"');
   assert.equal(titled.props.title, 'ChevronRight');
   assert.equal(titled.props.icon, undefined);
@@ -141,6 +154,10 @@ test('a disabled header draws in the muted ink; a normal one does not', () => {
   const disabled = render('Wireframe\n  AccordionHeader "Shipping" disabled').svg;
   const normal = render('Wireframe\n  AccordionHeader "Shipping"').svg;
   assert.match(disabled, new RegExp(`stroke="${MUTED}"`), 'disabled bar should use muted strokes');
+  // The ICON specifically (not the title <text>, which is also muted): drawIcon
+  // emits the resolved chevron as a <g ... fill=ink> group.
+  assert.match(disabled, new RegExp(`<g transform="translate\\([^"]*scale\\([^"]*" fill="${MUTED}"`),
+    'disabled icon group should be muted too');
   assert.doesNotMatch(normal, new RegExp(`stroke="${MUTED}"`), 'normal bar should use ink strokes only');
 });
 
@@ -149,12 +166,49 @@ test('a normal header strokes its border in the default ink', () => {
   assert.match(normal, new RegExp(`stroke="${INK}"`));
 });
 
-test('expanded vs collapsed produce visibly different SVG (chevron direction)', () => {
-  // The glyph diagonal flips with expanded, so the two renders differ even
-  // though the wireframe-fidelity glyph is the same placeholder box.
+test('expanded tints the icon with the accent ink; collapsed does not', () => {
+  // The chevron artwork stays put (direction is decorative at wireframe
+  // fidelity); the open state shows as the accent fill on the icon group.
   const expanded = render('Wireframe\n  AccordionHeader "Shipping" expanded').svg;
   const collapsed = render('Wireframe\n  AccordionHeader "Shipping"').svg;
   assert.notEqual(expanded, collapsed, 'expanded should render differently from collapsed');
+  assert.match(expanded, new RegExp(`fill="${ACCENT}"`), 'expanded icon should be accent-tinted');
+  assert.doesNotMatch(collapsed, new RegExp(`fill="${ACCENT}"`), 'collapsed icon should stay ink');
+});
+
+test('the default icon renders REAL ChevronRight vectors (no placeholder)', () => {
+  // The resolver annotates the PropDef default's artwork even when icon= is
+  // unset (ICONS.md ss.3), so a plain header draws clean vectors out of the box.
+  const { svg, diagnostics } = render(SRC);
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, ICON_GROUP, 'should contain a clean icon group');
+  assert.ok(svg.includes(CHEVRON_D), 'should contain the built-in ChevronRight body');
+});
+
+test('a known built-in icon name swaps in its artwork', () => {
+  const { svg, diagnostics } = render('Wireframe\n  AccordionHeader "Shipping" icon=Check');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, ICON_GROUP);
+  assert.ok(svg.includes('M9 16.17'), 'should contain the built-in Check body');
+  assert.ok(!svg.includes(CHEVRON_D), 'the explicit icon replaces the ChevronRight default');
+});
+
+test('an unknown icon name falls back to the placeholder glyph + a warning', () => {
+  const doc = parse('Wireframe\n  AccordionHeader "Shipping" icon=NoSuchIconXyz');
+  assert.equal(doc.diagnostics.length, 1);
+  assert.match(doc.diagnostics[0].message, /unknown icon/i);
+
+  const { svg } = render('Wireframe\n  AccordionHeader "Shipping" icon=NoSuchIconXyz');
+  assert.doesNotMatch(svg, ICON_GROUP, 'no clean-vector group for an unresolved name');
+  // The placeholder keeps the pre-icons look: stroked in the header ink.
+  assert.match(svg, new RegExp(`stroke="${INK}"`));
+});
+
+test('icon=none explicitly suppresses the artwork (placeholder slot, no warning)', () => {
+  const doc = parse('Wireframe\n  AccordionHeader "Shipping" icon=none');
+  assert.deepEqual(doc.diagnostics, [], 'none is "no icon", not an unknown name');
+  const { svg } = render('Wireframe\n  AccordionHeader "Shipping" icon=none');
+  assert.doesNotMatch(svg, ICON_GROUP);
 });
 
 test('render is deterministic across runs', () => {

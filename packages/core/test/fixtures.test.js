@@ -61,6 +61,14 @@ const FIXTURES_UNDER_TEST = [
     requires: ['Alert', 'Dialog', 'Snackbar', 'Progress', 'Skeleton'],
     texts: ['Sync status', 'Upload failed', 'Importing data', 'Discard draft?', 'Settings updated'],
   },
+  {
+    // The ICONS.md end-to-end fixture: built-in names in every accepted spelling
+    // plus an `Icons` block of document-local artwork (logo / brand). Real icon
+    // bodies are asserted separately below, since `texts` only covers <text>.
+    file: 'custom-icons.wiremark', id: 'icons',
+    requires: ['Icon', 'Button', 'CardHeader', 'AccordionHeader', 'BottomNavigationAction', 'Fab'],
+    texts: ['Iconic, Inc.', 'Inbox', '3 unread', 'Archive', 'Shipping options'],
+  },
 ];
 
 for (const fx of FIXTURES_UNDER_TEST) {
@@ -101,6 +109,19 @@ for (const fx of FIXTURES_UNDER_TEST) {
     }
   });
 }
+
+// custom-icons-specific: `texts` can only assert <text> content, so the real
+// icon ARTWORK is asserted here -- the Icons-block paths (logo, brand at its
+// non-24 viewBox scale) and a built-in body (Check) must reach the SVG, and
+// none may fall back to the muted placeholder-with-diagonal.
+test('custom-icons renders inline + built-in icon artwork (ICONS.md end-to-end)', () => {
+  const { svg, diagnostics } = render(fixture('custom-icons.wiremark'));
+  assert.deepEqual(diagnostics, []);
+  assert.ok(svg.includes('M12 2 2 22h20z'), 'the inline `logo` path should render');
+  assert.ok(svg.includes('M4 4h24v24H4z'), 'the inline `brand` path should render');
+  assert.ok(svg.includes('scale(0.3125)'), 'brand draws at 10px from its 32 viewBox (10/32)');
+  assert.ok(svg.includes('M9 16.17'), 'the built-in Check artwork should render');
+});
 
 // data-table-specific: the Table family lays each TableRow's cells out as
 // equal-flex, so a row with N cells yields N (near-)equal-width boxes -- the

@@ -18,9 +18,9 @@ Wireframe #settings landscape
       Stack row spacing=2
         Typography body2 "Delivery speed"
         ToggleButtonGroup
-          ToggleButton "Standard" selected
-          ToggleButton "Express"
-          ToggleButton "Overnight" large
+          ToggleButton "LocalShipping" selected
+          ToggleButton "Bolt"
+          ToggleButton "Schedule" large
       Stack row spacing=2
         Typography body2 "Order priority"
         Slider 40 min=0 max=100

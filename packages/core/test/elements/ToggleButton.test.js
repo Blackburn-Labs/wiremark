@@ -36,48 +36,58 @@ test('the quoted literal is the keyless icon name', () => {
   assert.equal(firstChild('Wireframe\n  ToggleButton "FormatItalic"').props.icon, 'FormatItalic');
 });
 
-test('icon also accepts the keyed string spelling', () => {
-  const tb = firstChild('Wireframe\n  ToggleButton icon="FormatUnderlined"');
-  assert.equal(tb.props.icon, 'FormatUnderlined');
+test('a bare keyless token also reads as the icon name', () => {
+  // icon is type 'icon' (tasks/ICONS.md ss.2-3): the bare spelling is tried LAST,
+  // after enum/boolean, so `selected` still flips the flag rather than naming an icon.
+  const doc = parse('Wireframe\n  ToggleButton FormatBold selected');
+  assert.deepEqual(doc.diagnostics, []);
+  const tb = doc.frames[0].children[0];
+  assert.equal(tb.props.icon, 'FormatBold');
+  assert.equal(tb.props.selected, true);
 });
 
-test('a keyed icon must be quoted (it is a string prop)', () => {
-  // string props are quoted (SPEC ss.3.2.1); a bare keyed value is rejected.
-  assert.throws(() => parse('Wireframe\n  ToggleButton icon=FormatBold'), /must be quoted/);
+test('icon also accepts the keyed spelling, bare or quoted', () => {
+  // icon-typed props parse like strings but take BARE keyed values too
+  // (tasks/ICONS.md ss.3 -- icon names are identifiers, not prose).
+  assert.equal(firstChild('Wireframe\n  ToggleButton icon="FormatUnderlined"').props.icon, 'FormatUnderlined');
+  assert.equal(firstChild('Wireframe\n  ToggleButton icon=FormatUnderlined').props.icon, 'FormatUnderlined');
 });
 
 test('selected resolves as a keyless flag and as the keyed form', () => {
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" selected').props.selected, true);
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" selected=true').props.selected, true);
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" selected=false').props.selected, false);
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" selected').props.selected, true);
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" selected=true').props.selected, true);
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" selected=false').props.selected, false);
   // Default: absent when not given (the resolver injects no PropDef defaults).
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B"').props.selected, undefined);
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check"').props.selected, undefined);
 });
 
 test('size is a keyless enum accepting each value', () => {
   for (const s of ['small', 'medium', 'large']) {
-    const doc = parse(`Wireframe\n  ToggleButton "B" ${s}`);
+    const doc = parse(`Wireframe\n  ToggleButton "Check" ${s}`);
     assert.deepEqual(doc.diagnostics, [], `ToggleButton ${s} should parse cleanly`);
     assert.equal(doc.frames[0].children[0].props.size, s);
   }
 });
 
 test('size also accepts the keyed enum spelling', () => {
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" size=large').props.size, 'large');
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" size=large').props.size, 'large');
 });
 
 test('a bad size enum value is rejected', () => {
-  assert.throws(() => parse('Wireframe\n  ToggleButton "B" size=huge'), /not valid for "size="/);
+  assert.throws(() => parse('Wireframe\n  ToggleButton "Check" size=huge'), /not valid for "size="/);
 });
 
 test('icon, selected, and size resolve independent of token order', () => {
   // literal + boolean + enum are three distinct keyless KINDS (CONVENTION s.2),
-  // so any ordering of the three tokens is unambiguous.
+  // so any ordering of the three tokens is unambiguous -- including the BARE
+  // icon spelling, which is tried last and so never shadows selected/large.
   const expected = { icon: 'FormatBold', selected: true, size: 'large' };
   for (const src of [
     'Wireframe\n  ToggleButton "FormatBold" selected large',
     'Wireframe\n  ToggleButton large "FormatBold" selected',
     'Wireframe\n  ToggleButton selected large "FormatBold"',
+    'Wireframe\n  ToggleButton FormatBold selected large',
+    'Wireframe\n  ToggleButton selected large FormatBold',
   ]) {
     const tb = firstChild(src);
     assert.deepEqual(
@@ -88,19 +98,21 @@ test('icon, selected, and size resolve independent of token order', () => {
 });
 
 test('a duplicate selected token is an error', () => {
-  assert.throws(() => parse('Wireframe\n  ToggleButton "B" selected selected'), /"selected" set more than once/);
+  assert.throws(() => parse('Wireframe\n  ToggleButton "Check" selected selected'), /"selected" set more than once/);
 });
 
 test('a duplicate size enum is an error', () => {
-  assert.throws(() => parse('Wireframe\n  ToggleButton "B" small large'), /"size" set more than once/);
+  assert.throws(() => parse('Wireframe\n  ToggleButton "Check" small large'), /"size" set more than once/);
 });
 
 test('a second text literal is rejected', () => {
-  assert.throws(() => parse('Wireframe\n  ToggleButton "A" "B"'), /more than one text literal/);
+  assert.throws(() => parse('Wireframe\n  ToggleButton "A" "Check"'), /more than one text literal/);
 });
 
-test('an unexpected bare token is rejected', () => {
-  assert.throws(() => parse('Wireframe\n  ToggleButton "B" wobble'), /unexpected token `wobble`/);
+test('an unexpected bare token is rejected once the icon slot is taken', () => {
+  // With the literal slot already filled, a stray bare token has nowhere to go
+  // (the bare-icon reading only applies to an UNFILLED slot, tasks/ICONS.md).
+  assert.throws(() => parse('Wireframe\n  ToggleButton "Check" wobble'), /unexpected token `wobble`/);
 });
 
 test('ToggleButton is not text-bearing: filler is rejected', () => {
@@ -110,13 +122,13 @@ test('ToggleButton is not text-bearing: filler is rejected', () => {
 });
 
 test('to=#id and href=#id both populate the universal node.props.to', () => {
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" to=#home').props.to, 'home');
-  assert.equal(firstChild('Wireframe\n  ToggleButton "B" href=#home').props.to, 'home');
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" to=#home').props.to, 'home');
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" href=#home').props.to, 'home');
 });
 
 test('ToggleButton lays out to a finite, positive square for every size', () => {
   for (const size of ['small', 'medium', 'large']) {
-    const box = firstBox(`Wireframe\n  ToggleButton "B" ${size}`);
+    const box = firstBox(`Wireframe\n  ToggleButton "Check" ${size}`);
     assert.ok(Number.isFinite(box.w) && box.w > 0, `w finite & positive for ${size}, got ${box.w}`);
     assert.ok(Number.isFinite(box.h) && box.h > 0, `h finite & positive for ${size}, got ${box.h}`);
   }
@@ -125,27 +137,55 @@ test('ToggleButton lays out to a finite, positive square for every size', () => 
 test('larger sizes produce a bigger box than smaller sizes', () => {
   // Height differs at the frame top level (cross-axis width is stretched there,
   // but height is intrinsic); width differs on a row main axis.
-  const small = firstBox('Wireframe\n  ToggleButton "B" small');
-  const large = firstBox('Wireframe\n  ToggleButton "B" large');
+  const small = firstBox('Wireframe\n  ToggleButton "Check" small');
+  const large = firstBox('Wireframe\n  ToggleButton "Check" large');
   assert.ok(large.h > small.h, `large (${large.h}) should be taller than small (${small.h})`);
-  assert.ok(rowToggleBox('"B" large').w > rowToggleBox('"B" small').w, 'large should be wider than small');
+  assert.ok(rowToggleBox('"Check" large').w > rowToggleBox('"Check" small').w, 'large should be wider than small');
 });
 
 test('default size (omitted) lays out like medium', () => {
-  const plain = rowToggleBox('"B"');
-  const medium = rowToggleBox('"B" medium');
+  const plain = rowToggleBox('"Check"');
+  const medium = rowToggleBox('"Check" medium');
   assert.equal(plain.w, medium.w);
   assert.equal(plain.h, medium.h);
 });
 
-test('ToggleButton renders a hand-drawn path (its chrome + icon glyph)', () => {
+test('ToggleButton renders a hand-drawn path (its chrome)', () => {
   const { svg } = render('Wireframe\n  ToggleButton "FormatBold"');
   assert.match(svg, /<path/);
+});
+
+test('a known built-in icon renders as clean vectors on the button face', () => {
+  // 'Check' resolves through the built-in set (tasks/ICONS.md ss.2): drawIcon
+  // emits a translate+scale <g> wrapping the real artwork, not the placeholder.
+  const { svg, diagnostics } = render('Wireframe\n  ToggleButton "Check" selected');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /<g transform="translate\([^)]+\) scale\(/);
+  assert.match(svg, /M9 16\.17/); // Check's path data -- stable built-in body
+});
+
+test('an unknown icon name renders the placeholder glyph + a warning', () => {
+  const { svg, diagnostics } = render('Wireframe\n  ToggleButton "NoSuchIconXyz"');
+  assert.ok(
+    diagnostics.some((d) => d.severity === 'warning' && /unknown icon "NoSuchIconXyz"/.test(d.message)),
+    `expected an unknown-icon warning, got: ${JSON.stringify(diagnostics)}`,
+  );
+  assert.doesNotMatch(svg, /scale\(/); // no clean-artwork group anywhere
+  assert.match(svg, /stroke="#9aa7b2"/); // the muted placeholder strokes
+});
+
+test('no icon at all renders the placeholder with NO warning', () => {
+  // An unset icon slot is fine (today's behavior, unchanged by tasks/ICONS.md):
+  // same muted placeholder mark, no diagnostic.
+  const { svg, diagnostics } = render('Wireframe\n  ToggleButton selected');
+  assert.deepEqual(diagnostics, []);
+  assert.doesNotMatch(svg, /scale\(/);
+  assert.match(svg, /stroke="#9aa7b2"/);
 });
 
 test('a selected button emits a hatch tint; an unselected one does not', () => {
   // selected -> hand-drawn hatch tint (gray hashes, COLORS.hatch); the pressed
   // look is what discriminates selected at render.
-  assert.match(render('Wireframe\n  ToggleButton "B" selected').svg, /stroke="#c4c4c4"/);
-  assert.doesNotMatch(render('Wireframe\n  ToggleButton "B"').svg, /stroke="#c4c4c4"/);
+  assert.match(render('Wireframe\n  ToggleButton "Check" selected').svg, /stroke="#c4c4c4"/);
+  assert.doesNotMatch(render('Wireframe\n  ToggleButton "Check"').svg, /stroke="#c4c4c4"/);
 });

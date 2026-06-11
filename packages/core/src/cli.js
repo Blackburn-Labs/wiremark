@@ -2,7 +2,7 @@
 /**
  * wiremark CLI core: render .wiremark files to SVGs.
  *
- *   wiremark <input.wiremark...> [-o out.svg | -d out-dir]
+ *   wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir]
  *
  * Every positional is an input. Each renders to <basename>.svg next to itself,
  * or into -d/--out-dir (created if missing), or to -o/--out (single input
@@ -10,19 +10,27 @@
  * prefixed with the input path and the exit code is 1 if any input failed.
  * Soft diagnostics print to stderr but still produce output (SPEC ss.5.1.1).
  *
+ * Icon files are a HOST concern (ICONS.md ss.4c) -- core never reads the
+ * filesystem -- so this is where they are resolved: an `Icons`-block
+ * `src=./logo.svg` entry loads relative to ITS input file via the `loadIcon`
+ * hook, and `--icons <dir>` injects every `<name>.svg` in <dir> as icon
+ * `name` for all inputs. Both extract sanitized inner-SVG artwork (scripts,
+ * styles, foreignObject, and event handlers stripped at this boundary).
+ *
  * This is the `@wiremark/core/cli` export. The `@wiremark/cli` package ships the
  * actual executable; its bin is a thin wrapper that calls `run(process.argv.slice(2))`.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve as resolvePath, dirname, basename, join, extname } from 'node:path';
 import { render } from './index.js';
 
-const USAGE = `Usage: wiremark <input.wiremark...> [-o out.svg | -d out-dir]
+const USAGE = `Usage: wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir]
 
 Render .wiremark files to hand-drawn SVGs, one SVG per input.
 
   -o, --out <file>     output path (exactly one input)
   -d, --out-dir <dir>  write each <input>.svg into <dir>, created if missing
+  --icons <dir>        register every <name>.svg in <dir> as a custom icon "name"
   -h, --help           show this help
 `;
 
@@ -31,6 +39,7 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
  * @property {string[]} inputs   positional input paths, as given
  * @property {string|null} output  -o/--out value
  * @property {string|null} outDir  -d/--out-dir value
+ * @property {string|null} iconDir --icons value
  * @property {boolean} help
  * @property {string|null} error   first argv-level problem, printable as-is
  */
@@ -38,21 +47,95 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
 /** @param {string[]} argv @returns {Args} */
 function parseArgs(argv) {
   /** @type {Args} */
-  const out = { inputs: [], output: null, outDir: null, help: false, error: null };
+  const out = { inputs: [], output: null, outDir: null, iconDir: null, help: false, error: null };
   let positionalOnly = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (positionalOnly || a === '-' || !a.startsWith('-')) out.inputs.push(a);
     else if (a === '--') positionalOnly = true;
-    else if (a === '-o' || a === '--out' || a === '-d' || a === '--out-dir') {
+    else if (a === '-o' || a === '--out' || a === '-d' || a === '--out-dir' || a === '--icons') {
       const value = argv[++i];
       if (value === undefined) out.error ??= `error: ${a} requires a value`;
       else if (a === '-o' || a === '--out') out.output = value;
+      else if (a === '--icons') out.iconDir = value;
       else out.outDir = value;
     } else if (a === '-h' || a === '--help') out.help = true;
     else out.error ??= `error: unknown option ${a}`;
   }
   return out;
+}
+
+/**
+ * Extract a renderable icon from SVG file text: the inner markup of the
+ * `<svg>` element plus its square grid size (from `viewBox`, else
+ * width/height, else the Material 24 default). Sanitization happens HERE, at
+ * the host boundary (ICONS.md ss.4c): scripts, styles, foreignObject, and
+ * `on*` event-handler attributes are stripped before anything reaches core.
+ * Returns null when the text holds no usable `<svg>` artwork.
+ * @param {string} text
+ * @returns {{ body: string, viewBox: number } | null}
+ */
+function iconFromSvg(text) {
+  const open = /<svg\b[^>]*>/i.exec(text);
+  const close = text.lastIndexOf('</svg>');
+  if (!open || close <= open.index) return null;
+
+  let viewBox = 24;
+  const vb = /viewBox\s*=\s*"([^"]+)"/i.exec(open[0]);
+  const dim = (/** @type {string} */ name) =>
+    Number(new RegExp(`${name}\\s*=\\s*"(\\d+(?:\\.\\d+)?)(?:px)?"`, 'i').exec(open[0])?.[1]);
+  if (vb) {
+    const parts = vb[1].trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts.every(Number.isFinite) && Math.max(parts[2], parts[3]) > 0) {
+      viewBox = Math.max(parts[2], parts[3]);
+    }
+  } else if (dim('height') > 0 || dim('width') > 0) {
+    viewBox = dim('height') > 0 ? dim('height') : dim('width');
+  }
+
+  // Strip in order: comments; script/style/foreignObject elements (an UNCLOSED
+  // tag swallows to end-of-body rather than surviving); on* event handlers in
+  // every attribute-value form SVG accepts (quoted, unquoted, backtick); and
+  // any href/xlink:href that is not a same-document `#` reference -- which
+  // kills javascript:/data: URIs and external <use>/<image> fetches in one
+  // rule (icon artwork has no legitimate use for either).
+  const body = text.slice(open.index + open[0].length, close)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(script|style|foreignObject)\b[\s\S]*?(?:<\/\1\s*>|$)/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|`[^`]*`|[^\s>]+)/gi, '')
+    .replace(/\s(?:xlink:)?href\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
+      (attr, value) => (/^["']?#/.test(value) ? attr : ''))
+    .trim();
+  return body ? { body, viewBox } : null;
+}
+
+/**
+ * Build the injected-icon map from `--icons <dir>`: every `<name>.svg` becomes
+ * icon `name`, shared by all inputs. Unusable files warn and are skipped (the
+ * reference degrades to the placeholder downstream); an unreadable DIRECTORY
+ * is an argv-level error the caller turns into exit 1.
+ * @param {string} dir  resolved directory path
+ * @returns {Record<string, { body: string, viewBox: number }>}
+ */
+function loadIconDir(dir) {
+  /** @type {Record<string, { body: string, viewBox: number }>} */
+  const icons = {};
+  for (const file of readdirSync(dir).filter((f) => extname(f).toLowerCase() === '.svg').sort()) {
+    const path = join(dir, file);
+    let icon = null;
+    try {
+      icon = iconFromSvg(readFileSync(path, 'utf8'));
+    } catch (err) {
+      process.stderr.write(`warning: cannot read icon ${path}: ${/** @type {Error} */ (err).message}\n`);
+      continue;
+    }
+    if (!icon) {
+      process.stderr.write(`warning: ${path} has no usable <svg> artwork; skipped\n`);
+      continue;
+    }
+    icons[basename(file, extname(file))] = icon;
+  }
+  return icons;
 }
 
 /**
@@ -74,9 +157,10 @@ function outputPathFor(inputPath, args) {
  * throwing so the caller can keep processing the remaining inputs.
  * @param {string} inputPath   resolved input path
  * @param {string} outputPath  resolved output path
+ * @param {Record<string, *>} [icons]  injected icons shared by all inputs (--icons)
  * @returns {boolean} true if the SVG was written
  */
-function renderOne(inputPath, outputPath) {
+function renderOne(inputPath, outputPath, icons) {
   let source;
   try {
     source = readFileSync(inputPath, 'utf8');
@@ -86,9 +170,19 @@ function renderOne(inputPath, outputPath) {
     return false;
   }
 
+  // `Icons` src= entries load relative to THIS input file. A failure throws
+  // here and core degrades it to a placeholder + soft diagnostic (ss.5.1.1).
+  /** @param {string} src */
+  const loadIcon = (src) => {
+    const path = resolvePath(dirname(inputPath), src);
+    const icon = iconFromSvg(readFileSync(path, 'utf8'));
+    if (!icon) throw new Error(`${path} has no usable <svg> artwork`);
+    return icon;
+  };
+
   let result;
   try {
-    result = render(source);
+    result = render(source, { icons, loadIcon });
   } catch (err) {
     // WiremarkError messages already carry " (line N)".
     process.stderr.write(`${inputPath}: error: ${/** @type {Error} */ (err).message}\n`);
@@ -159,6 +253,16 @@ export function run(argv) {
     seen.set(outputs[i], i);
   }
 
+  /** @type {Record<string, *>|undefined} */
+  let icons;
+  if (args.iconDir) {
+    try {
+      icons = loadIconDir(resolvePath(args.iconDir));
+    } catch (err) {
+      return fail(`error: cannot read icons directory ${resolvePath(args.iconDir)}: ${/** @type {Error} */ (err).message}`);
+    }
+  }
+
   if (args.outDir) {
     try {
       mkdirSync(resolvePath(args.outDir), { recursive: true });
@@ -169,7 +273,7 @@ export function run(argv) {
 
   let failed = false;
   for (let i = 0; i < inputs.length; i++) {
-    if (!renderOne(inputs[i], outputs[i])) failed = true;
+    if (!renderOne(inputs[i], outputs[i], icons)) failed = true;
   }
   if (failed) process.exitCode = 1;
 }

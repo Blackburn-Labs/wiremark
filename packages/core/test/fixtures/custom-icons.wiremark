@@ -1,0 +1,33 @@
+// Icons end-to-end (tasks/ICONS.md): built-in Material names in every accepted
+// spelling (PascalCase / kebab / snake, bare / quoted, keyed / keyless) mixed
+// with document-local custom artwork from an `Icons` block. The block sits
+// BELOW the frame on purpose -- declaration order does not matter.
+Wireframe #icons mobile
+  AppBar
+    Toolbar
+      Icon logo            // custom: defined in the Icons block, bare keyless name
+      Typography h6 "Iconic, Inc."
+      Spacer
+      Icon "Search"        // built-in, quoted keyless name
+      Icon notifications   // built-in, bare + lowercase (forgiving lookup)
+  Card
+    CardHeader "Inbox" subheader="3 unread" icon=Mail    // closeIcon defaults to Close
+    CardContent
+      ListItem "Welcome aboard"
+      ListItem "Your receipt"
+    CardActions
+      Button "Archive" startIcon=archive                 // kebab/lowercase spelling
+      Button "Reply" outlined startIcon=Reply
+  Stack row spacing=2
+    Button "Back" startIcon=arrow_back                   // snake_case spelling
+    Button "Save" contained startIcon=Check endIcon=brand // custom, non-24 viewBox
+  AccordionHeader "Shipping options" expanded            // default ChevronRight glyph
+  BottomNavigation
+    BottomNavigationAction "Home" icon=Home
+    BottomNavigationAction "Search" icon=Search
+    BottomNavigationAction "Profile" icon=Person
+  Fab "Add"
+
+Icons
+  logo "M12 2 2 22h20z"
+  brand "M4 4h24v24H4zM10 10h12v12H10z" viewBox=32

@@ -26,6 +26,14 @@ test('the quoted literal is keyless -> icon', () => {
   assert.equal(fab.props.icon, 'home');
 });
 
+test('a bare keyless token also reads as the icon name (icon-typed literal slot)', () => {
+  // `icon` is type:'icon' (tasks/ICONS.md ss.3): a bare token that survives the
+  // sizing/enum/flag readings lands on the icon slot, so `Fab edit` === `Fab "edit"`.
+  const doc = parse('Wireframe\n  Fab edit');
+  assert.deepEqual(doc.diagnostics, []);
+  assert.equal(doc.frames[0].children[0].props.icon, 'edit');
+});
+
 test('variant and size default to undefined when omitted (strategy applies defaults)', () => {
   // The resolver does not inject PropDef defaults; an unset prop is absent.
   const fab = firstChild(SRC);
@@ -130,11 +138,34 @@ test('a longer extended label widens the pill', () => {
   assert.ok(long.w > short.w, `longer label (${long.w}) should widen the pill beyond short (${short.w})`);
 });
 
-test('a circular Fab renders an ellipse-ish circle and the icon glyph, no label text', () => {
+// iconBody's clean <g> -- translate AND scale -- distinguishable from the frame
+// wrapper's plain translate-only <g> (render.js), so it proves real icon artwork.
+const CLEAN_ICON_G = /<g transform="translate\([^"]+\) scale\([^"]+\)"/;
+
+test('a circular Fab renders an ellipse-ish circle and the icon artwork, no label text', () => {
   const { svg } = render('Wireframe\n  Fab "edit" circular');
   assert.match(svg, /<path/);
-  // circular draws no <text> (the icon name is a glyph, not a printed label).
+  // circular draws no <text> (the icon is artwork, not a printed label).
   assert.doesNotMatch(svg, /<text/);
+});
+
+test('a known built-in icon renders clean vectors, not the placeholder', () => {
+  // 'Check' is in the built-in set (tasks/ICONS.md ss.1); drawIcon emits clean
+  // (non-rough) artwork: a translate+scale <g> wrapping the Material path.
+  const { svg, diagnostics } = render('Wireframe\n  Fab "Check"');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, CLEAN_ICON_G);
+  assert.match(svg, /M9 16.17/);
+});
+
+test('an unknown icon name renders the placeholder and warns', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Fab "NoSuchIconXyz"');
+  // Same box, placeholder artwork: no clean icon <g> appears anywhere.
+  assert.doesNotMatch(svg, CLEAN_ICON_G);
+  assert.ok(
+    diagnostics.some((d) => /unknown icon "NoSuchIconXyz"/.test(d.message)),
+    `expected an unknown-icon warning, got ${JSON.stringify(diagnostics)}`,
+  );
 });
 
 test('an extended Fab renders the icon name as a printed label', () => {
@@ -143,9 +174,21 @@ test('an extended Fab renders the icon name as a printed label', () => {
   assert.match(svg, />edit</);
 });
 
-test('a Fab with no icon still renders (a placeholder action label)', () => {
-  const { svg } = render('Wireframe\n  Fab');
+test('an extended Fab draws the real icon next to its printed name', () => {
+  // The pill keeps the icon NAME as its label while the slot itself resolves
+  // to clean vectors -- both halves of the extended layout in one render.
+  const { svg } = render('Wireframe\n  Fab "Check" extended');
+  assert.match(svg, />Check</);
+  assert.match(svg, CLEAN_ICON_G);
+});
+
+test('a Fab with no icon still renders (placeholder glyph, no warning)', () => {
+  // An UNSET icon prop has no node.icons annotation, so drawIcon falls back to
+  // the placeholder -- silently (no diagnostic), per tasks/ICONS.md ss.2.
+  const { svg, diagnostics } = render('Wireframe\n  Fab');
   assert.match(svg, /<path/);
+  assert.doesNotMatch(svg, CLEAN_ICON_G);
+  assert.deepEqual(diagnostics, []);
 });
 
 test('to= makes a Fab navigate (universal nav, wrapped by the facade)', () => {

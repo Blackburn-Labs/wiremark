@@ -89,13 +89,45 @@ test('fullWidth resolves as a keyless flag and as the keyed form', () => {
   assert.equal(firstChild('Wireframe\n  Button "X"').props.fullWidth, undefined);
 });
 
-test('startIcon and endIcon are keyed string props', () => {
-  const src = 'Wireframe\n  Button "Send" startIcon="mail" endIcon="arrow"';
+test('startIcon and endIcon are keyed icon props, bare or quoted', () => {
+  // type:'icon' parses like a string but also takes BARE values (ICONS.md ss.3):
+  // startIcon=Mail === startIcon="Mail". Known names resolve without diagnostics.
+  const src = 'Wireframe\n  Button "Send" startIcon=Mail endIcon="ArrowForward"';
   const doc = parse(src);
   assert.deepEqual(doc.diagnostics, []);
   const b = doc.frames[0].children[0];
-  assert.equal(b.props.startIcon, 'mail');
-  assert.equal(b.props.endIcon, 'arrow');
+  assert.equal(b.props.startIcon, 'Mail');
+  assert.equal(b.props.endIcon, 'ArrowForward');
+});
+
+test('a known built-in icon renders as clean vectors in the slot', () => {
+  // The resolver annotates node.icons and drawIcon emits a translate+scale <g>
+  // wrapping the real artwork ('Check' is the M9 16.17... Material check mark).
+  const { svg, diagnostics } = render('Wireframe\n  Button "Go" startIcon=Check');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /<g transform="translate\([^)]+\) scale\([^)]+\)" fill="/);
+  assert.match(svg, /M9 16.17/);
+});
+
+test('an unknown icon name renders the placeholder square and warns', () => {
+  const src = 'Wireframe\n  Button "Go" startIcon=NoSuchIconXyz';
+  const doc = parse(src);
+  // Annotated null (unresolved) + a soft "unknown icon" diagnostic at resolve time.
+  assert.equal(doc.frames[0].children[0].icons.startIcon, null);
+  assert.ok(
+    doc.diagnostics.some((d) => /unknown icon "NoSuchIconXyz"/.test(d.message)),
+    `diagnostics should warn about the unknown icon, got ${JSON.stringify(doc.diagnostics)}`,
+  );
+  // The fallback is the classic bordered square -- no clean-vector <g> appears.
+  const { svg } = render(src);
+  assert.doesNotMatch(svg, /scale\([^)]+\)" fill="/);
+  assert.match(svg, /<path/);
+});
+
+test('disabled mutes a resolved icon along with the label', () => {
+  // drawIcon inherits the button ink, so the clean artwork fills muted too.
+  const { svg } = render('Wireframe\n  Button "Go" disabled startIcon=Check');
+  assert.match(svg, /<g transform="translate\([^)]+\) scale\([^)]+\)" fill="#9aa7b2"/);
 });
 
 test('to=#id and href=#id both populate the universal node.props.to', () => {
@@ -121,6 +153,8 @@ test('larger sizes produce a bigger box than smaller sizes', () => {
 });
 
 test('icons widen the intrinsic box', () => {
+  // Deliberately UNKNOWN names: an unresolved slot still draws (as the
+  // placeholder) and reserves exactly the same ICON + ICON_GAP width.
   const plain = rowButtonBox('"Go"');
   const iconed = rowButtonBox('"Go" startIcon="x" endIcon="y"');
   assert.ok(iconed.w > plain.w, `iconed (${iconed.w}) should be wider than plain (${plain.w})`);

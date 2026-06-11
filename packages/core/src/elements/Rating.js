@@ -1,5 +1,5 @@
 // @ts-check
-import { rline, COLORS } from '../draw.js';
+import { rline, drawIcon, COLORS } from '../draw.js';
 
 /**
  * Rating -- a row of star glyphs, `value` of them filled and the rest hollow
@@ -26,9 +26,15 @@ import { rline, COLORS } from '../draw.js';
  * Fractional values round (`Rating 3.6` -> 4 filled), since half-stars don't read
  * at wireframe fidelity.
  *
- * `icon` / `emptyIcon` are carried for spec parity (the filled / empty glyph
- * names). At sketch fidelity every name renders the same star, so they are
- * parse-only -- recorded but not drawn.
+ * `icon` / `emptyIcon` are icon-typed (`type: 'icon'`, defaults `Star` /
+ * `StarBorder`): the resolver looks each name up and annotates `node.icons`,
+ * warning on unknown names at resolve time (tasks/ICONS.md ss.3 -- superseding
+ * the elements2-era "every name renders the same placeholder" ruling). An
+ * EXPLICITLY set name swaps the row over to that resolved artwork (filled
+ * cells in ink, empty cells muted -- `icon=Favorite` reads as a heart rating,
+ * MUI-style). With NEITHER prop set the row keeps its hand-drawn stars: the
+ * sketchy star is the wireframe-fidelity default, so the annotated default
+ * artwork (Star/StarBorder) is deliberately not drawn.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -117,11 +123,11 @@ export default {
     // Spec slice lists max default 100; we deviate to DEFAULT_MAX=5 so the schema
     // matches the runtime fallback (100 stars don't read at sketch fidelity).
     max: { type: 'number', default: DEFAULT_MAX },
-    icon: { type: 'string', default: 'Star' },
-    emptyIcon: { type: 'string', default: 'StarBorder' },
+    icon: { type: 'icon', default: 'Star' },
+    emptyIcon: { type: 'icon', default: 'StarBorder' },
   },
   keyless: [{ kind: 'number', to: 'value' }],
-  notes: 'Row of star glyphs; keyless value (n/v/val) fills value-of-max stars. max default is 5 (MUI\'s Rating default), an architect-sanctioned deviation from the spec slice\'s 100, which is unreadable at sketch fidelity; large max values are visually clamped to MAX_GLYPHS=12. icon/emptyIcon parse-only at sketch fidelity.',
+  notes: 'Row of glyphs; keyless value (n/v/val) fills value-of-max. max default is 5 (MUI\'s Rating default), an architect-sanctioned deviation from the spec slice\'s 100, which is unreadable at sketch fidelity; large max values are visually clamped to MAX_GLYPHS=12. Default glyphs are hand-drawn stars; an EXPLICIT icon=/emptyIcon= swaps in the resolved artwork (ink filled, muted empty) per tasks/ICONS.md.',
 
   block: false,
   intrinsic: (node) => {
@@ -131,10 +137,25 @@ export default {
   render: (node, box) => {
     const n = glyphsOf(node);
     const filled = filledOf(node);
+    // EXPLICIT icon=/emptyIcon= engages icon-mode: filled cells draw the `icon`
+    // artwork in ink, empty cells the `emptyIcon` artwork (else the same icon)
+    // muted -- so `Rating 2 icon=Favorite` reads as a heart rating, MUI-style.
+    // An UNSET pair keeps today's hand-drawn stars: the PropDef defaults
+    // (Star/StarBorder) are annotated by the resolver but deliberately not
+    // drawn, because the sketchy star IS the wireframe-fidelity default.
+    const explicitIcon = typeof node.props.icon === 'string';
+    const explicitEmpty = typeof node.props.emptyIcon === 'string';
+    const iconMode = explicitIcon || explicitEmpty;
     let out = '';
     for (let i = 0; i < n; i++) {
       const x = box.x + i * (STAR + GUTTER);
-      out += star(x, box.y, i < filled);
+      if (!iconMode) {
+        out += star(x, box.y, i < filled);
+      } else if (i < filled) {
+        out += drawIcon(node, 'icon', x, box.y, STAR);
+      } else {
+        out += drawIcon(node, explicitEmpty ? 'emptyIcon' : 'icon', x, box.y, STAR, { ink: COLORS.muted });
+      }
     }
     return out;
   },

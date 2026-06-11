@@ -263,6 +263,45 @@ export function iconGlyph(x, y, s, opts = {}) {
 }
 
 /**
+ * Clean (non-sketch) icon artwork: `body` -- a bare `<path d>` string or raw
+ * inner-SVG markup (leading `<`) targeting a square `viewBox` grid -- drawn at
+ * (x, y) scaled to extent `s`, inked solid. Deliberately NOT hand-drawn
+ * (ICONS.md decision #3): real icons read as clean glyphs inside the rough
+ * chrome, the Balsamiq look. No rough.js, so it is inherently deterministic.
+ * `currentColor` in raw bodies is replaced by the ink so output is
+ * self-contained.
+ * @param {string} body
+ * @param {number} x @param {number} y @param {number} s
+ * @param {{ ink?: string, viewBox?: number }} [opts]
+ * @returns {string}
+ */
+export function iconBody(body, x, y, s, opts = {}) {
+  const { ink = COLORS.ink, viewBox = 24 } = opts;
+  const inner = body[0] === '<' ? body.replaceAll('currentColor', ink) : `<path d="${body}"/>`;
+  const k = Math.round((s / viewBox) * 10000) / 10000; // tidy, deterministic scale
+  return `<g transform="translate(${x} ${y}) scale(${k})" fill="${ink}">${inner}</g>`;
+}
+
+/**
+ * THE icon slot renderer every icon-bearing element draws through: the icon
+ * resolved onto `node.icons[key]` at resolve time (ICONS.md ss.3) as clean
+ * vectors, or the shared `iconGlyph` placeholder when the name is unknown or
+ * the slot value never resolved. `ink` colors both (placeholder defaults to
+ * the muted stroke, matching the placeholder-only look); `diagonal` is the
+ * placeholder's mark, as in `iconGlyph`.
+ * @param {import('./resolve.js').ResolvedNode} node
+ * @param {string} key  the icon-typed prop name ('startIcon', 'icon', ...)
+ * @param {number} x @param {number} y @param {number} s
+ * @param {{ ink?: string, diagonal?: boolean }} [opts]
+ * @returns {string}
+ */
+export function drawIcon(node, key, x, y, s, opts = {}) {
+  const resolved = node.icons?.[key];
+  if (resolved) return iconBody(resolved.body, x, y, s, { ink: opts.ink ?? COLORS.ink, viewBox: resolved.viewBox });
+  return iconGlyph(x, y, s, { stroke: opts.ink ?? COLORS.muted, diagonal: opts.diagonal });
+}
+
+/**
  * A `<text>` element in the sketch font.
  * @param {number} x @param {number} y  baseline-ish anchor
  * @param {string} str

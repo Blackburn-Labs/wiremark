@@ -25,8 +25,18 @@ export { toFlowGraph, toMermaid };
 
 /**
  * Parse wiremark source into a validated Document (AST + diagnostics).
+ *
+ * Icons resolve at THIS stage (ICONS.md ss.3): pass `icons`/`loadIcon` here
+ * (or to `render` with a source string, which forwards them). Rendering an
+ * already-parsed Document uses the icons it was parsed with.
  * @param {string} source
  * @param {object} [options]
+ * @param {*} [options.icons]   injected icons: a flat name->body map, Iconify
+ *   JSON pack(s) (e.g. `@iconify-json/lucide`, addressable bare or as
+ *   `lucide:search`), or an array mixing both (ICONS.md ss.4b)
+ * @param {(src: string) => *} [options.loadIcon]  host loader for `Icons`-block
+ *   `src=` entries -- returns body text, `{ body, viewBox }`, or null; core
+ *   itself never reads files (ICONS.md ss.4c)
  * @returns {import('./resolve.js').Document}
  */
 export function parse(source, options = {}) {
@@ -42,6 +52,8 @@ export function parse(source, options = {}) {
  * @param {string|import('./resolve.js').Document} input
  * @param {object} [options]
  * @param {'TD'|'LR'} [options.direction]   flow direction override (default: TD)
+ * @param {*} [options.icons]               injected icons (see `parse`)
+ * @param {(src: string) => *} [options.loadIcon]  host icon-file loader (see `parse`)
  * @returns {{ svg: string, diagnostics: import('./errors.js').Diagnostic[] }}
  */
 export function render(input, options = {}) {

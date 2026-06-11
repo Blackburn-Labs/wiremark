@@ -1,5 +1,5 @@
 // @ts-check
-import { text, iconGlyph, COLORS } from '../draw.js';
+import { text, drawIcon, COLORS } from '../draw.js';
 import { SPACING, measureText } from '../metrics.js';
 
 /**
@@ -14,22 +14,26 @@ import { SPACING, measureText } from '../metrics.js';
  * flag.) `block` makes it span the Card column's full width; its height tracks
  * whether a subheader is present.
  *
- * It draws, left to right: an optional leading `icon` placeholder glyph, then the
- * `title` (bold) with the `subheader` (muted, smaller) stacked beneath it, and an
- * optional trailing `closeIcon` glyph at the right edge. The Card supplies the
- * paper beneath, so the band itself is transparent -- it paints only its content,
- * never a surface of its own.
+ * It draws, left to right: an optional leading `icon`, then the `title` (bold)
+ * with the `subheader` (muted, smaller) stacked beneath it, and an optional
+ * trailing `closeIcon` at the right edge. The Card supplies the paper beneath,
+ * so the band itself is transparent -- it paints only its content, never a
+ * surface of its own.
  *
- * `icon` / `closeIcon` are icon NAMES (strings, like `Icon.name`); per the icon
- * ruling every name renders the same bordered-box-with-diagonal placeholder. The
- * name is recorded but not shown -- the wireframe icon vocabulary is open
- * (ss.10.3). `closeIcon` defaults to `Close`; pass `closeIcon="none"` (a quoted
- * string, like any icon name) to omit the trailing glyph.
+ * `icon` / `closeIcon` are icon-typed props (icon NAMES, like `Icon.name`): a
+ * known name -- built-in, document-inline, or injected -- is resolved onto
+ * `node.icons` at resolve time and drawn here as clean vector artwork via
+ * `drawIcon`; an unknown name falls back to the classic bordered-box-with-
+ * diagonal placeholder (tasks/ICONS.md ss.3, superseding the elements2-era
+ * "every name renders the same placeholder" ruling). The icon vocabulary stays
+ * open (ss.10.3). `closeIcon` defaults to `Close` -- the resolver annotates the
+ * default's artwork even when the prop is unset -- so a plain header draws a
+ * real Close X; pass `closeIcon="none"` to omit the trailing icon.
  *
  * @type {import('./common.js').ComponentDef}
  */
 
-/** Title / subheader font sizes (px) and the glyph extent for the side icons. */
+/** Title / subheader font sizes (px) and the slot extent for the side icons. */
 const TITLE_FONT = 16;
 const SUB_FONT = 13;
 const GLYPH = 24;
@@ -40,21 +44,19 @@ const PAD_Y = SPACING * 1.5;
 /** Has this header an explicit subheader line? @param {import('./common.js').ResolvedNode} node */
 const hasSubheader = (node) => typeof node.props.subheader === 'string' && node.props.subheader !== '';
 
-/** `closeIcon` resolves to "Close" when unset (the resolver does not inject PropDef
- * defaults), so a plain header draws the trailing glyph. `none` opts out.
+/** `closeIcon` resolves to "Close" when unset: the resolver annotates the
+ * default's ARTWORK onto `node.icons.closeIcon` but never injects the value
+ * into `props`, so the show/hide gate still applies the default itself.
+ * `none` opts out (and suppresses the annotation engine-side too).
  * @param {import('./common.js').ResolvedNode} node @returns {boolean} */
 const showsClose = (node) => {
   const v = typeof node.props.closeIcon === 'string' ? node.props.closeIcon : 'Close';
-  return v !== 'none' && v !== '';
+  return v.toLowerCase() !== 'none' && v !== ''; // case-blind, like icon lookup itself
 };
 
-/**
- * The shared placeholder glyph (bordered box + diagonal), vertically centered in
- * the band at `x` -- the same mark every icon-bearing element draws.
- * @param {number} x @param {import('./common.js').Box} box @returns {string}
- */
-const glyph = (x, box) =>
-  iconGlyph(x, box.y + (box.h - GLYPH) / 2, GLYPH, { stroke: COLORS.muted });
+/** Vertical top of a side-icon slot, centered in the band.
+ * @param {import('./common.js').Box} box @returns {number} */
+const iconY = (box) => box.y + (box.h - GLYPH) / 2;
 
 export default {
   name: 'CardHeader',
@@ -63,11 +65,11 @@ export default {
   props: {
     title: { type: 'string', aliases: ['label', 'text'] },
     subheader: { type: 'string', aliases: ['subtext'] },
-    icon: { type: 'string', default: null },
-    closeIcon: { type: 'string', default: 'Close' },
+    icon: { type: 'icon', default: null },
+    closeIcon: { type: 'icon', default: 'Close' },
   },
   keyless: [{ kind: 'literal', to: 'title' }],
-  notes: 'Card title region; icon/closeIcon are icon names drawn as placeholder glyphs. closeIcon="none" omits the trailing glyph.',
+  notes: 'Card title region; icon/closeIcon are icon names -- known names draw real artwork, unknown ones the placeholder glyph (tasks/ICONS.md). closeIcon="none" omits the trailing icon.',
 
   block: true,
   intrinsic: (node) => {
@@ -87,18 +89,20 @@ export default {
     const left = box.x + SPACING;
     const right = box.x + box.w - SPACING;
 
-    // Leading icon (optional): a placeholder glyph at the left, text shifts right.
-    const hasIcon = typeof node.props.icon === 'string' && node.props.icon !== '' && node.props.icon !== 'none';
+    // Leading icon (optional): drawn at the left, text shifts right. drawIcon
+    // picks real artwork vs the placeholder; the element never branches on it.
+    const hasIcon = typeof node.props.icon === 'string' && node.props.icon !== ''
+      && node.props.icon.toLowerCase() !== 'none';
     let textX = left;
     if (hasIcon) {
-      out += glyph(left, box);
+      out += drawIcon(node, 'icon', left, iconY(box), GLYPH);
       textX = left + GLYPH + SPACING;
     }
 
-    // Trailing close icon (drawn by default since closeIcon defaults to Close):
-    // a glyph hugging the right edge. `closeIcon="none"` opts out.
+    // Trailing close icon (drawn by default since closeIcon defaults to Close --
+    // a real Close X) hugging the right edge. `closeIcon="none"` opts out.
     if (showsClose(node)) {
-      out += glyph(right - GLYPH, box);
+      out += drawIcon(node, 'closeIcon', right - GLYPH, iconY(box), GLYPH);
     }
 
     // Title + subheader stacked. With a subheader the pair is centered as a block;

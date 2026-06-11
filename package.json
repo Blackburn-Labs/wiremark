@@ -10,9 +10,13 @@
   "scripts": {
     "test": "node --test",
     "docs:reference": "node scripts/generate-reference.mjs",
+    "icons:builtin": "node scripts/generate-icons.mjs",
     "render:fixtures": "node scripts/render-fixtures.mjs"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@iconify-json/ic": "^1.2.4"
   }
 }

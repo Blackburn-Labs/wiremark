@@ -65,13 +65,16 @@ test('keyless slots never collide: <=1 literal; keyless-enum domains pairwise di
   }
 });
 
-test('fixture corpus loads and each fixture is a frame', () => {
+test('fixture corpus loads and each fixture leads with a frame', () => {
   const files = readdirSync(FIXTURES).filter((f) => f.endsWith('.wiremark'));
   assert.ok(files.length >= 5, 'expected the ss.8 + composition fixtures');
   for (const file of files) {
     const src = readFileSync(join(FIXTURES, file), 'utf8').trim();
     assert.ok(src.length > 0, `${file} is empty`);
-    assert.ok(src.startsWith('Wireframe'), `${file} should start with a Wireframe root`);
+    // First significant line (comments stripped) is a Wireframe root; an
+    // `Icons` declaration block may follow anywhere (ICONS.md ss.4a).
+    const first = src.split('\n').find((l) => l.trim() && !l.trim().startsWith('//'));
+    assert.ok(first?.startsWith('Wireframe'), `${file} should lead with a Wireframe root`);
   }
 });
 

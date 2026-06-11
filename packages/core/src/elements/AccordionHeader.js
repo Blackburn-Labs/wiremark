@@ -1,5 +1,5 @@
 // @ts-check
-import { surface, iconGlyph, text, COLORS } from '../draw.js';
+import { surface, drawIcon, text, COLORS } from '../draw.js';
 import { SPACING } from '../metrics.js';
 
 /**
@@ -10,7 +10,7 @@ import { SPACING } from '../metrics.js';
  *
  * Reference strategy (full-width bar leaf): `block` so the bar fills its
  * container's cross axis (like an AppBar or a list row), a fixed header height,
- * and a bordered `surface` with the title left-aligned and a chevron-style glyph
+ * and a bordered `surface` with the title left-aligned and a chevron icon
  * pinned to the right. It pairs with AccordionBody, which draws a matching
  * bordered panel directly beneath; both use the default solid ink stroke so the
  * shared seam reads as one continuous outline.
@@ -19,23 +19,25 @@ import { SPACING } from '../metrics.js';
  *    directly from `props.title` (NOT via `textOf`, so no filler -- this leaf
  *    does not set `text: true`).
  *  - `expanded` (keyless boolean): conventionally flips the chevron to point
- *    down. At wireframe fidelity the glyph is the same generic placeholder either
- *    way, so the direction nuance is decorative -- but an expanded header tints
- *    its glyph with the accent ink so the open state is still legible.
- *  - `disabled` (keyless boolean): draws the whole bar (border, title, glyph) in
+ *    down. The default artwork stays `ChevronRight` either way, so the direction
+ *    nuance is decorative -- but an expanded header tints its icon with the
+ *    accent ink so the open state is still legible (authors who want the
+ *    pointing-down look can set `icon=ExpandMore` themselves).
+ *  - `disabled` (keyless boolean): draws the whole bar (border, title, icon) in
  *    the muted ink, matching how Control mutes a disabled input.
- *  - `icon` (keyed string; default `ChevronRight`): the icon NAME. Per the icon
- *    ruling every name renders the same placeholder glyph (the shared `iconGlyph`
- *    helper -- a bordered box with a diagonal stroke), so the value is recorded
- *    but not vocabulary-specific. `ChevronDown` is the conventional default when
- *    expanded.
+ *  - `icon` (keyed, `type: 'icon'`; default `ChevronRight`): the icon NAME,
+ *    resolved against the icon lookup chain at resolve time (ICONS.md ss.3 --
+ *    superseding the elements2-era placeholder-only ruling). The resolver
+ *    annotates the default's artwork even when the prop is unset, so the bar
+ *    draws a REAL chevron out of the box; unknown names fall back to the classic
+ *    placeholder glyph (with a resolve-time diagnostic, not ours to emit).
  *
  * @type {import('./common.js').ComponentDef}
  */
 
 /** Fixed header bar height (px) -- a touch taller than a list row so it reads as a section header. */
 const HEADER_H = 44;
-/** Footprint of the right-hand chevron placeholder glyph (px). */
+/** Footprint of the right-hand chevron icon slot (px). */
 const GLYPH = 16;
 
 /** The string the bar draws: explicit title, else a generic placeholder. */
@@ -50,10 +52,10 @@ export default {
     title: { type: 'string', aliases: ['label', 'text'] },
     expanded: { type: 'boolean', default: false },
     disabled: { type: 'boolean', default: false },
-    icon: { type: 'string', default: 'ChevronRight' },
+    icon: { type: 'icon', default: 'ChevronRight' },
   },
   keyless: [{ kind: 'literal', to: 'title' }],
-  notes: 'Sibling of AccordionBody; there is no Accordion parent. Expanded chevron direction is decorative at wireframe fidelity.',
+  notes: 'Sibling of AccordionBody; there is no Accordion parent. The default ChevronRight stays put when expanded (direction is decorative); the open state shows as an accent-tinted icon.',
 
   block: true,
   intrinsic: () => ({ w: 160, h: HEADER_H }),
@@ -70,14 +72,16 @@ export default {
     const fs = 16;
     out += text(box.x + SPACING, box.y + box.h / 2 + fs * 0.35, titleOf(node), { fontSize: fs, fill: ink });
 
-    // Placeholder icon glyph pinned to the right (the shared `iconGlyph` look).
-    // The chevron-direction nuance is decorative at wireframe fidelity, so an
-    // expanded header instead tints the glyph with the accent ink to keep the
-    // open state legible -- unless disabled, where the whole bar stays muted.
+    // Icon slot pinned to the right, drawn through the shared `drawIcon`: the
+    // resolved artwork (a real ChevronRight by default) as clean vectors, or the
+    // classic placeholder glyph when the name didn't resolve. The chevron
+    // direction stays put at wireframe fidelity, so an expanded header instead
+    // tints the icon with the accent ink to keep the open state legible --
+    // unless disabled, where the whole bar stays muted.
     const gx = box.x + box.w - SPACING - GLYPH;
     const gy = box.y + (box.h - GLYPH) / 2;
     const glyphInk = disabled ? COLORS.muted : expanded ? COLORS.accent : COLORS.ink;
-    out += iconGlyph(gx, gy, GLYPH, { stroke: glyphInk });
+    out += drawIcon(node, 'icon', gx, gy, GLYPH, { ink: glyphInk });
     return out;
   },
 };

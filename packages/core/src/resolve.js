@@ -2,6 +2,7 @@
 import { WiremarkError, diagnostic } from './errors.js';
 import { getComponent } from './registry.js';
 import { PRESETS } from './elements/common.js';
+import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
 
 /**
  * Stage (3) -- RESOLVE.  raw tree -> validated, semantic Document.
@@ -40,6 +41,9 @@ import { PRESETS } from './elements/common.js';
  * @property {Record<string, *>} props     // resolved keyed props
  * @property {{ w?: Size, h?: Size }} [size]   // parsed sizing, if any
  * @property {Filler} [filler]             // parsed filler amount, if any
+ * @property {Record<string, import('./icons.js').ResolvedIcon|null>} [icons]
+ *           // icon-typed props resolved at resolve time (ICONS.md ss.3): artwork
+ *           // for draw.js's drawIcon, or null for an unknown name (-> placeholder)
  * @property {ResolvedNode[]} children
  * @property {number} line
  *
@@ -116,6 +120,11 @@ function coerce(prop, tok, comp, loc) {
       if (value === 'true') return true;
       if (value === 'false') return false;
       throw new WiremarkError(`${comp}: "${tok.key}=" expects true|false, got \`${value}\``, loc);
+    case 'icon':
+      // Icon NAMES are identifiers, not prose: `startIcon=Check` reads best
+      // bare, but the quoted spelling (`startIcon="Check"`) predates the icon
+      // type and stays valid (ICONS.md ss.3).
+      return value;
     case 'ref':
     case 'id':
       return value.startsWith('#') ? value.slice(1) : value; // frame anchor (SPEC ss.7)
@@ -241,6 +250,17 @@ function resolveNode(raw) {
       props[v] = true;
       continue;
     }
+    // Keyless icon name (ICONS.md ss.2): on an element whose literal slot targets
+    // an icon-typed prop, a bare token is the icon name -- `Icon Search`,
+    // `Fab edit`. Tried LAST so it can never shadow sizing/enum/boolean tokens
+    // (`Fab large` stays a size; quote the name to force an icon: `Fab "large"`).
+    if (literalSlot && comp.props[literalSlot.to ?? '']?.type === 'icon' && !sawLiteral) {
+      const to = /** @type {string} */ (literalSlot.to);
+      if (Object.hasOwn(props, to)) throw new WiremarkError(`${raw.name}: "${to}" set more than once (\`${v}\`)`, loc);
+      props[to] = v;
+      sawLiteral = true;
+      continue;
+    }
     throw new WiremarkError(`${raw.name}: unexpected token \`${v}\``, loc);
   }
 
@@ -341,15 +361,172 @@ function checkElementIds(frame, diagnostics) {
 }
 
 /**
+ * Inline-icon path data alphabet: SVG `<path d>` commands, numbers, and
+ * separators only. Enforced so an `Icons` entry can never smuggle markup,
+ * styles, or scripts into the SVG (ICONS.md ss.4a -- path-data-only by design;
+ * the literal is embedded verbatim in a `d="..."` attribute downstream).
+ */
+const PATH_DATA_RE = /^[MmLlHhVvCcSsQqTtAaZz0-9eE+\-.,\s]+$/;
+
+/** Inline icons default to the Material 24x24 grid, like the built-in set. */
+const INLINE_VIEWBOX = 24;
+
+/**
+ * Resolve one `src=` inline-icon entry through the host's `loadIcon` callback.
+ * Core never touches the filesystem (SPEC ss.1): the host (CLI / editor)
+ * supplies the loader and owns path resolution + sanitization (ICONS.md
+ * ss.4c). Any failure degrades to null -- the entry renders as the
+ * placeholder, with a soft Diagnostic saying why.
+ * @param {string} name @param {string} src @param {number|undefined} viewBox
+ * @param {{ loadIcon?: (src: string) => * }} options
+ * @param {Diagnostic[]} diagnostics @param {{ line: number }} loc
+ * @returns {import('./icons.js').ResolvedIcon|null}
+ */
+function loadIconSrc(name, src, viewBox, options, diagnostics, loc) {
+  const warn = (/** @type {string} */ why) =>
+    diagnostics.push(diagnostic('warning', `icon "${name}": ${why} -- rendered as placeholder`, loc));
+  if (typeof options.loadIcon !== 'function') {
+    warn(`src= needs a host that loads files (e.g. the CLI)`);
+    return null;
+  }
+  let loaded;
+  try {
+    loaded = options.loadIcon(src);
+  } catch (err) {
+    warn(`cannot load "${src}": ${/** @type {Error} */ (err).message}`);
+    return null;
+  }
+  if (typeof loaded === 'string' && loaded !== '') return { body: loaded, viewBox: viewBox ?? INLINE_VIEWBOX };
+  if (typeof loaded === 'object' && loaded !== null && typeof loaded.body === 'string' && loaded.body !== '') {
+    return { body: loaded.body, viewBox: viewBox ?? (Number(loaded.viewBox) || INLINE_VIEWBOX) };
+  }
+  warn(`cannot load "${src}"`);
+  return null;
+}
+
+/**
+ * Consume one top-level `Icons` block (ICONS.md ss.4a -- the SPEC ss.10.3
+ * extension point) into the document-inline icon map. Entries are
+ * `name "<path d>" [viewBox=N]` or `name src=<path> [viewBox=N]`; malformed
+ * entries are hard errors (author-must-fix, like any structural problem), a
+ * duplicate name is a soft warning and the first declaration wins (the
+ * element-#id convention).
+ * @param {RawNode} raw
+ * @param {Map<string, import('./icons.js').ResolvedIcon|null>} icons
+ * @param {Diagnostic[]} diagnostics
+ * @param {{ loadIcon?: (src: string) => * }} options
+ */
+function collectInlineIcons(raw, icons, diagnostics, options) {
+  if (raw.tokens.length)
+    throw new WiremarkError('Icons takes no tokens of its own -- icons are its children', { line: raw.line });
+  for (const entry of raw.children) {
+    const loc = { line: entry.line };
+    if (entry.children.length)
+      throw new WiremarkError(`Icons: "${entry.name}" takes no children`, loc);
+
+    /** @type {string|undefined} */ let d;
+    /** @type {string|undefined} */ let src;
+    /** @type {number|undefined} */ let viewBox;
+    for (const tok of entry.tokens) {
+      if (tok.kind === 'literal') {
+        if (d !== undefined) throw new WiremarkError(`Icons: "${entry.name}" has more than one path literal`, loc);
+        d = tok.value;
+      } else if (tok.kind === 'keyed' && tok.key === 'viewBox') {
+        const n = Number(tok.value);
+        if (tok.quoted || !Number.isFinite(n) || n <= 0)
+          throw new WiremarkError(`Icons: "${entry.name}": viewBox= expects a positive number`, loc);
+        viewBox = n;
+      } else if (tok.kind === 'keyed' && tok.key === 'src') {
+        src = tok.value;
+      } else {
+        const shown = tok.kind === 'keyed' ? `${tok.key}=` : tok.value;
+        throw new WiremarkError(`Icons: "${entry.name}": unexpected token \`${shown}\``, loc);
+      }
+    }
+    if (d !== undefined && src !== undefined)
+      throw new WiremarkError(`Icons: "${entry.name}" takes a path literal or src=, not both`, loc);
+    if (d === undefined && src === undefined)
+      throw new WiremarkError(`Icons: "${entry.name}" needs a "<path data>" literal or src=`, loc);
+    if (d !== undefined && !PATH_DATA_RE.test(d))
+      throw new WiremarkError(`Icons: "${entry.name}": the literal must be SVG path data, not markup`, loc);
+
+    const key = normalizeIconName(entry.name);
+    if (icons.has(key)) {
+      diagnostics.push(diagnostic('warning', `duplicate icon "${entry.name}" -- the first declaration wins`, loc));
+      continue;
+    }
+    icons.set(key, d !== undefined
+      ? { body: d, viewBox: viewBox ?? INLINE_VIEWBOX }
+      : loadIconSrc(entry.name, /** @type {string} */ (src), viewBox, options, diagnostics, loc));
+  }
+}
+
+/**
+ * Post-pass over a resolved tree: resolve every icon-typed prop against the
+ * lookup chain (inline -> injected -> built-in) and annotate the node for
+ * draw.js's drawIcon (ICONS.md ss.3). An UNSET prop falls back to its
+ * PropDef `default` icon name (the one deliberate exception to the
+ * no-default-injection rule: `props` stays untouched, only the artwork
+ * annotation is added, so CardHeader's default Close glyph resolves without
+ * the element re-doing lookup). `none`/empty means "explicitly no icon" --
+ * no annotation, no warning. Unknown names warn ONLY when author-written;
+ * a missing default is the element author's bug, not the document's.
+ * @param {ResolvedNode[]} nodes
+ * @param {{ inline: Map<string, import('./icons.js').ResolvedIcon|null>, injected: Map<string, import('./icons.js').ResolvedIcon> }} scopes
+ * @param {Diagnostic[]} diagnostics
+ */
+function annotateIcons(nodes, scopes, diagnostics) {
+  for (const node of nodes) {
+    const comp = getComponent(node.component);
+    for (const [key, def] of Object.entries(comp?.props ?? {})) {
+      if (def.type !== 'icon') continue;
+      const explicit = typeof node.props[key] === 'string' ? node.props[key] : undefined;
+      const name = explicit ?? (typeof def.default === 'string' ? def.default : undefined);
+      // `none`/empty = "explicitly no icon", spelled as forgivingly as any
+      // icon name (none/None/NONE), since icon lookup itself is case-blind.
+      if (name === undefined || name === '' || name.toLowerCase() === 'none') continue;
+      const resolved = resolveIcon(name, scopes);
+      (node.icons ??= {})[key] = resolved;
+      // Warn only for an author-written name that resolved nowhere. A name the
+      // document DECLARED inline but whose src= failed to load already warned
+      // at the declaration site -- repeating "unknown icon" per use would be
+      // both noisy and wrong (the name is known; its artwork failed).
+      if (resolved === null && explicit !== undefined && !scopes.inline.has(normalizeIconName(explicit))) {
+        diagnostics.push(diagnostic('warning', `unknown icon "${explicit}" -- rendered as placeholder`, { line: node.line }));
+      }
+    }
+    annotateIcons(node.children, scopes, diagnostics);
+  }
+}
+
+/**
  * @param {RawNode[]} roots
  * @param {object} [options]
+ * @param {*} [options.icons]     injected icons: flat name->body map, Iconify
+ *                                JSON pack(s), or an array of both (ICONS.md ss.4b)
+ * @param {(src: string) => *} [options.loadIcon]  host file loader for `Icons`
+ *                                `src=` entries (ICONS.md ss.4c); core never reads files
  * @returns {Document}
  */
 export function resolve(roots, options = {}) {
-  void options;
   /** @type {Diagnostic[]} */
   const diagnostics = [];
-  const frames = roots.map((r) => resolveFrame(r));
-  for (const frame of frames) checkElementIds(frame, diagnostics);
+  /** @type {Map<string, import('./icons.js').ResolvedIcon|null>} */
+  const inline = new Map();
+  /** @type {RawNode[]} */
+  const frameRoots = [];
+  // An `Icons` root is a document-level declaration, not a frame (ICONS.md
+  // ss.4a): consume it into the inline icon map wherever it appears; its
+  // icons apply document-wide regardless of source order.
+  for (const r of roots) {
+    if (r.name === 'Icons') collectInlineIcons(r, inline, diagnostics, options);
+    else frameRoots.push(r);
+  }
+  const scopes = { inline, injected: buildInjectedIcons(/** @type {*} */ (options).icons) };
+  const frames = frameRoots.map((r) => resolveFrame(r));
+  for (const frame of frames) {
+    checkElementIds(frame, diagnostics);
+    annotateIcons(frame.children, scopes, diagnostics);
+  }
   return { frames, diagnostics };
 }

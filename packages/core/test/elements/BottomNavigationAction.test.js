@@ -19,9 +19,9 @@ test('the quoted literal is keyless -> label', () => {
   assert.equal(action.props.label, 'Home');
 });
 
-test('icon= is a keyed string prop (the icon NAME, quoted like every string value)', () => {
-  // icon is type:'string' (icon NAMES are strings); the resolver requires keyed
-  // string values to be quoted (SPEC ss.3.2.1).
+test('icon= is a keyed icon prop (the icon NAME, quoted or bare)', () => {
+  // icon is type:'icon' (ICONS.md ss.3): parses like a string but, unlike one,
+  // accepts BARE values too -- icon=Home and icon="Home" are the same name.
   const doc = parse('Wireframe\n  BottomNavigationAction "Home" icon="Home"');
   assert.deepEqual(doc.diagnostics, []);
   const action = doc.frames[0].children[0];
@@ -29,12 +29,12 @@ test('icon= is a keyed string prop (the icon NAME, quoted like every string valu
   assert.equal(action.props.icon, 'Home');
 });
 
-test('a BARE keyed icon value is a hard error (string values must be quoted)', () => {
-  assert.throws(
-    () => parse('Wireframe\n  BottomNavigationAction "Home" icon=Home'),
-    /must be quoted/,
-    'icon=Home (bare) must throw; the icon NAME is a quoted string',
-  );
+test('a BARE keyed icon value parses (icon-typed props need no quotes)', () => {
+  // Previously a hard error under type:'string'; type:'icon' supersedes that
+  // (ICONS.md ss.3 sign-off #3).
+  const doc = parse('Wireframe\n  BottomNavigationAction "Home" icon=Home');
+  assert.deepEqual(doc.diagnostics, []);
+  assert.equal(doc.frames[0].children[0].props.icon, 'Home');
 });
 
 test('icon is keyed, NOT keyless: a second quoted literal is an error', () => {
@@ -92,11 +92,28 @@ test('a long label widens the action box but height is fixed (icon+label stack)'
   assert.equal(long.h, short.h, 'the stack height is fixed regardless of label length');
 });
 
-test('renders the icon placeholder glyph (a muted bordered box + diagonal stroke)', () => {
-  const { svg } = render('Wireframe\n  BottomNavigationAction "Home" icon="Home"');
-  // The Icon-style placeholder uses the muted ink for both the box and the slash.
-  assert.match(svg, /stroke="#9aa7b2"/);
-  assert.match(svg, /<path/);
+test('a known built-in icon renders as clean vectors (not the placeholder)', () => {
+  // 'Check' resolves against the built-in set onto node.icons at resolve time;
+  // drawIcon emits a clean <g translate/scale> wrapping the real artwork.
+  const { svg, diagnostics } = render('Wireframe\n  BottomNavigationAction "Done" icon=Check');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /M9 16\.17/, 'the Check artwork body should be present');
+});
+
+test('an UNKNOWN icon name renders the placeholder and warns (soft Diagnostic)', () => {
+  const { svg, diagnostics } = render('Wireframe\n  BottomNavigationAction "Hm" icon="NoSuchIconXyz"');
+  // Placeholder fallback: the muted bordered box + diagonal stroke, as before.
+  assert.match(svg, /stroke="#9aa7b2"/, 'unknown names keep the classic placeholder glyph');
+  assert.ok(
+    diagnostics.some((d) => /unknown icon/.test(d.message)),
+    `diagnostics should warn about the unknown icon, got ${JSON.stringify(diagnostics)}`,
+  );
+});
+
+test('no icon at all still renders the placeholder glyph (no diagnostic)', () => {
+  const { svg, diagnostics } = render('Wireframe\n  BottomNavigationAction "Home"');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /stroke="#9aa7b2"/, 'an unset icon slot keeps the muted placeholder');
 });
 
 test('renders its label text', () => {
@@ -104,9 +121,11 @@ test('renders its label text', () => {
   assert.match(svg, /Profile/);
 });
 
-test('an action with no label still draws the glyph (no label text)', () => {
+test('an action with no label still draws its icon (no label text)', () => {
   const { svg } = render('Wireframe\n  BottomNavigationAction icon="Home"');
-  assert.match(svg, /stroke="#9aa7b2"/, 'glyph should still draw without a label');
+  // The Home artwork itself, not just any <g translate> (the frame wrapper
+  // emits one of those in every SVG, so it proves nothing).
+  assert.match(svg, /M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8z/, 'the resolved Home icon should still draw without a label');
 });
 
 test('to= wraps the action in an anchor (universal prop, facade-drawn)', () => {

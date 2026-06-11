@@ -1,10 +1,12 @@
 // @ts-check
-import { rrect, rline, COLORS } from '../draw.js';
+import { drawIcon } from '../draw.js';
 
 /**
- * Icon -- a generic glyph. Keyless text is the icon `name=`. The icon name
- * vocabulary is still open (ss.10.3), so every name renders the same
- * placeholder glyph (a bordered box with a diagonal mark). (SPEC ss.5.4)
+ * Icon -- a glyph by name. Keyless text is the icon `name=`, bare or quoted
+ * (`Icon Search` === `Icon "Search"`). The name vocabulary is the built-in
+ * Material set plus custom icons (`Icons` block / injected packs) per
+ * tasks/ICONS.md: a resolved name draws clean vector artwork; an unknown or
+ * absent name draws the shared placeholder glyph. (SPEC ss.5.4)
  *
  * Reference strategy (fixed leaf): a `SIZE x SIZE` square that does NOT stretch
  * to the container cross axis (`block: false`) -- an icon keeps its intrinsic
@@ -28,7 +30,7 @@ export default {
   tier: 'v0.1',
   category: 'content',
   props: {
-    name: { type: 'string' },
+    name: { type: 'icon' },
     fontSize: {
       type: 'enum',
       values: ['small', 'medium', 'large', 'inherit'],
@@ -37,17 +39,18 @@ export default {
     },
   },
   keyless: [{ kind: 'literal', to: 'name' }],
-  notes: 'Icon name vocabulary is still open (ss.10.3).',
+  notes: 'Icon vocabulary: built-in Material set + custom icons (tasks/ICONS.md).',
 
   block: false,
   intrinsic: (node) => {
     const s = sizeOf(node);
     return { w: s, h: s };
   },
-  render: (_node, box) => {
-    // A bordered frame plus a single diagonal stroke reads as a generic glyph
-    // placeholder without implying any particular icon. It scales with the box.
-    return rrect(box.x, box.y, box.w, box.h, { stroke: COLORS.muted })
-      + rline(box.x, box.y + box.h, box.x + box.w, box.y, { stroke: COLORS.muted, strokeWidth: 1 });
+  render: (node, box) => {
+    // The resolver annotated node.icons.name (or didn't); drawIcon does the
+    // rest -- clean vectors for a known name, the muted placeholder glyph
+    // (bordered square + diagonal) otherwise -- centered at full extent.
+    const s = Math.min(box.w, box.h);
+    return drawIcon(node, 'name', box.x + (box.w - s) / 2, box.y + (box.h - s) / 2, s);
   },
 };

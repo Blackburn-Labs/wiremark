@@ -33,6 +33,7 @@ npm run render --workspace @wiremark/cli -- <inputs...> [-o out.svg | -d out-dir
 node packages/cli/bin/wiremark.js <in.wiremark> -o out.svg           # same, directly
 
 npm run docs:reference              # regenerate docs/reference/components.md from meta/element-specs.json
+npm run icons:builtin               # regenerate the built-in icon module + docs/reference/icons.md from meta/builtin-icons.json
 cd site && npm start                # docs site dev server (regenerates the reference first)
 cd site && npm run build            # build the docs site
 ```
@@ -105,7 +106,19 @@ authoritative intent even though you can't open the file.
   draw their own links.
 - **Keyless resolution can't collide** (enforced by a test): at most one string
   literal, at most one enum, sizing as its own category. In `resolve.js`, a bare token
-  is tried as sizing → filler → keyless enum → boolean flag, in that order.
+  is tried as sizing → filler → keyless number → keyless enum → boolean flag → icon
+  name (only on elements whose literal slot targets an icon-typed prop), in that order.
+- **Icons** (tasks/ICONS.md). Props declared `type: 'icon'` take an icon NAME (bare or
+  quoted, MUI PascalCase, forgiving spelling); `resolve.js` resolves each one at
+  resolve time through document-`Icons`-block → injected (`render(src, {icons})`,
+  flat maps or Iconify packs) → built-in, and annotates `node.icons[key]` for
+  `draw.js`'s `drawIcon` — elements draw icon slots ONLY through `drawIcon`, which
+  falls back to the `iconGlyph` placeholder (+ a soft Diagnostic for unknown names).
+  The built-in set, `packages/core/src/icons/builtin.js`, is **generated** from
+  `meta/builtin-icons.json` by `scripts/generate-icons.mjs` (devDep `@iconify-json/ic`,
+  80 KB budget enforced) — never edit it (or `docs/reference/icons.md`) by hand;
+  change the JSON and `npm run icons:builtin`. Core never reads icon files: `src=`
+  entries resolve through the host's `loadIcon` callback (the CLI implements it).
 - **Aliases** (`gap`→`spacing`, `w`→`width`, …) are declared per-prop and mapped to
   the canonical name by the resolver.
 - **Leaf modules avoid import cycles.** `common.js`, `metrics.js`, and `draw.js` import

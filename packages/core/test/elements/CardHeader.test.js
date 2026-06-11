@@ -12,6 +12,11 @@ const firstChild = (src) => parse(src).frames[0].children[0];
 /** Laid-out box of the frame's first child for `src`. */
 const firstBox = (src) => layout(parse(src))[0].root.children[0];
 
+/** Signature of a clean drawIcon vector group (translate + scale) -- the frame's
+ * own wrapper is a translate-only `<g>`, so the `scale(` is what marks real
+ * icon artwork (ICONS.md ss.3). */
+const ICON_G = /<g transform="translate\([^)]*\) scale\(/;
+
 test('CardHeader parses cleanly and resolves its title from the keyless literal', () => {
   const doc = parse(SRC);
   assert.deepEqual(doc.diagnostics, []);
@@ -64,24 +69,58 @@ test('a header WITH a subheader lays out taller than one without', () => {
   );
 });
 
-test('icon is keyed and adds a leading placeholder glyph', () => {
+test('icon is keyed and adds a leading icon slot', () => {
   const doc = parse('Wireframe\n  CardHeader "Jane" icon="Person"');
   assert.deepEqual(doc.diagnostics, []);
   assert.equal(doc.frames[0].children[0].props.icon, 'Person');
 
-  // A header with a leading icon emits more chrome than one without (the extra glyph).
+  // A header with a leading icon emits more artwork than one without it.
   const withIcon = render('Wireframe\n  CardHeader "Jane" icon="Person"').svg;
   const without = render('Wireframe\n  CardHeader "Jane" closeIcon="none"').svg;
   const paths = (svg) => (svg.match(/<path/g) ?? []).length;
   assert.ok(
     paths(withIcon) > paths(without),
-    `icon header path count (${paths(withIcon)}) should exceed the glyph-free header (${paths(without)})`,
+    `icon header path count (${paths(withIcon)}) should exceed the icon-free header (${paths(without)})`,
   );
 });
 
-test('closeIcon defaults to "Close" and draws a trailing glyph; closeIcon="none" omits it', () => {
+test('icon-typed props accept bare names: icon=Check === icon="Check" (ICONS.md ss.3)', () => {
+  const bare = parse('Wireframe\n  CardHeader "Jane" icon=Check');
+  assert.deepEqual(bare.diagnostics, []);
+  assert.equal(bare.frames[0].children[0].props.icon, 'Check');
+  const quoted = parse('Wireframe\n  CardHeader "Jane" icon="Check"');
+  assert.equal(quoted.frames[0].children[0].props.icon, 'Check');
+});
+
+test('a known built-in icon name renders its real artwork as clean vectors', () => {
+  const { svg, diagnostics } = render('Wireframe\n  CardHeader "Jane" icon="Check" closeIcon="none"');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, ICON_G); // the clean drawIcon group
+  assert.match(svg, /M9 16\.17/); // the built-in Check path data
+});
+
+test('an unknown icon name falls back to the placeholder glyph plus an "unknown icon" warning', () => {
+  const { svg, diagnostics } = render('Wireframe\n  CardHeader "Jane" icon="NoSuchIconXyz" closeIcon="none"');
+  assert.equal(diagnostics.length, 1);
+  assert.match(diagnostics[0].message, /unknown icon "NoSuchIconXyz"/);
+  // No clean vector group -- the slot degrades to the rough bordered-box glyph,
+  // which still adds chrome over an icon-free header.
+  assert.doesNotMatch(svg, ICON_G);
+  const without = render('Wireframe\n  CardHeader "Jane" closeIcon="none"').svg;
+  const paths = (s) => (s.match(/<path/g) ?? []).length;
+  assert.ok(
+    paths(svg) > paths(without),
+    `placeholder header path count (${paths(svg)}) should exceed the icon-free header (${paths(without)})`,
+  );
+});
+
+test('closeIcon defaults to "Close" and draws a real trailing Close X; closeIcon="none" omits it', () => {
   const withClose = render('Wireframe\n  CardHeader "Jane"').svg;
   const noClose = render('Wireframe\n  CardHeader "Jane" closeIcon="none"').svg;
+  // The default is real built-in artwork, not the placeholder glyph...
+  assert.match(withClose, ICON_G);
+  // ...and "none" suppresses the slot entirely.
+  assert.doesNotMatch(noClose, ICON_G);
   const paths = (svg) => (svg.match(/<path/g) ?? []).length;
   assert.ok(
     paths(withClose) > paths(noClose),
@@ -95,11 +134,12 @@ test('closeIcon accepts a custom icon name', () => {
   assert.equal(doc.frames[0].children[0].props.closeIcon, 'MoreVert');
 });
 
-test('an unset closeIcon resolves to the "Close" default and draws the same trailing glyph', () => {
-  // The resolver does NOT inject PropDef defaults, so an unset closeIcon is
-  // absent on node.props; the element must apply its "Close" default at render
-  // time. A plain header and an explicit closeIcon="Close" must therefore emit
-  // an identical trailing glyph (same path count).
+test('an unset closeIcon resolves to the "Close" default and draws the same trailing icon', () => {
+  // The resolver never injects PropDef defaults into props, but it DOES resolve
+  // an icon-typed prop's default name and annotate its artwork onto
+  // node.icons.closeIcon (ICONS.md ss.3); the element still applies "Close" in
+  // its show/hide gate. A plain header and an explicit closeIcon="Close" must
+  // therefore emit identical trailing artwork (same path count).
   const plain = render('Wireframe\n  CardHeader "Jane"').svg;
   const explicit = render('Wireframe\n  CardHeader "Jane" closeIcon="Close"').svg;
   const paths = (svg) => (svg.match(/<path/g) ?? []).length;
@@ -108,7 +148,13 @@ test('an unset closeIcon resolves to the "Close" default and draws the same trai
     paths(explicit),
     `default closeIcon (${paths(plain)}) should match explicit closeIcon="Close" (${paths(explicit)})`,
   );
-  assert.ok(paths(plain) > 0, 'the default header should draw at least the close glyph');
+  assert.ok(paths(plain) > 0, 'the default header should draw at least the close icon');
+});
+
+test('the unset closeIcon default is annotated with real artwork at resolve time', () => {
+  const header = firstChild(SRC);
+  assert.equal(header.props.closeIcon, undefined, 'props must stay untouched by the default');
+  assert.ok(header.icons?.closeIcon?.body, 'node.icons.closeIcon should carry the resolved Close artwork');
 });
 
 test('a CardHeader is block: it stretches to its container cross axis', () => {

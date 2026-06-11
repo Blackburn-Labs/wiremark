@@ -20,6 +20,17 @@ test('Icon parses with clean diagnostics and the keyless name resolves', () => {
   assert.equal(icon.props.name, 'home');
 });
 
+test('the keyless name may be bare: `Icon Search` === `Icon "Search"` (tasks/ICONS.md ss.3)', () => {
+  const bare = parse('Wireframe\n  Icon Search');
+  assert.deepEqual(bare.diagnostics, []);
+  assert.equal(bare.frames[0].children[0].props.name, 'Search');
+
+  // ...and the two spellings render byte-identically.
+  const { svg: bareSvg } = render('Wireframe\n  Icon Search');
+  const { svg: quotedSvg } = render('Wireframe\n  Icon "Search"');
+  assert.equal(bareSvg, quotedSvg);
+});
+
 test('fontSize is keyed and its alias size= lands on the same prop', () => {
   const keyed = parse('Wireframe\n  Icon "home" fontSize=large');
   assert.deepEqual(keyed.diagnostics, []);
@@ -58,7 +69,28 @@ test('Icon lays out to finite, positive boxes at every fontSize', () => {
   }
 });
 
-test('Icon renders a hand-drawn path', () => {
-  const { svg } = render(SRC);
-  assert.match(svg, /<path/);
+test('a known built-in name renders clean vector artwork (tasks/ICONS.md ss.3)', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Icon "Check"');
+  assert.deepEqual(diagnostics, []);
+  // iconBody's translate+scale group is the clean-vector signature, and
+  // 'Check' resolves to the Material body starting at M9 16.17.
+  assert.match(svg, /<g transform="translate\([^"]*\) scale\(/);
+  assert.match(svg, /M9 16\.17/);
+});
+
+test('an unknown name renders the placeholder glyph and warns', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Icon "NoSuchIconXyz"');
+  // No clean-vector group -- only iconBody emits a scale() transform.
+  assert.doesNotMatch(svg, /\) scale\(/);
+  assert.match(svg, /<path/); // the rough placeholder strokes are still drawn
+  assert.ok(
+    diagnostics.some((d) => /unknown icon/.test(d.message)),
+    `expected an "unknown icon" warning, got ${JSON.stringify(diagnostics)}`,
+  );
+
+  // The fallback is pixel-compatible with a nameless Icon (same box, same
+  // placeholder artwork) -- the unknown name only adds the warning.
+  const bare = render('Wireframe\n  Icon');
+  assert.deepEqual(bare.diagnostics, []);
+  assert.equal(svg, bare.svg);
 });

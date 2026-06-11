@@ -41,8 +41,10 @@ test('Rating parses cleanly as an inputs leaf with no diagnostics', () => {
 });
 
 test('the resolver injects no defaults; props are absent until set', () => {
-  // Defaults (value=0, max=100, icon=Star, emptyIcon=StarBorder) live in the
-  // strategy, not the resolved node -- mirrors Chip/Slider behavior.
+  // Defaults (value=0, max=5, icon=Star, emptyIcon=StarBorder) live in the
+  // strategy, not the resolved node -- mirrors Chip/Slider behavior. The icon
+  // defaults DO resolve into the node.icons annotation (tasks/ICONS.md ss.3),
+  // but props stay untouched -- and Rating's render never reads the artwork.
   const r = firstChild('Wireframe\n  Rating');
   assert.equal(r.props.value, undefined);
   assert.equal(r.props.max, undefined);
@@ -78,10 +80,15 @@ test('max is a keyed numeric prop', () => {
   assert.equal(firstChild('Wireframe\n  Rating max=4').props.max, 4);
 });
 
-test('icon and emptyIcon are keyed string props (quoted)', () => {
-  const r = firstChild('Wireframe\n  Rating icon="Favorite" emptyIcon="FavoriteBorder"');
-  assert.equal(r.props.icon, 'Favorite');
-  assert.equal(r.props.emptyIcon, 'FavoriteBorder');
+test('icon and emptyIcon are keyed icon props (bare or quoted)', () => {
+  // type:'icon' parses like a string but accepts BARE names too (tasks/ICONS.md
+  // ss.3) -- `icon=Favorite` and `icon="Favorite"` are the same prop value.
+  const quoted = firstChild('Wireframe\n  Rating icon="Favorite" emptyIcon="FavoriteBorder"');
+  assert.equal(quoted.props.icon, 'Favorite');
+  assert.equal(quoted.props.emptyIcon, 'FavoriteBorder');
+  const bare = firstChild('Wireframe\n  Rating icon=Favorite emptyIcon=FavoriteBorder');
+  assert.equal(bare.props.icon, 'Favorite');
+  assert.equal(bare.props.emptyIcon, 'FavoriteBorder');
 });
 
 test('two bare numbers is an error (value set more than once)', () => {
@@ -98,10 +105,6 @@ test('a bare number plus an alias is an error (same canonical prop)', () => {
 
 test('a quoted literal is rejected (Rating takes no text)', () => {
   assert.throws(() => parse('Wireframe\n  Rating "label"'), /does not take a text literal/);
-});
-
-test('icon= must be quoted (string prop)', () => {
-  assert.throws(() => parse('Wireframe\n  Rating icon=Star'), /must be quoted/);
 });
 
 test('max= must be numeric', () => {
@@ -159,6 +162,52 @@ test('value is clamped to [0, glyphs] (above the star count pins to full)', () =
 
 test('a negative value fills no stars (clamped at 0)', () => {
   assert.equal(filledStars('Wireframe\n  Rating -2'), 0);
+});
+
+// drawIcon's clean <g> -- translate AND scale -- distinguishable from the frame
+// wrapper's plain translate-only <g> (render.js). It appears in Rating output
+// ONLY when icon=/emptyIcon= is explicitly set (icon-mode); the default row is
+// hand-drawn stars.
+const CLEAN_ICON_G = /<g transform="translate\([^"]+\) scale\([^"]+\)"/;
+/** The built-in Favorite (heart) body's leading path fragment. */
+const FAVORITE_D = /m12 21\.35/;
+
+test('a default Rating keeps its hand-drawn stars (no icon artwork)', () => {
+  // The PropDef defaults (Star/StarBorder) are annotated by the resolver but
+  // deliberately NOT drawn: the sketchy star is the wireframe-fidelity default.
+  const { svg, diagnostics } = render('Wireframe\n  Rating 3');
+  assert.deepEqual(diagnostics, []);
+  assert.equal(filledStars('Wireframe\n  Rating 3'), 3);
+  assert.doesNotMatch(svg, CLEAN_ICON_G);
+});
+
+test('an explicit known icon= swaps the row to that artwork (ink filled, muted empty)', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Rating 2 max=3 icon=Favorite');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, CLEAN_ICON_G, 'icon-mode draws clean vector cells');
+  assert.match(svg, FAVORITE_D, 'the Favorite artwork should be present');
+  assert.equal((svg.match(/m12 21\.35/g) ?? []).length, 3, 'every cell draws the icon');
+  assert.match(svg, /fill="#22303f"/, 'filled cells draw in ink');
+  assert.match(svg, /fill="#9aa7b2"/, 'empty cells draw muted');
+  assert.equal(filledStars('Wireframe\n  Rating 2 max=3 icon=Favorite'), 0, 'no hand-drawn stars in icon-mode');
+});
+
+test('an explicit emptyIcon= pairs with the icon artwork for empty cells', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Rating 1 max=2 icon=Favorite emptyIcon=FavoriteBorder');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, FAVORITE_D, 'filled cell draws Favorite');
+  assert.match(svg, /M16\.5 3c-1\.74/, 'empty cell draws FavoriteBorder');
+});
+
+test('an unknown icon name warns and icon-mode falls back to placeholder cells', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Rating 3 icon=NoSuchIconXyz');
+  assert.ok(
+    diagnostics.some((d) => /unknown icon "NoSuchIconXyz"/.test(d.message)),
+    `expected an unknown-icon warning, got ${JSON.stringify(diagnostics)}`,
+  );
+  // Unresolved icon-mode cells degrade to the shared placeholder glyph.
+  assert.match(svg, /stroke="#9aa7b2"/);
+  assert.doesNotMatch(svg, CLEAN_ICON_G);
 });
 
 test('Rating renders hollow stars in the muted ink', () => {
