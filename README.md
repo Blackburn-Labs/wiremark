@@ -8,6 +8,9 @@ in a hand-drawn (Balsamiq-like) style.
 wiremark is **agent-first** — designed to be trivial for an LLM to read, write,
 and reason about — while embedding cleanly in markdown the way Mermaid does.
 
+**Site:** [wiremark.dev](https://wiremark.dev/) ·
+**Docs:** [docs.wiremark.dev](https://docs.wiremark.dev/)
+
 ## Example
 
 A wireframe lives inside a fenced ` ```wireframe ` block:
@@ -48,7 +51,10 @@ packages/
   core/         # @wiremark/core -- parser, layout engine, hand-drawn SVG renderer (pure JS, no host deps)
   cli/          # @wiremark/cli  -- thin command-line renderer (npx @wiremark/cli in.wiremark -o out.svg)
   adapter-*/    # thin per-host adapters (Obsidian, markdown-it, remark, ...) -- added as built
+docs/           # portable Markdown language docs (guides + generated reference)
+site/           # Docusaurus app that serves docs/ at https://docs.wiremark.dev/
 meta/           # element-specs.json -- component coverage matrix (hand-maintained)
+RELEASING.md    # how @wiremark/core and @wiremark/cli get published to npm
 ```
 
 - **core** turns wiremark source — the text inside a ` ```wireframe ` block —
@@ -58,40 +64,22 @@ meta/           # element-specs.json -- component coverage matrix (hand-maintain
 - the **editor** (a PWA WYSIWYG authoring tool) is a separate repo that consumes
   `core` as a dependency.
 
-## Pipeline
+## Docs
 
-`source → lex → indent tree → resolve (keyless/sizing/filler) → layout →
-hand-drawn SVG`, with the navigation graph inferred from `to=#id` links.
+[![Netlify Status](https://api.netlify.com/api/v1/badges/8a2a5f41-bd79-4cbe-840f-4d25ea8278d9/deploy-status)](https://app.netlify.com/projects/wiremark-docs/deploys)
 
-## Status
+The language documentation is portable Markdown in `docs/`, served by the
+Docusaurus app in `site/` and published at
+[docs.wiremark.dev](https://docs.wiremark.dev/).
 
-The format is specified at v0.1. The workspace and core skeleton are scaffolded;
-the parser, layout engine, and renderer are in progress. Run the core test suite
-with `npm test`.
-
-## Releasing
-
-The scoped packages **`@wiremark/core`** (`packages/core`, the library) and
-**`@wiremark/cli`** (`packages/cli`, the command-line renderer) are published to
-npm by the **Publish to npm** workflow (`.github/workflows/release.yml`), which
-authenticates via OIDC trusted publishing — no tokens or secrets required. The
-workflow publishes core first, then cli (cli depends on core).
-
-To cut a release:
-
-1. Bump `version` in **both** `packages/core/package.json` and
-   `packages/cli/package.json` — and the `@wiremark/core` dependency pin in
-   `packages/cli/package.json` — to the same new semver (one not already on npm).
-2. Commit and push to `main`.
-3. Draft and publish a new **GitHub Release** with a tag matching the version
-   (e.g. `v0.2.0`).
-
-Publishing the Release runs the workflow — test suite, then `npm publish
---provenance --access public` for each package — and the new versions (with
-provenance attestations) appear on npm a few minutes later. The workflow can also
-be run on demand from the **Actions** tab.
-
-> **First publish is manual.** OIDC trusted publishing requires the package to
-> already exist on npm with a Trusted Publisher configured, so the very first
-> publish of each package is done by hand (`npm publish --access public` from the
-> package dir); CI takes over from the second release on.
+- **Guides** (`docs/guides/`) are written by hand.
+- The **component reference** (`docs/reference/components.md`) is **generated**
+  from `meta/element-specs.json` by `npm run docs:reference` — never edit it by
+  hand; change the JSON and regenerate. The site's `prestart`/`prebuild` hooks
+  run the generator automatically, so the published reference always matches the
+  source of truth.
+- **Publishing** is handled by Netlify (`netlify.toml`): every push to `main`
+  triggers a build of `site/`, but the deploy is skipped unless something the
+  site actually consumes changed (`site/`, `docs/`, `meta/`, the generator
+  script, or the Netlify config). Commits touching only `packages/*` never
+  redeploy the docs.
