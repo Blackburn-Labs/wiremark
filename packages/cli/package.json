@@ -1,6 +1,6 @@
 {
   "name": "@wiremark/cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Command-line renderer for the wiremark wireframe DSL: turn a .wiremark file into a hand-drawn SVG.",
   "homepage": "https://wiremark.dev",
   "bugs": "https://github.com/Blackburn-Labs/wiremark/issues",
@@ -41,6 +41,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@wiremark/core": "0.0.3"
+    "@wiremark/core": "0.0.4"
   }
 }
