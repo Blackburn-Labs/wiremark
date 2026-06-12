@@ -25,7 +25,7 @@ The name is optional, but you need one on any frame you want to link to.
 whole region — a clickable zone that navigates to a frame:
 
 ```wireframe
-Button "Sign in" primary to=#dashboard
+Button "Sign in" contained to=#dashboard
 ListItem "Settings" to=#settings
 Box * * to=#detail            // an entire region is clickable
 Card to=#product              // the whole card navigates

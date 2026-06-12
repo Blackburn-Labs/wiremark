@@ -1,6 +1,6 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText, textRunWidth } from './metrics.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -193,29 +193,74 @@ const HATCH_BASE = { fillWeight: 1, hachureAngle: -41, roughness: 0.4 };
 export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
 
 /**
+ * Draw `box` in one of `backgroundHatch`'s four chrome shapes (rect, `'pill'`,
+ * `'ellipse'`, or a numeric corner radius) with the given rough.js `opts`. Shared
+ * by the opaque base pass and the hatch pass so the two always trace the SAME
+ * outline -- the base can never extend past the hashes (or vice versa) for a
+ * curved shape.
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {'pill'|'ellipse'|number|undefined} shape
+ * @param {object} opts
+ * @returns {string}
+ */
+function hatchShape(box, shape, opts) {
+  if (shape === 'pill') return rpill(box.x, box.y, box.w, box.h, opts);
+  if (shape === 'ellipse') return rellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, opts);
+  if (typeof shape === 'number') return rroundrect(box.x, box.y, box.w, box.h, shape, opts);
+  return surface(box, opts);
+}
+
+/**
+ * A solid, BORDERLESS `COLORS.paper` fill in `box`, in the same `shape` the hatch
+ * uses -- the opaque base that makes a tinted surface knock out whatever is
+ * behind it. Always paper (themed), never the hatch's `fill`, so a disabled tint
+ * (muted hashes) is still paper-opaque. Drawn through the shared `hatchShape` so
+ * the base and the hashes can't diverge.
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {'pill'|'ellipse'|number|undefined} [shape]
+ * @returns {string}
+ */
+function paperBase(box, shape) {
+  return hatchShape(box, shape, { fill: COLORS.paper, fillStyle: 'solid', stroke: 'none', roughness: 0.6 });
+}
+
+/**
  * The wireframe background tint: light gray hand-drawn hashes filling `box`,
  * BORDERLESS. Draw your own border afterwards (e.g. `surface(box, { fill:
  * 'none' })`) so the tight hatch roughness doesn't stiffen the outline.
+ *
  * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
- * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer). Pass
- * `opts.fill` to recolor the hashes (e.g. muted when disabled), and `opts.shape`
- * to hatch non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
+ * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer).
+ * `opts.fill` recolors the HASHES (e.g. muted when disabled). `opts.shape`
+ * hatches non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
  * rounded rect with that corner radius) -- so the hashes never poke past a
  * curved outline.
+ *
+ * `opts.base` is OPT-IN opacity (CONVENTION s.8). Pass `base: true` when the
+ * hatch IS the element's own opaque SURFACE (an (A) caller: AppBar, contained
+ * Button, filled Chip/TextField, the switch's "on" track, a filled/standard
+ * Alert): a solid `COLORS.paper` fill in the same `shape` is laid down FIRST so
+ * nothing behind shows through the hash gaps. Leave it false (the default) when
+ * the hatch is a TRANSLUCENT highlight/marker/placeholder over content that must
+ * stay visible (a (B) caller: a selected row, a partial progress run, the dark
+ * Snackbar, a Skeleton) -- those stay byte-identical and see-through between the
+ * hashes. The base is ALWAYS paper, independent of `opts.fill`. For a partial
+ * tint pass the SUB-box you want opaque, not the full box.
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {string} [pattern]  'hatch' | 'crosshatch'
  * @param {boolean} [dense]
- * @param {{ fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
+ * @param {{ base?: boolean, fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
  * @returns {string}
  */
 export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
   const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
   const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
-  const fill = { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE };
-  if (opts.shape === 'pill') return rpill(box.x, box.y, box.w, box.h, fill);
-  if (opts.shape === 'ellipse') return rellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, fill);
-  if (typeof opts.shape === 'number') return rroundrect(box.x, box.y, box.w, box.h, opts.shape, fill);
-  return surface(box, fill);
+  // (A) callers opt into an opaque paper base under the hashes; (B) callers omit
+  // it and stay see-through over the content/track/row behind them.
+  const base = opts.base ? paperBase(box, opts.shape) : '';
+  const hatch = hatchShape(box, opts.shape,
+    { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE });
+  return base + hatch;
 }
 
 /**
@@ -373,6 +418,40 @@ export function centeredLabel(box, str, opts = {}) {
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2 + fontSize * 0.35; // optical vertical centering
   return text(cx, cy, str, { fontSize, weight, anchor: 'middle', fill, maxW });
+}
+
+/**
+ * A small "floating" label sitting ON a field's TOP border (the MUI outlined
+ * look once a value/placeholder is shown). A paper-colored rectangle is knocked
+ * out behind the text first, so the field outline doesn't strike through the
+ * label. Shared by TextField and Select so the floating look stays identical.
+ *
+ * `x` is the field's left edge and `topY` its top border y; the label is inset
+ * `indent` px from `x` and vertically centered on `topY`. The knockout spans the
+ * (truncated) text width plus `gapPad` on each side. Pass `maxW` to bound the
+ * label run; it is trimmed with an ellipsis to fit, and the knockout matches the
+ * trimmed width.
+ * @param {number} x  field left edge
+ * @param {number} topY  field top border y (the label centers on this line)
+ * @param {string} str
+ * @param {{ fontSize?: number, fill?: string, gapPad?: number, indent?: number, maxW?: number }} [opts]
+ * @returns {string}
+ */
+export function floatingLabel(x, topY, str, opts = {}) {
+  const { fontSize = 11, fill = COLORS.muted, gapPad = 4, indent = 8, maxW } = opts;
+  const shown = truncateText(str, fontSize, maxW);
+  if (!shown) return '';
+  const textX = x + indent;
+  const textW = textRunWidth(shown, fontSize);
+  // Opaque paper knockout behind the text so the outline reads as broken by the
+  // label. A plain SVG rect (not hand-drawn) keeps the gap crisp and seamless.
+  const gapX = textX - gapPad;
+  const gapY = topY - fontSize / 2 - 1;
+  const gapW = textW + gapPad * 2;
+  const gapH = fontSize + 2;
+  const knockout = `<rect x="${gapX}" y="${gapY}" width="${gapW}" height="${gapH}" fill="${COLORS.paper}"/>`;
+  // Baseline placed so the text is vertically centered on the border line.
+  return knockout + text(textX, topY + fontSize * 0.35, shown, { fontSize, fill });
 }
 
 /**

@@ -71,11 +71,12 @@ export default {
 
     if (variant === 'switch') {
       // Pill track hatches with the "on" tint when checked (muted when disabled);
+      // opaque (base:true) pill fill so the "on" track is its own solid surface,
       // borderless hatch + its own border, so the pill outline keeps its roughness.
       // Knob slides L->R.
       const tint = checked
         ? backgroundHatch(box, node.props.background, node.props.denseBackground === true,
-            disabled ? { shape: 'pill', fill: COLORS.muted } : { shape: 'pill' })
+            disabled ? { shape: 'pill', fill: COLORS.muted, base: true } : { shape: 'pill', base: true })
         : '';
       const track = tint + rpill(box.x, box.y, box.w, box.h, { stroke: ink });
       const d = box.h - 4;                 // knob diameter, 2px inset top & bottom

@@ -36,6 +36,7 @@ Wireframe #users landscape
           TableCell "Total"
           TableCell ""
           TableCell "10" align=right
+    Scrollbar horizontal 20 thumb=45
     Stack row spacing=2
       Typography body2 "Rows per page: 25"
       Spacer

@@ -61,13 +61,13 @@ Every line follows the same shape:
 Take this line:
 
 ```wireframe
-TextField "Email" type=email required
+TextField "Email" startIcon=Email required
 ```
 
 - `TextField` — the **component name** (always PascalCase).
 - `"Email"` — a **keyless property**: a quoted text literal. wiremark resolves
   it to the field's `label`, so this is the field labelled "Email".
-- `type=email` — a **keyed property**, written `key=value`.
+- `startIcon=Email` — a **keyed property**, written `key=value`.
 - `required` — a **boolean flag**, a bare word that switches a property on.
 
 The indentation in front of the component name is what makes it a child of the
@@ -90,7 +90,7 @@ Wireframe #card-demo
 - `Img` with no properties draws a placeholder image box.
 - The final bare `Typography` draws a line of placeholder **filler** text — handy
   when the exact words do not matter yet. (See [Text & filler](05-text-and-filler.md).)
-- `Card` with no explicit `CardContent`/`CardMedia`/`CardActions` children simply
+- `Card` with no explicit `CardContent`/`CardActions` children simply
   treats everything inside it as its body.
 
 Start sparse. Add detail only where it communicates something.
@@ -105,9 +105,9 @@ point at it with `to=#id`:
 Wireframe #login mobile
   Stack column gap=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
-    Button "Sign in" primary to=#dashboard
+    TextField "Email" startIcon=Email
+    TextField "Password" startIcon=Lock
+    Button "Sign in" contained to=#dashboard
 ```
 ````
 

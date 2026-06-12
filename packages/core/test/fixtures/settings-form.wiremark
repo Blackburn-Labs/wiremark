@@ -10,7 +10,7 @@ Wireframe #settings landscape
     Card
       Typography h5 "Shipping details"
       TextField "Full name"
-      TextField "Email" type=email
+      TextField "Email" startIcon=Email
       Select "Country" outlined value="United States"
         Option "United States" selected
         Option "Canada"
@@ -30,7 +30,7 @@ Wireframe #settings landscape
     Card
       Typography h5 "Rate your experience"
       Rating 4 max=5
-      TextField "Comments" type=text
+      TextField "Comments" multiline placeholder="Tell us what you think"
     Stack row spacing=2
       ButtonGroup outlined
         Button "Back"

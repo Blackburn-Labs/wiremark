@@ -46,7 +46,7 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {number} [y]
  */
 
-/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}|((node:ResolvedNode)=>{w:number,h:number})}} */
+/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}|((node:ResolvedNode)=>{w:number,h:number}), overlay?:boolean|((node:ResolvedNode)=>boolean), overlayPlacement?:(node:ResolvedNode, parentContent:Rect, measured:{w:number,h:number})=>Rect}} */
 function strategyFor(name) {
   return REGISTRY[name] ?? /** @type {*} */ ({});
 }
@@ -61,6 +61,21 @@ function strategyFor(name) {
 function isContainer(node) {
   const s = strategyFor(node.component);
   return s.container === true || typeof s.layoutSpec === 'function';
+}
+
+/**
+ * Is this node an OVERLAY (out of flow)? An overlay contributes nothing to its
+ * parent's content size and gets no flex/grid slot (this module), and the FRAME
+ * paints it last, over the in-flow content (render.js). `overlay` may be a static
+ * boolean OR a per-node predicate, mirroring how `block`/`minSize` may be
+ * functions. EXPORTED so render.js's deferred paint pass keys off the exact same
+ * predicate as this module's flow partition -- one source of truth for "what is
+ * an overlay." (Dialog; Drawer overlay variant; Scrollbar.)
+ * @param {ResolvedNode} node @returns {boolean}
+ */
+export function isOverlay(node) {
+  const s = strategyFor(node.component);
+  return typeof s.overlay === 'function' ? !!s.overlay(node) : !!s.overlay;
 }
 
 /** Resolve a container's layout spec, defaulting to a 0-gap column. @param {ResolvedNode} node @returns {{axis:string,pad?:number,gap?:number,cols?:number}} */
@@ -128,7 +143,11 @@ export function measure(node, avail) {
 function measureContainer(node, spec, avail) {
   const pad = spec.pad ?? 0;
   const gap = spec.gap ?? 0;
-  const kids = node.children ?? [];
+  // Overlay children are OUT OF FLOW: they add nothing to the parent's content
+  // size and seed no gap. Measuring over the flow kids only is what makes a
+  // container's size identical whether or not a Dialog/Drawer/Scrollbar overlays
+  // it (the regression guard: with no overlays this is `node.children` verbatim).
+  const kids = (node.children ?? []).filter((k) => !isOverlay(k));
   const totalGap = gap * Math.max(0, kids.length - 1);
 
   if (spec.axis === 'row') {
@@ -173,14 +192,53 @@ export function place(node, region) {
     const pad = spec.pad ?? 0;
     const content = { x: region.x + pad, y: region.y + pad, w: region.w - 2 * pad, h: region.h - 2 * pad };
     const kids = node.children ?? [];
-    box.children = spec.axis === 'grid' ? arrangeGrid(kids, content, spec) : arrangeLinear(kids, content, spec);
+    // OUT-OF-FLOW split: flow kids arrange exactly as before (so an overlay-free
+    // container is byte-identical -- `flowKids` then equals `kids`); overlay kids
+    // are placed parent-relative afterward and appended LAST in document order.
+    const flowKids = kids.filter((k) => !isOverlay(k));
+    const overlayKids = kids.filter((k) => isOverlay(k));
+    box.children = spec.axis === 'grid' ? arrangeGrid(flowKids, content, spec) : arrangeLinear(flowKids, content, spec);
+    for (const child of overlayKids) box.children.push(placeOverlay(child, content));
   }
   return box;
 }
 
 /**
+ * Place one OUT-OF-FLOW child against its parent's `content` rect.
+ *
+ * The subtree is measured at its CONTENT size (bare `measure`, no avail), so a
+ * content-/breakpoint-sized overlay keeps its own width rather than stretching to
+ * the parent -- a `col`/`row` container handed an avail extent fills it (the
+ * in-flow `block` behaviour), which would defeat a Dialog's `size`. PARENT-RELATIVE
+ * sizing is the ELEMENT's job: `overlayPlacement(node, content, measured)` gets the
+ * parent content rect and returns the final box, so a fullScreen Dialog fills the
+ * parent, a Drawer docks 100% to an edge, a Scrollbar pins the right edge -- each
+ * computes its own extent from `content`. (Note `%`/`fill` sizing tokens are
+ * resolved in arrangeLinear, which overlays bypass; an overlay that wants a `%`
+ * extent derives it in its own `overlayPlacement` from `content`.) The engine stays
+ * vocabulary-free. The returned rect is used VERBATIM (place() does not re-measure),
+ * so the element's w/h are final.
+ *
+ * The parent content rect is annotated onto `node.overlayParent` so the element's
+ * render can paint a parent-spanning scrim behind itself (a Dialog's modal
+ * backdrop) without the render facade threading the parent through -- the same
+ * node-annotation pattern as `node.icons`. A malformed overlay with no placement
+ * hook degrades to its content size at the parent origin rather than throwing
+ * (CONVENTION s.11). @param {ResolvedNode} node @param {Rect} content @returns {Box}
+ */
+function placeOverlay(node, content) {
+  const s = strategyFor(node.component);
+  const measured = measure(node);
+  node.overlayParent = { ...content };
+  const rect = typeof s.overlayPlacement === 'function'
+    ? s.overlayPlacement(node, content, measured)
+    : { x: content.x, y: content.y, w: measured.w, h: measured.h };
+  return place(node, rect);
+}
+
+/**
  * @param {ResolvedNode[]} children @param {Rect} content
- * @param {{ axis:string, gap?:number, reverse?:boolean }} spec @returns {Box[]}
+ * @param {{ axis:string, gap?:number, reverse?:boolean, mainAlign?:'start'|'end'|'center' }} spec @returns {Box[]}
  */
 function arrangeLinear(children, content, spec) {
   const horiz = spec.axis === 'row';
@@ -203,7 +261,7 @@ function arrangeLinear(children, content, spec) {
     if (main == null && flex === 0) {
       // Measure against the cross extent this child will actually get, so an
       // aspect-locked subtree (Img `ratio=`) reserves the right main extent.
-      const cross = crossExtent(child, horiz, crossAvail);
+      const cross = crossExtent(child, horiz, crossAvail, mainAvail);
       const m = measure(child, horiz ? { h: cross } : { w: cross });
       main = horiz ? m.w : m.h;
     }
@@ -220,10 +278,18 @@ function arrangeLinear(children, content, spec) {
   // weights, leftover and totalGap are all computed order-independently above, so
   // reversing here only mirrors visual order (Stack `-reverse` directions, ss.5.2).
   const order = spec.reverse ? [...items].reverse() : items;
-  let cursor = horiz ? content.x : content.y;
+  // mainAlign packs the children toward the start (default), end, or center of the
+  // main axis by offsetting the start cursor by the free space. Only meaningful
+  // with NO flex child -- a flex/`*`/Spacer already absorbs `leftover` into its own
+  // size, so the offset is then 0 (flex wins; otherwise the free space would be
+  // double-counted). `start` keeps cursor at the content origin, so every existing
+  // container is byte-identical. Used by DialogActions (`end`, MUI right-alignment).
+  const align = totalFlex === 0 ? spec.mainAlign : 'start';
+  const startOffset = align === 'end' ? leftover : align === 'center' ? leftover / 2 : 0;
+  let cursor = (horiz ? content.x : content.y) + startOffset;
   const end = content.x + content.w;
   for (const i of order) {
-    const cross = crossExtent(i.child, horiz, crossAvail);
+    const cross = crossExtent(i.child, horiz, crossAvail, mainAvail);
     // A row clamps each child to the space remaining inside the parent: an
     // overcrowded row squeezes its trailing children (whose labels then trim to
     // an ellipsis) instead of letting boxes spill past the right edge. Columns
@@ -245,17 +311,37 @@ function arrangeLinear(children, content, spec) {
 }
 
 /**
- * Cross-axis extent for a child: explicit token, else stretch (block / container)
- * or intrinsic (inline leaf).
+ * Cross-axis extent for a child: explicit token, else an aspect-derived extent
+ * (when the child pins only its main axis), else stretch (block / container) or
+ * intrinsic (inline leaf).
  * @param {ResolvedNode} child @param {boolean} horiz @param {number} crossAvail
+ * @param {number} [mainAvail]  main-axis space, so a `%` main extent can be
+ *   resolved here for the aspect-derive branch
  * @returns {number}
  */
-function crossExtent(child, horiz, crossAvail) {
+function crossExtent(child, horiz, crossAvail, mainAvail) {
   const s = strategyFor(child.component);
   const tok = horiz ? child.size?.h : child.size?.w;
   if (tok?.unit === 'px') return tok.value;
   if (tok?.unit === '%') return (/** @type {number} */ (tok.value) / 100) * crossAvail;
   if (tok) return crossAvail; // fill / flex on the cross axis
+  // An aspect leaf (Img `ratio=`) that pins ONLY its main axis derives its cross
+  // from the ratio instead of block-filling: in a row a `100px` width is the main
+  // extent, so the height is 100/ratio. Gated tightly -- aspect function, finite
+  // ratio, an explicit main token (no explicit cross token, handled above), and a
+  // px/% main whose extent is known here (a flex/* main isn't resolved until after
+  // distribution, so it falls through to block-fill). measure() owns the ratio
+  // math (avail.w -> h, avail.h -> w), so the formula lives in exactly one place.
+  const mainTok = horiz ? child.size?.w : child.size?.h;
+  const ratio = typeof s.aspect === 'function' ? s.aspect(child) : undefined;
+  if (ratio && Number.isFinite(ratio) && mainTok) {
+    let mainExtent = null;
+    if (mainTok.unit === 'px') mainExtent = /** @type {number} */ (mainTok.value);
+    else if (mainTok.unit === '%' && mainAvail != null)
+      mainExtent = (/** @type {number} */ (mainTok.value) / 100) * mainAvail;
+    if (mainExtent != null)
+      return measure(child, horiz ? { w: mainExtent } : { h: mainExtent })[horiz ? 'h' : 'w'];
+  }
   // `block` may be a static boolean OR a per-node predicate (e.g. Button stretches
   // only when fullWidth). Containers stretch to fill by default.
   const block = typeof s.block === 'function' ? s.block(child) : (s.block ?? isContainer(child));

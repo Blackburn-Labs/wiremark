@@ -29,7 +29,7 @@ A common, readable choice is **variant/flags first, the text literal last**:
 
 ```wireframe
 Typography h6 "Acme"
-Button primary "Save"
+Button contained "Save"
 TextField outlined "Email"
 ```
 
@@ -57,7 +57,7 @@ navigate. The payoff is the inferred flow graph (see
 of screens into a navigable map for free.
 
 ```wireframe
-Button "Continue" primary to=#checkout
+Button "Continue" contained to=#checkout
 ListItem "Order history" to=#orders
 ```
 

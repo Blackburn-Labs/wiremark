@@ -80,6 +80,12 @@ test('Stack row lays children left-to-right separated by spacing*SPACING', () =>
 
   const [a, b] = stack.children;
   assert.ok(b.x > a.x, 'a row advances along x');
+  // Anti-swap guard (the user report this task investigates): a row must advance
+  // on the MAIN (x) axis AND keep children level on the CROSS (y) axis. If the
+  // direction->axis mapping were swapped, a "row" would stack vertically and these
+  // y values would differ instead. Children are short labels of the same height,
+  // so an honest row shares the exact y.
+  assert.equal(a.y, b.y, 'row children share a y (do NOT stack vertically -- direction is not swapped)');
   // The second child starts after the first plus the resolved gap (2 * SPACING).
   assert.equal(b.x - (a.x + a.w), 2 * SPACING, 'the gap between children is spacing * SPACING');
 });
@@ -89,6 +95,11 @@ test('Stack column lays children top-to-bottom separated by spacing*SPACING', ()
   const [a, b] = stack.children;
   assert.ok(Number.isFinite(stack.h) && stack.h > 0, `h should be finite & positive, got ${stack.h}`);
   assert.ok(b.y > a.y, 'a column advances along y');
+  // Anti-swap guard (mirror of the row case): a column advances on the MAIN (y)
+  // axis AND keeps children aligned on the CROSS (x) axis. Column children align
+  // to the start of the cross axis, so both share the same x; if direction were
+  // swapped, a "column" would run horizontally and these x values would differ.
+  assert.equal(a.x, b.x, 'column children share an x (do NOT lay out horizontally -- direction is not swapped)');
   assert.equal(b.y - (a.y + a.h), 2 * SPACING, 'the gap between children is spacing * SPACING');
 });
 
@@ -96,6 +107,45 @@ test('default direction (omitted) lays out as a column', () => {
   const stack = laidStack('Wireframe w=400 h=200\n  Stack spacing=2\n    Typography "A"\n    Typography "B"');
   const [a, b] = stack.children;
   assert.ok(b.y > a.y && b.x === a.x, 'omitted direction behaves as column (advances along y)');
+});
+
+// Direct anti-swap cross-check (the user report this task investigates): render the
+// SAME two children once as a row and once as a column in the SAME frame, and assert
+// the two arrangements are genuinely orthogonal -- row varies x while column varies
+// y, and crucially they are NOT each other's behavior. A swapped direction->axis
+// mapping would make these two layouts identical (or transposed), failing here.
+test('row and column are orthogonal, matching CSS flex-direction (not swapped)', () => {
+  const SRC = (dir) => `Wireframe w=400 h=400\n  Stack ${dir} spacing=2\n    Typography "A"\n    Typography "B"`;
+  const [ra, rb] = laidStack(SRC('row')).children;
+  const [ca, cb] = laidStack(SRC('column')).children;
+
+  // row: horizontal => x differs, y shared.
+  assert.ok(rb.x > ra.x && rb.y === ra.y, 'row is horizontal (x advances, y shared)');
+  // column: vertical => y differs, x shared.
+  assert.ok(cb.y > ca.y && cb.x === ca.x, 'column is vertical (y advances, x shared)');
+  // The two are not the same arrangement: a row does not advance on y, a column
+  // does not advance on x. This is the assertion that fails if the mapping swaps.
+  assert.equal(ra.y, rb.y, 'row does not advance vertically');
+  assert.equal(ca.x, cb.x, 'column does not advance horizontally');
+});
+
+// Guard the mapping when Stacks nest (a common real layout: a row of controls
+// inside a column form). The inner row must still run horizontally even though its
+// parent runs vertically -- i.e. axis is per-Stack, never inherited or flipped.
+test('a row nested inside a column still lays out horizontally', () => {
+  const src =
+    'Wireframe w=400 h=400\n' +
+    '  Stack column spacing=2\n' +
+    '    Typography "header"\n' +
+    '    Stack row spacing=2\n' +
+    '      Button "Save"\n' +
+    '      Button "Cancel"';
+  const outer = laidStack(src);
+  const [, innerRow] = outer.children; // [Typography, inner Stack row]
+  assert.equal(innerRow.node.component, 'Stack');
+  const [a, b] = innerRow.children;
+  assert.ok(b.x > a.x, 'nested row advances along x (horizontal)');
+  assert.equal(a.y, b.y, 'nested row children share a y -- the inner axis is not inherited from the column parent');
 });
 
 // `-reverse` emits `reverse:true` in the layoutSpec, which the engine honors by

@@ -185,6 +185,37 @@
       ]
     },
     {
+      "name": "Scrollbar",
+      "category": "Layout",
+      "children": false,
+      "properties": [
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": [
+            "vertical",
+            "horizontal"
+          ],
+          "default": "vertical",
+          "keyless": true,
+          "notes": "Place vertical in a row, horizontal in a column: the strip stretches the container's cross axis only (a block leaf cannot grow the main axis), so against-the-grain placement reads as the wrong silhouette."
+        },
+        {
+          "name": "scrolled",
+          "type": "numeric",
+          "default": 0,
+          "keyless": true,
+          "notes": "How far scrolled, percent 0-100 (0 = start/top-left). Clamped; out-of-range degrades, never throws."
+        },
+        {
+          "name": "thumb",
+          "type": "numeric",
+          "default": 30,
+          "keyless": false
+        }
+      ]
+    },
+    {
       "name": "Card",
       "category": "Surfaces",
       "children": true,
@@ -194,13 +225,6 @@
           "type": "numeric",
           "default": "1",
           "keyless": false
-        },
-        {
-          "name": "variant",
-          "type": "enum",
-          "values": ["elevation", "outlined"],
-          "default": "elevation",
-          "keyless": true
         }
       ]
     },
@@ -316,9 +340,36 @@
         {
           "name": "icon",
           "type": "icon",
-          "default": "ChevronRight",
           "keyless": false,
-          "notes": "ChevronDown used by default if `expanded`"
+          "notes": "Explicit chevron OVERRIDE; wins in both states. Unset, the per-state defaults below apply."
+        },
+        {
+          "name": "expandedIcon",
+          "type": "icon",
+          "default": "ExpandLess",
+          "keyless": false,
+          "notes": "The chevron drawn when expanded (default ExpandLess, pointing up)."
+        },
+        {
+          "name": "collapsedIcon",
+          "type": "icon",
+          "default": "ExpandMore",
+          "keyless": false,
+          "notes": "The chevron drawn when collapsed (default ExpandMore, pointing down)."
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch"],
+          "keyless": true,
+          "notes": "Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true)."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "notes": "Packs the background hatch lines closer."
         }
       ]
     },
@@ -344,26 +395,55 @@
           ],
           "default": "left",
           "keyless": true,
-          "notes": "v1.0."
+          "notes": "v1.0. Pins the edge for overlay; sets the docked side + divider edge in flow. Implies the axis when given (right=>vertical, top=>horizontal) and overrides a conflicting orientation."
+        },
+        {
+          "name": "orientation",
+          "type": "enum",
+          "values": [
+            "vertical",
+            "horizontal"
+          ],
+          "default": "vertical",
+          "keyless": true,
+          "notes": "v1.0. Panel axis: vertical=tall narrow side panel, horizontal=wide short panel. anchor implies and overrides it when both are given."
         },
         {
           "name": "variant",
           "type": "enum",
           "values": [
             "permanent",
-            "persistent",
-            "temporary"
+            "overlay",
+            "rail"
           ],
-          "default": "temporary",
+          "default": "permanent",
           "keyless": true,
-          "notes": "v1.0."
+          "notes": "v1.0. permanent=in-flow panel; overlay=out-of-flow, pinned to anchor; rail=thin in-flow strip."
         },
         {
-          "name": "open",
+          "name": "divider",
+          "type": "boolean",
+          "default": true,
+          "keyless": true,
+          "notes": "Solid seam on the inner edge facing the content; divider=false suppresses it."
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": [
+            "hatch",
+            "crosshatch"
+          ],
+          "default": "hatch",
+          "keyless": true,
+          "notes": "Opaque hatch tint on the panel (drawn only when set)."
+        },
+        {
+          "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Drawn open by default in wireframe."
+          "notes": "Packs the background hatch lines closer."
         }
       ]
     },
@@ -376,15 +456,6 @@
           "name": "label",
           "type": "string",
           "keyless": true
-        },
-        {
-          "name": "href",
-          "type": "reference",
-          "keyless": false,
-          "aliases": [
-            "to"
-          ],
-          "notes": "DSL to=#id (frame-level only)."
         },
         {
           "name": "underline",
@@ -665,7 +736,8 @@
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "notes": "Optional. An icon (startIcon/endIcon) with no label draws a compact, square icon-only button. A bare Button with neither label nor icon shows a Button placeholder."
         },
         {
           "name": "variant",
@@ -677,14 +749,6 @@
           ],
           "default": "text",
           "keyless": true
-        },
-        {
-          "name": "href",
-          "type": "reference",
-          "keyless": false,
-          "aliases": [
-            "to"
-          ]
         },
         {
           "name": "size",
@@ -733,13 +797,14 @@
     },
     {
       "name": "TextField",
-      "category": "Content",
+      "category": "Inputs",
       "children": false,
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "notes": "Optional. Absent: nothing drawn, no space reserved. Outlined: rests inside the empty field, floats onto the top border once a value/placeholder shows."
         },
         {
           "name": "variant",
@@ -758,16 +823,9 @@
           "keyless": false
         },
         {
-          "name": "type",
-          "type": "enum",
-          "values": [
-            "text",
-            "password",
-            "email",
-            "number"
-          ],
-          "default": "text",
-          "keyless": true
+          "name": "defaultValue",
+          "type": "string",
+          "keyless": false
         },
         {
           "name": "multiline",
@@ -779,8 +837,8 @@
           "name": "required",
           "type": "boolean",
           "default": false,
-          "keyless": false,
-          "notes": true
+          "keyless": true,
+          "notes": "Appends a * marker to the label."
         },
         {
           "name": "placeholder",
@@ -819,6 +877,25 @@
           "keyless": true
         },
         {
+          "name": "startIcon",
+          "type": "icon",
+          "keyless": false,
+          "notes": "Icon name (MUI PascalCase); drawn just inside the leading edge."
+        },
+        {
+          "name": "endIcon",
+          "type": "icon",
+          "keyless": false,
+          "notes": "Icon name; drawn just inside the trailing edge (takes the slot a select caret would use)."
+        },
+        {
+          "name": "select",
+          "type": "boolean",
+          "default": false,
+          "keyless": false,
+          "notes": "Draws a dropdown caret on the trailing edge."
+        },
+        {
           "name": "fullWidth",
           "type": "boolean",
           "default": false,
@@ -838,11 +915,6 @@
           "keyless": true
         },
         {
-          "name": "to",
-          "type": "reference",
-          "keyless": false
-        },
-        {
           "name": "filler",
           "type": "string",
           "default": "label fill",
@@ -856,12 +928,62 @@
       "children": false,
       "properties": [
         {
+          "name": "width",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["h"]
+        },
+        {
           "name": "ratio",
           "type": "ratio",
           "keyless": false
         },
         {
+          "name": "alt",
+          "type": "string",
+          "keyless": false
+        },
+        {
           "name": "src",
+          "type": "string",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "Placeholder",
+      "category": "Content",
+      "children": false,
+      "properties": [
+        {
+          "name": "width",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["w"]
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "keyless": true,
+          "aliases": ["h"]
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "keyless": true
+        },
+        {
+          "name": "description",
           "type": "string",
           "keyless": false
         }
@@ -884,6 +1006,17 @@
           "keyless": true
         },
         {
+          "name": "size",
+          "type": "enum",
+          "values": [
+            "small",
+            "medium",
+            "large"
+          ],
+          "default": "medium",
+          "keyless": true
+        },
+        {
           "name": "src",
           "type": "string",
           "keyless": false
@@ -891,6 +1024,22 @@
         {
           "name": "label",
           "type": "string",
+          "keyless": true
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": [
+            "hatch",
+            "crosshatch"
+          ],
+          "default": "hatch",
+          "keyless": true
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
           "keyless": true
         }
       ]
@@ -997,11 +1146,6 @@
           "type": "icon",
           "keyless": false,
           "default": null
-        },
-        {
-          "name": "to",
-          "type": "reference",
-          "keyless": false
         },
         {
           "name": "filler",
@@ -1399,6 +1543,13 @@
       "children": true,
       "properties": [
         {
+          "name": "position",
+          "type": "enum",
+          "values": [ "center", "top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"],
+          "default": "center",
+          "keyless": true
+        },
+        {
           "name": "size",
           "type": "enum",
           "values": [ "fullScreen", "content", "xs", "sm", "md", "lg", "lx"],
@@ -1406,6 +1557,37 @@
           "keyless": true
         }
       ]
+    },
+    {
+      "name": "DialogHeader",
+      "category": "Feedback",
+      "children": false,
+      "properties": [
+        {
+          "name": "title",
+          "type": "string",
+          "aliases": ["label", "text"],
+          "keyless": true
+        },
+        {
+          "name": "closeIcon",
+          "type": "icon",
+          "default": "Close",
+          "keyless": false
+        }
+      ]
+    },
+    {
+      "name": "DialogContent",
+      "category": "Feedback",
+      "children": true,
+      "properties": []
+    },
+    {
+      "name": "DialogActions",
+      "category": "Feedback",
+      "children": true,
+      "properties": []
     },
     {
       "name": "Snackbar",

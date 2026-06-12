@@ -49,6 +49,17 @@ function pathsCross(a, b) {
 
 const { h: LH } = PRESET_SIZES.landscape; // #login is landscape; the anchored frames adopt #shell's landscape canvas
 
+/**
+ * Count placed frames by a marker that is genuinely 1:1 with a frame group:
+ * render.js wraps every visible frame in its own `<clipPath id="wm-clip-N">`
+ * (the per-frame overflow clip). A bare `<g transform>` count is NOT a valid
+ * proxy -- resolved icons (`iconBody` -> `<g transform="translate(...) scale(...)">`)
+ * and any other transformed group inflate it, so a frame holding an icon would
+ * over-count. The clip id is emitted once per placed frame and by nothing else.
+ * @param {string} svg @returns {number}
+ */
+const frameCount = (svg) => (svg.match(/<clipPath id="wm-clip-\d+"/g) ?? []).length;
+
 // The fixture: #login -> #home, then #home fans out to #details and #product, with
 // a #details -> #home back-link. (#login -> #reset and #product -> #detail are
 // dangling; #shell is the invisible background.)
@@ -100,7 +111,7 @@ test('multi-frame: layout is deterministic across runs', () => {
 test('multi-frame render: frames placed in 2D with frame-to-frame connectors', () => {
   const { svg, diagnostics } = render(fixture('multi-frame.wiremark'));
   assert.deepEqual(diagnostics, [], 'the fixture resolves cleanly');
-  assert.equal((svg.match(/<g transform/g) ?? []).length, 4, 'four visible frames are placed (shell is hidden)');
+  assert.equal(frameCount(svg), 4, 'four visible frames are placed (shell is hidden)');
 
   // Connectors live in their own layer, on top of the frames.
   const layer = svg.match(/<g class="wm-connectors">([\s\S]*)<\/g><\/svg>$/);
@@ -266,6 +277,27 @@ test('direction is a keyed Wireframe prop and an option override', () => {
 test('single-frame files render exactly as before (no flow chrome)', () => {
   const { svg } = render('Wireframe\n  Typography "Hello"');
   assert.match(svg, /viewBox="0 0 800 600"/, 'legacy origin + default canvas size preserved');
-  assert.equal((svg.match(/<g transform/g) ?? []).length, 1, 'one frame group');
+  assert.equal(frameCount(svg), 1, 'one frame group');
   assert.doesNotMatch(svg, /wm-connectors/, 'no connector layer for a lone frame');
+});
+
+test('frame count is robust to icons in the content (wm-clip marker, not <g transform>)', () => {
+  // Regression guard for the brittle proxy this test used to use: a resolved icon
+  // emits its own `<g transform="translate(...) scale(...)">`, so counting raw
+  // `<g transform>` over-counts any frame holding an icon. Two frames, one of which
+  // contains an Icon: the robust marker must report 2, while `<g transform>` is
+  // inflated past 2 -- proving why frameCount() does not use it.
+  const src = [
+    'Wireframe #one',
+    '  Icon Search',
+    'Wireframe #two',
+    '  Typography "plain"',
+  ].join('\n');
+  const { svg, diagnostics } = render(src);
+  assert.deepEqual(diagnostics, [], 'the icon resolves cleanly');
+
+  assert.equal(frameCount(svg), 2, 'two frames counted regardless of the icon group');
+  // The icon adds at least one extra `<g transform>`, so the old proxy would mis-count.
+  assert.ok((svg.match(/<g transform/g) ?? []).length > 2,
+    'raw <g transform> is inflated by the icon -- the reason this proxy was replaced');
 });

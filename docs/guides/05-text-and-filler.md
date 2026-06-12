@@ -11,7 +11,7 @@ resolves to the label/content:
 
 ```wireframe
 Typography h4 "Sign in"
-Button "Save" primary
+Button "Save" contained
 ListItem "Settings" to=#settings
 ```
 
@@ -117,7 +117,7 @@ neither is set, the renderer's own default applies.
 
 Any text-bearing element: `Typography`, `Button` (its label), `TextField` (label
 and value), `Link`, `Chip`, `ListItem`, and similar. Non-text elements (`Box`,
-`Divider`, `Img`, `Checkbox`, ...) do not. The
+`Divider`, `Img`, `Control`, ...) do not. The
 [component reference](../reference/components.md) notes filler behavior per
 component.
 

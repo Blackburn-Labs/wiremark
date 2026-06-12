@@ -50,7 +50,7 @@ Spacer
 
 After the component name, a line carries two kinds of properties:
 
-- **Keyed** — written `key=value`: `type=password`, `cols=3`, `to=#dashboard`,
+- **Keyed** — written `key=value`: `startIcon=Lock`, `cols=3`, `to=#dashboard`,
   `variant=outlined`, `label="Email"`.
 - **Keyless** — a value with no `key=`, resolved to a property by its *type or
   value alone*: an enum (`outlined`, `row`, `h3`), a string literal
@@ -68,7 +68,7 @@ One rule governs how every token is read:
   *drawn* (a label, a value, alt text). Quoting is **mandatory** for literals.
   There is no "optional quoting".
 - **A bare token is never a text literal.** It is one of: an **enum** value
-  (`outlined`, `row`, `h3`), a **boolean flag** (`primary`, `required`), a
+  (`outlined`, `row`, `h3`), a **boolean flag** (`disabled`, `required`), a
   **number** (only as a keyed value like `cols=3`, or as sizing), or a **sizing
   token** (`100%`, `*`, `240px`, flex weight `2`).
 
@@ -122,8 +122,8 @@ of which can collide. So they may appear in **any order**:
 ```wireframe
 Typography "Acme" h6
 Typography h6 "Acme"
-Button "Buy" primary
-Button primary "Buy"
+Button "Buy" contained
+Button contained "Buy"
 ```
 
 > **Style tip (non-binding).** The grammar accepts any order, but pick a
@@ -161,7 +161,7 @@ Box * *
 end of the line:
 
 ```wireframe
-Button "Save" primary   // submits the form
+Button "Save" contained   // submits the form
 ```
 
 ## Recap

@@ -24,6 +24,7 @@ import Typography from './Typography.js';
 import Button from './Button.js';
 import TextField from './TextField.js';
 import Img from './Img.js';
+import Placeholder from './Placeholder.js';
 import Chip from './Chip.js';
 import Icon from './Icon.js';
 import List from './List.js';
@@ -61,23 +62,27 @@ import ButtonGroup from './ButtonGroup.js';
 import Fab from './Fab.js';
 import Alert from './Alert.js';
 import Dialog from './Dialog.js';
+import DialogHeader from './DialogHeader.js';
+import DialogContent from './DialogContent.js';
+import DialogActions from './DialogActions.js';
 import Snackbar from './Snackbar.js';
 import Progress from './Progress.js';
 import Skeleton from './Skeleton.js';
+import Scrollbar from './Scrollbar.js';
 
 /** Every element definition, grouped by category. @type {import('./common.js').ComponentDef[]} */
 export const ELEMENTS = [
   Wireframe,
-  Stack, Box, Grid, Spacer, Anchor, Divider,
+  Stack, Box, Grid, Spacer, Anchor, Divider, Scrollbar,
   Card, CardHeader, CardContent, CardActions, AppBar, Toolbar,
   AccordionHeader, AccordionBody,
   Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,
   Stepper, Step, Pagination, BottomNavigation, BottomNavigationAction,
-  Typography, Button, TextField, Img, Avatar, Chip, Icon, List, ListItem,
+  Typography, Button, TextField, Img, Placeholder, Avatar, Chip, Icon, List, ListItem,
   Table, TableHead, TableBody, TableFooter, TableRow, TableCell, Badge,
   Control, Select, Option, Slider, Rating,
   ToggleButtonGroup, ToggleButton, ButtonGroup, Fab,
-  Alert, Dialog, Snackbar, Progress, Skeleton,
+  Alert, Dialog, DialogHeader, DialogContent, DialogActions, Snackbar, Progress, Skeleton,
 ];
 
 export { FILLER_STYLES, PRESETS } from './common.js';

@@ -60,10 +60,11 @@ export default {
   },
   render: (node, box) => {
     const { fontSize } = sizeOf(node);
-    // filled -> hand-drawn hatch tint under the border; outlined (and default-read
+    // filled -> opaque (base:true) hand-drawn hatch tint under the border (the
+    // chip's own fill, so nothing shows through it); outlined (and default-read
     // safety) -> border only. The hatch is borderless so the pill border keeps its
     // own normal roughness.
-    const tint = node.props.variant === 'outlined' ? '' : backgroundHatch(box, node.props.background, node.props.denseBackground === true);
+    const tint = node.props.variant === 'outlined' ? '' : backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true });
     return tint + surface(box, {}) + centeredLabel(box, textOf(node, 'Chip'), { fontSize });
   },
 };

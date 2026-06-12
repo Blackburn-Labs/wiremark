@@ -16,7 +16,7 @@ Wireframe mobile
     Typography h4 "Sign in"
     TextField "Email"
     TextField "Password"
-    Button "Sign in" primary to=#dashboard
+    Button "Sign in" contained to=#dashboard
 ```
 ````
 

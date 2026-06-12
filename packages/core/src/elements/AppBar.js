@@ -42,10 +42,11 @@ export default {
   notes: 'Top app bar; usually wraps a Toolbar.',
 
   layoutSpec: (node) => ({ axis: 'row', pad: VARIANT_PAD[variantOf(node)], gap: SPACING }),
-  // Two layers so each keeps its own character: a low-roughness hatch fill that
-  // barely overflows the box, then the normal-roughness border that stays as
-  // wobbly as every other surface.
+  // Two layers so each keeps its own character: an opaque (base:true) low-roughness
+  // hatch fill that barely overflows the box -- the bar is its own surface, so
+  // content behind it must not bleed through -- then the normal-roughness border
+  // that stays as wobbly as every other surface.
   render: (node, box) =>
-    backgroundHatch(box, node.props.background, node.props.denseBackground === true)
+    backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true })
     + surface(box, { fill: 'none' }),
 };

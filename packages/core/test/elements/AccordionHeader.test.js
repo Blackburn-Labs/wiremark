@@ -16,11 +16,11 @@ const firstBox = (src) => layout(parse(src))[0].root.children[0];
 const MUTED = '#9aa7b2';
 // COLORS.ink from draw.js -- the default ink.
 const INK = '#22303f';
-// COLORS.accent from draw.js -- the expanded-state icon tint.
-const ACCENT = '#cfe0ee';
-// The built-in ChevronRight body's opening moveto (ICONS.md built-in set) --
-// the default icon's artwork, asserted as a stable d fragment.
-const CHEVRON_D = 'M10 6L8.59';
+// The built-in ExpandMore / ExpandLess bodies' opening fragments (ICONS.md
+// built-in set): the per-state default chevrons -- ExpandMore (down) when
+// collapsed, ExpandLess (up) when expanded -- asserted as stable d fragments.
+const EXPAND_MORE_D = 'M16.59 8.59';
+const EXPAND_LESS_D = 'm12 8l-6 6';
 // iconBody's clean-vector group: translate + SCALE. (The frame chrome also
 // emits a translate-only <g>, so the scale is what distinguishes icon artwork.)
 const ICON_GROUP = /<g transform="translate\([^"]*scale\(/;
@@ -166,23 +166,53 @@ test('a normal header strokes its border in the default ink', () => {
   assert.match(normal, new RegExp(`stroke="${INK}"`));
 });
 
-test('expanded tints the icon with the accent ink; collapsed does not', () => {
-  // The chevron artwork stays put (direction is decorative at wireframe
-  // fidelity); the open state shows as the accent fill on the icon group.
+test('expanded and collapsed both ink the chevron normally; only the glyph differs', () => {
+  // The open/closed state reads from the chevron DIRECTION, not a colour: both
+  // states draw the icon in the normal ink (no accent, no disabled tint), and
+  // the glyph swaps ExpandLess (up, open) <-> ExpandMore (down, closed).
   const expanded = render('Wireframe\n  AccordionHeader "Shipping" expanded').svg;
   const collapsed = render('Wireframe\n  AccordionHeader "Shipping"').svg;
   assert.notEqual(expanded, collapsed, 'expanded should render differently from collapsed');
-  assert.match(expanded, new RegExp(`fill="${ACCENT}"`), 'expanded icon should be accent-tinted');
-  assert.doesNotMatch(collapsed, new RegExp(`fill="${ACCENT}"`), 'collapsed icon should stay ink');
+  // Both icon groups carry the normal ink fill -- expanded is NOT faded/tinted.
+  const inkIcon = new RegExp(`<g transform="translate\\([^"]*scale\\([^"]*" fill="${INK}"`);
+  assert.match(expanded, inkIcon, 'expanded chevron should be normal ink');
+  assert.match(collapsed, inkIcon, 'collapsed chevron should be normal ink');
+  // The DIRECTION carries the state: ExpandLess when open, ExpandMore when closed.
+  assert.ok(expanded.includes(EXPAND_LESS_D), 'expanded draws the ExpandLess (up) chevron');
+  assert.ok(collapsed.includes(EXPAND_MORE_D), 'collapsed draws the ExpandMore (down) chevron');
+  assert.ok(!collapsed.includes(EXPAND_LESS_D), 'collapsed does not draw the ExpandLess glyph');
 });
 
-test('the default icon renders REAL ChevronRight vectors (no placeholder)', () => {
-  // The resolver annotates the PropDef default's artwork even when icon= is
-  // unset (ICONS.md ss.3), so a plain header draws clean vectors out of the box.
+test('the default icon renders REAL ExpandMore vectors (no placeholder)', () => {
+  // The resolver annotates the per-state default's artwork even when icon= is
+  // unset (ICONS.md ss.3), so a plain (collapsed) header draws clean ExpandMore
+  // vectors out of the box.
   const { svg, diagnostics } = render(SRC);
   assert.deepEqual(diagnostics, []);
   assert.match(svg, ICON_GROUP, 'should contain a clean icon group');
-  assert.ok(svg.includes(CHEVRON_D), 'should contain the built-in ChevronRight body');
+  assert.ok(svg.includes(EXPAND_MORE_D), 'should contain the built-in ExpandMore body');
+});
+
+test('an opt-in background tint adds an opaque paper base (Ruling 1 (A)-site)', () => {
+  // A filled AccordionHeader is its own opaque surface, so the tint passes
+  // base:true -- exactly one extra solid paper base under the hashes vs a plain
+  // header (the frame's own paper paths are constant across both).
+  const baseCount = (svg) => (svg.match(/fill="#ffffff"/g) || []).length;
+  const plain = render('Wireframe\n  AccordionHeader "Shipping"').svg;
+  const tinted = render('Wireframe\n  AccordionHeader "Shipping" background=hatch').svg;
+  assert.notEqual(plain, tinted, 'the background tint should change the render');
+  assert.equal(baseCount(tinted), baseCount(plain) + 1,
+    'a tinted header paints exactly one extra opaque paper base');
+});
+
+test('expandedIcon and collapsedIcon override the per-state default chevrons', () => {
+  const CHECK_D = 'M9 16.17';
+  const exp = render('Wireframe\n  AccordionHeader "Shipping" expanded expandedIcon=Check').svg;
+  assert.ok(exp.includes(CHECK_D), 'expanded state uses the overridden Check glyph');
+  assert.ok(!exp.includes(EXPAND_LESS_D), 'the ExpandLess default is replaced when expanded');
+  const col = render('Wireframe\n  AccordionHeader "Shipping" collapsedIcon=Check').svg;
+  assert.ok(col.includes(CHECK_D), 'collapsed state uses the overridden Check glyph');
+  assert.ok(!col.includes(EXPAND_MORE_D), 'the ExpandMore default is replaced when collapsed');
 });
 
 test('a known built-in icon name swaps in its artwork', () => {
@@ -190,7 +220,7 @@ test('a known built-in icon name swaps in its artwork', () => {
   assert.deepEqual(diagnostics, []);
   assert.match(svg, ICON_GROUP);
   assert.ok(svg.includes('M9 16.17'), 'should contain the built-in Check body');
-  assert.ok(!svg.includes(CHEVRON_D), 'the explicit icon replaces the ChevronRight default');
+  assert.ok(!svg.includes(EXPAND_MORE_D), 'the explicit icon replaces the ExpandMore default');
 });
 
 test('an unknown icon name falls back to the placeholder glyph + a warning', () => {

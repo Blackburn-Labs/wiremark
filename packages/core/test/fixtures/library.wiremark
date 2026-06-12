@@ -1,4 +1,4 @@
-Wireframe #library w=1600 h=4800
+Wireframe #library w=1600 h=5700
   Typography h3 "wiremark component reference"
   Typography body2 "Every implemented component with common variants, grouped by category."
   Divider
@@ -48,6 +48,14 @@ Wireframe #library w=1600 h=4800
         Typography body2 "A"
         Divider vertical
         Typography body2 "B"
+    Stack column spacing=1
+      Typography subtitle2 "Scrollbar (vertical hugs a row edge / horizontal hugs a column edge)"
+      Stack row 360px 160px spacing=2 outline=dotted
+        Box * 160px outline=solid
+        Scrollbar 35 thumb=40
+      Stack column 360px spacing=2 outline=dotted
+        Box 360px 80px outline=solid
+        Scrollbar horizontal 60 thumb=30
   Typography h4 "Surfaces"
   Grid cols=2 gap=3
     Stack column spacing=1
@@ -119,9 +127,9 @@ Wireframe #library w=1600 h=4800
         Step "Payment"
   Grid cols=2
     Stack column spacing=1
-      Typography subtitle2 "Drawer (left permanent open)"
+      Typography subtitle2 "Drawer (permanent)"
       Stack row spacing=3
-        Drawer left permanent open
+        Drawer permanent
           List
             ListItem "Inbox"
             ListItem "Starred"
@@ -170,12 +178,12 @@ Wireframe #library w=1600 h=4800
         Button "Disabled" disabled
         Button "Link" outlined to=#library
     Stack column spacing=1
-      Typography subtitle2 "TextField (variants / value / password)"
+      Typography subtitle2 "TextField (variants / value / icons)"
       TextField "Outlined"
       TextField "Filled" filled
       TextField "Standard" standard
       TextField "With value" value="Jane Doe"
-      TextField "Password" type=password size=small
+      TextField "Search" startIcon=Search placeholder="Find anything" size=small
     Stack column spacing=1
       Typography subtitle2 "Chip / Avatar / Icon / Badge"
       Stack row spacing=2
@@ -202,6 +210,11 @@ Wireframe #library w=1600 h=4800
       Stack column 320px spacing=2
         Img ratio=16:9
         Img
+      Typography subtitle2 "Placeholder (label+description / label / bare)"
+      Stack column 320px spacing=2
+        Placeholder "Chart" description="Q3 revenue by region" 100% 90px
+        Placeholder "Hero image" 100% 60px
+        Placeholder 100% 60px
     Stack column spacing=1
       Typography subtitle2 "List + ListItem (default / dense)"
       List
@@ -321,3 +334,12 @@ Wireframe #library w=1600 h=4800
         Stack row spacing=2
           Button "Cancel"
           Button "Discard" contained
+    Stack column spacing=1
+      Typography subtitle2 "Dialog kit (DialogHeader / DialogContent / DialogActions)"
+      Dialog sm
+        DialogHeader "Delete file?"
+        DialogContent
+          Typography body2 "This permanently removes the file."
+        DialogActions
+          Button "Cancel"
+          Button "Delete" contained

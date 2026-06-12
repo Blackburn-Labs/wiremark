@@ -81,9 +81,11 @@ export default {
     const variant = variantOf(node);
     const glyph = SEVERITY_GLYPH[severityOf(node)];
 
-    // standard/filled lay a borderless hatch tint under the border (filled denser);
-    // outlined stays open. The border is drawn separately at its own roughness.
-    let out = variant === 'outlined' ? '' : backgroundHatch(box, 'hatch', variant === 'filled');
+    // standard/filled lay an opaque (base:true) borderless hatch tint under the
+    // border (filled denser) -- a filled/standard alert is its own surface, so
+    // content behind must not bleed through; outlined stays open (no fill, no
+    // base). The border is drawn separately at its own roughness.
+    let out = variant === 'outlined' ? '' : backgroundHatch(box, 'hatch', variant === 'filled', { base: true });
     out += surface(box, {});
 
     // Left accent bar marks standard/filled (heavier when filled); outlined omits it.

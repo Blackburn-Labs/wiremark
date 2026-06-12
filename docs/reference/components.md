@@ -82,6 +82,16 @@ This reference is generated from [`meta/element-specs.json`](../../meta/element-
 | width | size |  |  | yes | w |  |
 | height | size |  |  | yes | h |  |
 
+### Scrollbar
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| orientation | enum | vertical, horizontal | vertical | yes |  | Place vertical in a row, horizontal in a column: the strip stretches the container's cross axis only (a block leaf cannot grow the main axis), so against-the-grain placement reads as the wrong silhouette. |
+| scrolled | numeric |  | 0 | yes |  | How far scrolled, percent 0-100 (0 = start/top-left). Clamped; out-of-range degrades, never throws. |
+| thumb | numeric |  | 30 | no |  |  |
+
 ## Surfaces
 
 ### Card
@@ -91,7 +101,6 @@ This reference is generated from [`meta/element-specs.json`](../../meta/element-
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | elevation | numeric |  | 1 | no |  |  |
-| variant | enum | elevation, outlined | elevation | yes |  |  |
 
 ### CardHeader
 
@@ -143,7 +152,11 @@ No configurable properties.
 | title | string |  |  | yes | label, text |  |
 | expanded | boolean |  | false | yes |  |  |
 | disabled | boolean |  | false | yes |  |  |
-| icon | icon |  | ChevronRight | no |  | ChevronDown used by default if `expanded` |
+| icon | icon |  |  | no |  | Explicit chevron OVERRIDE; wins in both states. Unset, the per-state defaults below apply. |
+| expandedIcon | icon |  | ExpandLess | no |  | The chevron drawn when expanded (default ExpandLess, pointing up). |
+| collapsedIcon | icon |  | ExpandMore | no |  | The chevron drawn when collapsed (default ExpandMore, pointing down). |
+| background | enum | hatch, crosshatch |  | yes |  | Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). |
+| denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer. |
 
 ### AccordionBody
 
@@ -159,9 +172,12 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| anchor | enum | left, right, top, bottom | left | yes |  | v1.0. |
-| variant | enum | permanent, persistent, temporary | temporary | yes |  | v1.0. |
-| open | boolean |  | false | yes |  | Drawn open by default in wireframe. |
+| anchor | enum | left, right, top, bottom | left | yes |  | v1.0. Pins the edge for overlay; sets the docked side + divider edge in flow. Implies the axis when given (right=>vertical, top=>horizontal) and overrides a conflicting orientation. |
+| orientation | enum | vertical, horizontal | vertical | yes |  | v1.0. Panel axis: vertical=tall narrow side panel, horizontal=wide short panel. anchor implies and overrides it when both are given. |
+| variant | enum | permanent, overlay, rail | permanent | yes |  | v1.0. permanent=in-flow panel; overlay=out-of-flow, pinned to anchor; rail=thin in-flow strip. |
+| divider | boolean |  | true | yes |  | Solid seam on the inner edge facing the content; divider=false suppresses it. |
+| background | enum | hatch, crosshatch | hatch | yes |  | Opaque hatch tint on the panel (drawn only when set). |
+| denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer. |
 
 ### Link
 
@@ -170,7 +186,6 @@ No configurable properties.
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | label | string |  |  | yes |  |  |
-| href | reference |  |  | no | to | DSL to=#id (frame-level only). |
 | underline | boolean |  | true | yes |  |  |
 | variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | inherit | yes |  | Shares Typography scale. |
 | filler | string |  |  | no |  | Filler control. |
@@ -281,9 +296,8 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  |  |
+| label | string |  |  | yes |  | Optional. An icon (startIcon/endIcon) with no label draws a compact, square icon-only button. A bare Button with neither label nor icon shows a Button placeholder. |
 | variant | enum | text, outlined, contained | text | yes |  |  |
-| href | reference |  |  | no | to |  |
 | size | enum | small, medium, large | medium | yes |  |  |
 | disabled | boolean |  | false | yes |  |  |
 | startIcon | icon |  |  | no |  |  |
@@ -292,38 +306,28 @@ No configurable properties.
 | background | enum | hatch, crosshatch | hatch | yes |  |  |
 | denseBackground | boolean |  | false | yes |  |  |
 
-### TextField
-
-*Accepts children: no*
-
-| Name | Type | Values | Default | Keyless | Aliases | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| label | string |  |  | yes |  |  |
-| variant | enum | outlined, filled, standard | outlined | yes |  |  |
-| value | string |  |  | no |  |  |
-| type | enum | text, password, email, number | text | yes |  |  |
-| multiline | boolean |  | false | yes |  |  |
-| required | boolean |  | false | no |  | true |
-| placeholder | string |  |  | no |  |  |
-| helperText | string |  |  | no | helper |  |
-| error | boolean |  | false | yes |  |  |
-| disabled | boolean |  | false | yes |  |  |
-| rows | numeric |  | 1 | no |  |  |
-| size | enum | small, medium | medium | yes |  |  |
-| fullWidth | boolean |  | false | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  |  |
-| denseBackground | boolean |  | false | yes |  |  |
-| to | reference |  |  | no |  |  |
-| filler | string |  | label fill | no |  |  |
-
 ### Img
 
 *Accepts children: no*
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| width | size |  | content | yes | w |  |
+| height | size |  | content | yes | h |  |
 | ratio | ratio |  |  | no |  |  |
+| alt | string |  |  | no |  |  |
 | src | string |  |  | no |  |  |
+
+### Placeholder
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| width | size |  | content | yes | w |  |
+| height | size |  | content | yes | h |  |
+| label | string |  |  | yes |  |  |
+| description | string |  |  | no |  |  |
 
 ### Avatar
 
@@ -332,8 +336,11 @@ No configurable properties.
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | variant | enum | circular, rounded, square | circular | yes |  |  |
+| size | enum | small, medium, large | medium | yes |  |  |
 | src | string |  |  | no |  |  |
 | label | string |  |  | yes |  |  |
+| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| denseBackground | boolean |  | false | yes |  |  |
 
 ### Chip
 
@@ -373,7 +380,6 @@ No configurable properties.
 | --- | --- | --- | --- | --- | --- | --- |
 | label | string |  |  | yes |  |  |
 | icon | icon |  |  | no |  |  |
-| to | reference |  |  | no |  |  |
 | filler | string |  | 1 line | no |  |  |
 
 ### Table
@@ -428,6 +434,32 @@ No configurable properties.
 | variant | enum | standard, dot | standard | yes |  |  |
 
 ## Inputs
+
+### TextField
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| label | string |  |  | yes |  | Optional. Absent: nothing drawn, no space reserved. Outlined: rests inside the empty field, floats onto the top border once a value/placeholder shows. |
+| variant | enum | outlined, filled, standard | outlined | yes |  |  |
+| value | string |  |  | no |  |  |
+| defaultValue | string |  |  | no |  |  |
+| multiline | boolean |  | false | yes |  |  |
+| required | boolean |  | false | yes |  | Appends a * marker to the label. |
+| placeholder | string |  |  | no |  |  |
+| helperText | string |  |  | no | helper |  |
+| error | boolean |  | false | yes |  |  |
+| disabled | boolean |  | false | yes |  |  |
+| rows | numeric |  | 1 | no |  |  |
+| size | enum | small, medium | medium | yes |  |  |
+| startIcon | icon |  |  | no |  | Icon name (MUI PascalCase); drawn just inside the leading edge. |
+| endIcon | icon |  |  | no |  | Icon name; drawn just inside the trailing edge (takes the slot a select caret would use). |
+| select | boolean |  | false | no |  | Draws a dropdown caret on the trailing edge. |
+| fullWidth | boolean |  | false | yes |  |  |
+| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| denseBackground | boolean |  | false | yes |  |  |
+| filler | string |  | label fill | no |  |  |
 
 ### Control
 
@@ -542,7 +574,29 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| position | enum | center, top, bottom, left, right, topLeft, topRight, bottomLeft, bottomRight | center | yes |  |  |
 | size | enum | fullScreen, content, xs, sm, md, lg, lx | content | yes |  |  |
+
+### DialogHeader
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| title | string |  |  | yes | label, text |  |
+| closeIcon | icon |  | Close | no |  |  |
+
+### DialogContent
+
+*Accepts children: yes*
+
+No configurable properties.
+
+### DialogActions
+
+*Accepts children: yes*
+
+No configurable properties.
 
 ### Snackbar
 

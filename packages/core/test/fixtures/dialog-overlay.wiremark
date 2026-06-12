@@ -1,0 +1,50 @@
+// Dialog as a true overlay (task 15): the modal consumes no flow space, paints
+// last over the page, and dims it with a backdrop scrim. The page below (AppBar +
+// content) lays out exactly as if the Dialog were absent; the centered Dialog
+// floats on top. A second frame shows a fullScreen dialog filling the screen.
+//
+// The dialogs are built from the Dialog kit (task 14): DialogHeader (title row),
+// DialogContent (padded body), DialogActions (right-aligned button row -- no manual
+// Spacer needed, MUI alignment).
+
+Wireframe #page landscape
+  AppBar
+    Toolbar
+      Typography h6 "Projects"
+      Spacer
+      Icon "Search"
+      Avatar "JD"
+  Stack column spacing=2
+    Typography h5 "Your projects"
+    Stack row spacing=2
+      Card
+        Typography subtitle1 "Apollo"
+        Typography body2 "Updated 2 hours ago"
+      Card
+        Typography subtitle1 "Borealis"
+        Typography body2 "Updated yesterday"
+      Card
+        Typography subtitle1 "Cosmos"
+        Typography body2 "Updated last week"
+    Typography ~3
+  Dialog sm
+    DialogHeader "Delete project?"
+    DialogContent
+      Typography body2 "This permanently removes Apollo and all its data."
+    DialogActions
+      Button "Cancel"
+      Button "Delete" contained to=#page
+
+Wireframe #fullscreen landscape
+  AppBar
+    Toolbar
+      Typography h6 "Settings"
+  Stack column spacing=2
+    Typography body2 "The page behind is fully covered."
+    Typography ~4
+  Dialog fullScreen
+    DialogHeader "Edit profile"
+    DialogContent
+      Typography body2 "A full-screen dialog fills the whole frame."
+    DialogActions
+      Button "Save" contained to=#page

@@ -13,8 +13,8 @@ Wireframe #shell landscape visible=false
 Wireframe #login landscape
   Stack column spacing=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
+    TextField "Email"
+    TextField "Password"
     Stack row spacing=3
       Control
       Typography body2 "Remember me"

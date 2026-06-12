@@ -7,7 +7,7 @@ Wireframe #appnav landscape
         MenuItem "Edit"
         MenuItem "View" disabled
   Stack row 100% * spacing=3
-    Drawer left permanent open
+    Drawer permanent
       List
         ListItem "Dashboard" to=#dashboard
         ListItem "Projects" to=#projects

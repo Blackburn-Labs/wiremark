@@ -102,3 +102,13 @@ test('a filled Chip emits a hatch tint; an outlined Chip does not', () => {
   const outlined = render('Wireframe\n  Chip "Off" outlined').svg;
   assert.doesNotMatch(outlined, /stroke="#c4c4c4"/);
 });
+
+test('a filled Chip is OPAQUE (paper base under the hatch); an outlined Chip stays transparent', () => {
+  // The tint now lays a solid COLORS.paper base so content behind a filled Chip
+  // cannot show through the hash gaps. An outlined Chip draws no tint at all, so
+  // it gets NO base and stays see-through (MUI: an outlined chip has no fill).
+  const filled = render('Wireframe\n  Chip "On" filled').svg;
+  const outlined = render('Wireframe\n  Chip "Off" outlined').svg;
+  assert.match(filled, /fill="#ffffff" stroke="none"/, 'filled Chip lays an opaque paper base');
+  assert.doesNotMatch(outlined, /fill="#ffffff" stroke="none"/, 'outlined Chip must stay transparent (no base)');
+});

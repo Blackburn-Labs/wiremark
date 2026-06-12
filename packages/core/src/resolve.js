@@ -44,6 +44,10 @@ import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
  * @property {Record<string, import('./icons.js').ResolvedIcon|null>} [icons]
  *           // icon-typed props resolved at resolve time (ICONS.md ss.3): artwork
  *           // for draw.js's drawIcon, or null for an unknown name (-> placeholder)
+ * @property {import('./layout.js').Rect} [overlayParent]
+ *           // OVERLAY nodes only: the parent content rect annotated at layout time
+ *           // (layout.js placeOverlay) so the element's render can paint a
+ *           // parent-spanning scrim/backdrop behind itself (Dialog modal)
  * @property {ResolvedNode[]} children
  * @property {number} line
  *

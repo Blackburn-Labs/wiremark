@@ -1,5 +1,6 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
+import { isOverlay } from './layout.js';
 import { COLORS, escape, connectorArrow, centeredLabel } from './draw.js';
 import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './metrics.js';
 
@@ -10,6 +11,19 @@ import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './met
  * `render(node, box)` strategy (the wobbly drawing lives in `elements/<Name>.js`
  * via the shared `draw.js` primitives). The element draws *itself*; the facade
  * then recurses into its children.
+ *
+ * Overlay layer: an OUT-OF-FLOW node (`overlay` strategy -- Dialog/Drawer/
+ * Scrollbar) must paint LAST within its frame, on top of every in-flow sibling
+ * (even ones declared after it), so it reads as a modal/overlay. So each frame is
+ * painted in two phases: phase 1 walks the box tree SKIPPING overlay subtrees;
+ * phase 2 collects every overlay box in the frame (in document order) and paints
+ * them after, inside the same frame transform + overflow clip. Placement is
+ * parent-relative (layout.js), so an overlay's coordinates are already frame-local
+ * -- only the PAINT order is hoisted to frame scope. A frame with no overlays runs
+ * phase 1 over the whole tree and phase 2 empty, byte-identical to before.
+ * KNOWN LIMITATION: an overlay inside a background-chain frame paints within that
+ * background layer, not hoisted to the foreground -- overlays are a foreground
+ * feature (a modal in shared `background=` chrome is a degenerate construction).
  *
  * Document layer: when a file has several frames they are placed at the absolute
  * `{x, y}` assigned by `frame-layout.js` (a Mermaid-style flow chart) and joined
@@ -30,14 +44,23 @@ import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './met
 const FRAME_GAP = 40;  // legacy vertical gap (fallback when frames carry no {x,y})
 const FLOW_PAD = 24;   // padding around a multi-frame flow chart's content box
 
-/** @param {Box} box @param {string[]} out */
-function renderBox(box, out) {
+/**
+ * @param {Box} box @param {string[]} out
+ * @param {boolean} [skipOverlays]  phase 1 of the overlay split: when true, an
+ *   OUT-OF-FLOW subtree draws NOTHING here (it is deferred to the frame's phase-2
+ *   overlay pass and painted last). Recurses with the same flag so an overlay
+ *   buried deep in the flow tree is still deferred. Off (the default) renders the
+ *   whole subtree -- used for background-chain frames and the phase-2 overlay
+ *   pass itself.
+ */
+function renderBox(box, out, skipOverlays = false) {
   const node = box.node;
+  if (skipOverlays && isOverlay(node)) return; // deferred to the frame overlay pass
   const s = /** @type {*} */ (REGISTRY[node.component]) ?? {};
   /** @type {string[]} */
   const inner = [];
   if (typeof s.render === 'function') inner.push(s.render(node, box));
-  for (const child of box.children) renderBox(child, inner);
+  for (const child of box.children) renderBox(child, inner, skipOverlays);
   // Any node carrying to=#id is a clickable region (SPEC ss.7.2); the facade
   // wraps it here so elements never draw their own link.
   out.push(node.props.to
@@ -53,10 +76,36 @@ function renderFrame(frame, out) {
 /**
  * Render a frame's *content* (its child boxes) without the frame root's own
  * border, so the caller can keep that border out of the overflow clip and paint
- * it on top. @param {LaidOutFrame} frame @param {string[]} out
+ * it on top. OUT-OF-FLOW (overlay) subtrees are skipped here -- the caller paints
+ * them last via `renderOverlays`. @param {LaidOutFrame} frame @param {string[]} out
  */
 function renderFrameContent(frame, out) {
-  for (const child of frame.root.children) renderBox(child, out);
+  for (const child of frame.root.children) renderBox(child, out, true);
+}
+
+/**
+ * Collect every OUT-OF-FLOW box in a frame's tree, in document order (pre-order
+ * DFS over `box.children`, which layout.js builds in source order with overlays
+ * appended after their flow siblings). An overlay's whole subtree is painted by
+ * the phase-2 pass, so once one is collected its descendants are NOT walked again
+ * here. @param {Box} box @param {Box[]} acc @returns {Box[]}
+ */
+function collectOverlays(box, acc) {
+  for (const child of box.children) {
+    if (isOverlay(child.node)) acc.push(child);
+    else collectOverlays(child, acc);
+  }
+  return acc;
+}
+
+/**
+ * Phase 2 of the overlay split: paint every overlay box in the frame, in document
+ * order, AFTER all in-flow content -- so a Dialog/Drawer/Scrollbar sits above even
+ * siblings declared later (the frame-last requirement). Each overlay's full
+ * subtree is drawn (no skip). @param {LaidOutFrame} frame @param {string[]} out
+ */
+function renderOverlays(frame, out) {
+  for (const box of collectOverlays(frame.root, [])) renderBox(box, out);
 }
 
 /**
@@ -105,7 +154,8 @@ export function renderSVG(frames, options = {}) {
     /** @type {string[]} */
     const content = [`<rect x="0" y="0" width="${p.w}" height="${p.h}" fill="${COLORS.paper}"/>`];
     for (const bg of p.frame.backgroundChain) renderFrame(bg, content); // beneath, deepest-first
-    renderFrameContent(p.frame, content);
+    renderFrameContent(p.frame, content);   // phase 1: in-flow content (overlays skipped)
+    renderOverlays(p.frame, content);       // phase 2: overlays last, over everything above
     // Content can overflow a fixed-size frame (the canvas is sized by preset/w,h,
     // not by its children -- ss.5.1). Clip it to the frame box so it never bleeds
     // past the edge: a single-frame file's outer viewport already did this, but a

@@ -31,19 +31,20 @@ Grid [c] [w h] -- columns|cols:N=12, spacing|gap:N=0
 Spacer [w h]
 Anchor [w h]
 Divider -- orientation:(horizontal|vertical)=horizontal*, variant:(solid|dashed|dotted)=solid*
+Scrollbar -- orientation:(vertical|horizontal)=vertical*, scrolled:N=0*, thumb:N=30
 
 SURFACES
-Card [c] [w h] -- elevation:N=1, variant:(elevation|outlined)=elevation*
+Card [c] [w h] -- elevation:N=1
 CardHeader -- title|label|text:T*, subheader|subtext:T, icon:I, closeIcon:I=Close
 CardContent [c]
 CardActions [c]
 AppBar [c] -- variant:(regular|dense)=regular*, background:(hatch|crosshatch)=hatch, denseBackground:B*
 Toolbar [c] -- variant:(regular|dense)=regular*
-AccordionHeader -- title|label|text:T*, expanded:B*, disabled:B*, icon:I=ChevronRight
+AccordionHeader -- title|label|text:T*, expanded:B*, disabled:B*, icon:I, expandedIcon:I=ExpandLess, collapsedIcon:I=ExpandMore, background:(hatch|crosshatch), denseBackground:B*
 AccordionBody [c]
 
 NAVIGATION
-Drawer [c] -- anchor:(left|right|top|bottom)=left*, variant:(permanent|persistent|temporary)=temporary*, open:B*
+Drawer [c] -- variant:(permanent|overlay|rail)=permanent*, orientation:(vertical|horizontal)=vertical*, anchor:(left|right|top|bottom)=left*, divider:B=true*, background:(hatch|crosshatch)=hatch*, denseBackground:B*
 Link [~] -- label:T*, underline:(none|hover|always)=always, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1|body2|caption|overline|button)*, filler:(squiggle|lorem|blocks)
 MenuItem -- label:T*, selected:B*, disabled:B*
 Menubar [c]
@@ -57,11 +58,16 @@ BottomNavigation [c] -- value:T, showLabels:B*
 BottomNavigationAction -- label:T*, icon:I
 
 CONTENT
-Typography [~] -- label:T*, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1|body2|caption|overline|button)=body1*, align:(inherit|left|center|right|justify)=inherit, noWrap:B*, filler:(squiggle|lorem|blocks)
+Typography [~] -- label:T*, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1|body2|caption|overline|button)=body1*, align:(inherit|left|center|right|justify)=inherit*, noWrap:B*, filler:(squiggle|lorem|blocks)
 Button -- label:T*, variant:(text|outlined|contained)=text*, size:(small|medium|large)=medium*, disabled:B*, startIcon:I, endIcon:I, fullWidth:B*, background:(hatch|crosshatch)=hatch*, denseBackground:B*
-TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value:T, type:(text|password|email|number)=text, multiline:B*, required:B*, placeholder:T, helperText|helper:T, error:B*, disabled:B*, rows:N, defaultValue:T, size:(small|medium)=medium, fullWidth:B*, select:B*, background:(hatch|crosshatch)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
-Img -- ratio:A, alt:T, src:T
-Avatar -- variant:(circular|rounded|square)=circular*, src:T, label:T*
+
+INPUTS
+TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value:T, multiline:B*, required:B*, placeholder:T, helperText|helper:T, error:B*, disabled:B*, rows:N, defaultValue:T, size:(small|medium)=medium*, startIcon:I, endIcon:I, fullWidth:B*, select:B*, background:(hatch|crosshatch)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
+
+CONTENT
+Img [w h] -- ratio:A, alt:T, src:T
+Placeholder [w h] -- label:T*, description:T
+Avatar -- variant:(circular|rounded|square)=circular*, size:(small|medium|large)=medium*, src:T, label:T*, background:(hatch|crosshatch)=hatch*, denseBackground:B*
 Chip [~] -- label:T*, variant:(filled|outlined)=filled*, size:(small|medium)=medium*, background:(hatch|crosshatch)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
 Icon -- name:I*, fontSize|size:(small|medium|large|inherit)=medium
 List [c] -- dense:B*, subheader:T
@@ -87,7 +93,10 @@ Fab -- icon:I*, variant:(circular|extended)=circular*, size:(small|medium|large)
 
 FEEDBACK
 Alert [~] -- label:T*, severity:(error|warning|info|success)=success*, variant:(standard|filled|outlined)=standard*, filler:(squiggle|lorem|blocks)
-Dialog [c] -- size:(fullScreen|content|xs|sm|md|lg|lx)=content*
+Dialog [c] -- position:(center|top|bottom|left|right|topLeft|topRight|bottomLeft|bottomRight)=center*, size:(fullScreen|content|xs|sm|md|lg|lx)=content*
+DialogHeader -- title|label|text:T*, closeIcon:I=Close
+DialogContent [c]
+DialogActions [c]
 Snackbar -- position:(inline|topLeft|topRight|bottomLeft|bottomRight)=inline*, message|label:T*
 Progress -- variant:(linear|circular)*, value|n|v|val:N=0*, min:N=0, max:N=100, thickness:(small|medium|large)=medium*
 Skeleton [w h] -- variant:(text|circular|rectangular|rounded)=rectangular*

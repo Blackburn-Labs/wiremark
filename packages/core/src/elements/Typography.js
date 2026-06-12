@@ -4,12 +4,14 @@ import { text, fillerRows, COLORS } from '../draw.js';
 import { fontSizeOf, textOf, measureText, wrapText, fillerLines, LINE_HEIGHT, LOREM } from '../metrics.js';
 
 /**
- * Typography -- text. Keyless slots are the text literal (-> label) and the
- * variant enum, in any order; the variant defaults to `body1` and drives the
- * font size. Bare `~N` -> filler at that size. (SPEC ss.5.4, ss.6)
+ * Typography -- text. Keyless slots are the text literal (-> label) and two
+ * enums, `variant` and `align`, in any order (disjoint domains); the variant
+ * defaults to `body1` and drives the font size, and the `caption` variant inks
+ * in the muted/disabled color so it reads as de-emphasized. Bare `~N` -> filler
+ * at the variant size. (SPEC ss.5.4, ss.6)
  *
- * `align` (keyed) places the line within the box -- left/justify/inherit anchor
- * at the left edge, center at the midpoint, right at the trailing edge -- via the
+ * `align` places the line within the box -- left/justify/inherit anchor at the
+ * left edge, center at the midpoint, right at the trailing edge -- via the
  * `text` helper's text-anchor (justify degrades to left at sketch fidelity).
  * `noWrap` (keyed) pins the MUI single-line form: one line, trimmed to the box
  * with a trailing `…`. Without it (the default) a label that can't fit on one
@@ -75,6 +77,16 @@ function placement(align, box) {
   return { anchor: 'start', x: box.x }; // left / justify / inherit
 }
 
+/**
+ * Ink for the drawn label. The `caption` variant is MUI's de-emphasized text, so
+ * it draws in the muted/disabled color (COLORS.muted -- the same faded ink Button
+ * and TextField use when disabled); every other variant inks normally.
+ * @param {import('../resolve.js').ResolvedNode} node @returns {string}
+ */
+function inkOf(node) {
+  return node.props.variant === 'caption' ? COLORS.muted : COLORS.ink;
+}
+
 export default {
   name: 'Typography',
   tier: 'v0.1',
@@ -97,8 +109,15 @@ export default {
     noWrap: { type: 'boolean', default: false },
     filler: { type: 'enum', values: FILLER_STYLES },
   },
-  keyless: [{ kind: 'literal', to: 'label' }, { kind: 'enum', to: 'variant' }],
-  notes: 'Bare -> filler at the variant size (ss.6); align + noWrap are keyed.',
+  // variant + align are disjoint enum domains (CONVENTION s.2.1), so a bare
+  // `caption`/`center` routes to the right slot in any order; `noWrap` is an
+  // implicit keyless boolean (a bare `noWrap` token -> true, s.3).
+  keyless: [
+    { kind: 'literal', to: 'label' },
+    { kind: 'enum', to: 'variant' },
+    { kind: 'enum', to: 'align' },
+  ],
+  notes: 'Bare -> filler at the variant size (ss.6); variant + align are keyless enums, noWrap a keyless flag.',
 
   block: true,
   intrinsic: (node, avail) => {
@@ -124,6 +143,7 @@ export default {
       return fillerRows(box.x, box.y, box.w, fillerLines(node), fs);
     }
     const weight = weightOf(node);
+    const fill = inkOf(node);
     const { anchor, x } = placement(node.props.align ?? 'inherit', box);
     const str = textOf(node);
     const lines = node.props.noWrap === true ? [str] : wrapText(str, fs, box.w, weight);
@@ -136,7 +156,7 @@ export default {
     if (kept.length < lines.length) kept[kept.length - 1] = lines.slice(kept.length - 1).join(' ');
     let out = '';
     for (let i = 0; i < kept.length; i++) {
-      out += text(x, box.y + fs + lineH * i, kept[i], { fontSize: fs, weight, anchor, maxW: box.w });
+      out += text(x, box.y + fs + lineH * i, kept[i], { fontSize: fs, weight, anchor, fill, maxW: box.w });
     }
     return out;
   },
