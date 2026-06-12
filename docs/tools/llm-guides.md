@@ -135,9 +135,7 @@ Claude.ai has no filesystem to install into — custom skills are uploaded as a
 exact same two files on every deploy, so there is nothing separate to
 maintain:
 
-```sh
-curl -O https://docs.wiremark.dev/skills/wiremark.zip
-```
+**[⬇ Download wiremark.zip](https://docs.wiremark.dev/skills/wiremark.zip)**
 
 In claude.ai, open **Settings → Capabilities → Skills**, choose **Upload
 skill**, and pick `wiremark.zip` (see the
