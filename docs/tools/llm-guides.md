@@ -144,9 +144,7 @@ skill**, and pick `wiremark.zip` (see the
 [help-center article](https://support.claude.com/en/articles/12512180-use-skills-in-claude)
 for the current steps). Custom skills require code execution to be enabled and
 are per-user — each teammate uploads their own copy. To update, re-download
-the ZIP and upload it again. One caveat: claude.ai's sandbox may not be able
-to run `npx @wiremark/cli`, so the skill's render-to-validate step is skipped
-there — reading and writing wireframes works the same.
+the ZIP and upload it again.
 
 ### OpenAI Codex
 
