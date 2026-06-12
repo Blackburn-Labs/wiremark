@@ -67,17 +67,23 @@ Before reading or writing a wireframe, read ./wiremark-llm.md and follow it.
 If you are unsure, start with the full guide: it is still small, and an agent
 that never has to stop and look something up writes better wireframes.
 
-## The Claude skill
+## Setup Agent Skill
 
-For Claude Code (and other hosts that support
-[Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)),
-the same instructions are packaged as a downloadable **skill**. A skill loads
-*progressively*: Claude sees only the skill's one-line description until a
-wireframe task actually comes up, then reads the instructions, and opens the
-bundled component reference only when it needs to look something up — so it
-costs almost no context until used.
+The same instructions are also packaged as an
+[Agent Skill](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview):
+a folder holding a `SKILL.md` (the instructions) and a `reference.md` (the
+component lookup). A skill loads *progressively*: the agent sees only the
+skill's one-line description until a wireframe task actually comes up, then
+reads the instructions, and opens the bundled component reference only when it
+needs to look something up — so it costs almost no context until used.
 
-Install it into a single project:
+The skill format started with Claude, but it is host-agnostic markdown: Claude
+Code, Claude.ai, OpenAI Codex, and a growing list of other agents all load the
+same files. Claude Code is the primary case, covered first; the others follow.
+
+### Claude Code
+
+Install the skill into a single project:
 
 ```sh
 mkdir -p .claude/skills/wiremark
@@ -117,3 +123,48 @@ curl -o ~/.claude/skills/wiremark/reference.md https://docs.wiremark.dev/skills/
 ```
 
 (Re-fetch `SKILL.md` the same way if you also want the latest instructions.)
+
+A stale copy degrades gracefully either way: `reference.md` tells the agent
+where to fetch its own latest version if it meets a component it does not
+recognize.
+
+### Claude.ai (chat)
+
+Claude.ai has no filesystem to install into — custom skills are uploaded as a
+**ZIP of the skill folder** instead. The docs site builds that ZIP from the
+exact same two files on every deploy, so there is nothing separate to
+maintain:
+
+```sh
+curl -O https://docs.wiremark.dev/skills/wiremark.zip
+```
+
+In claude.ai, open **Settings → Capabilities → Skills**, choose **Upload
+skill**, and pick `wiremark.zip` (see the
+[help-center article](https://support.claude.com/en/articles/12512180-use-skills-in-claude)
+for the current steps). Custom skills require code execution to be enabled and
+are per-user — each teammate uploads their own copy. To update, re-download
+the ZIP and upload it again. One caveat: claude.ai's sandbox may not be able
+to run `npx @wiremark/cli`, so the skill's render-to-validate step is skipped
+there — reading and writing wireframes works the same.
+
+### OpenAI Codex
+
+Codex reads the same skill-folder format from `.agents/skills/` (per
+repository) or `~/.agents/skills/` (user-wide) — the identical files, just a
+different directory:
+
+```sh
+mkdir -p .agents/skills/wiremark
+curl -o .agents/skills/wiremark/SKILL.md https://docs.wiremark.dev/skills/wiremark/SKILL.md
+curl -o .agents/skills/wiremark/reference.md https://docs.wiremark.dev/skills/wiremark/reference.md
+```
+
+See the [Codex skills docs](https://developers.openai.com/codex/skills) for
+discovery order and user-level installs.
+
+### Other hosts
+
+Any agent that supports the Agent Skills folder convention (a directory with a
+`SKILL.md` whose frontmatter has `name` and `description`) can use these same
+two files — install them wherever that host discovers skills, per its docs.

@@ -16,6 +16,12 @@ Every component the renderer implements, with its props. Legend:
   bare `#id` token (names the element, e.g. as an `anchor=` target). The
   `Wireframe` root is described in SKILL.md.
 
+This file is a pinned local copy and may lag behind the renderer. If a
+wireframe uses a component or prop not listed below, or you need a component
+and want to check whether a newer release added it, fetch the current version
+of this same list from <https://docs.wiremark.dev/skills/wiremark/reference.md>
+before concluding it does not exist.
+
 <!-- BEGIN GENERATED: component-list (source: the live element registry, packages/core/src/elements; regenerate with `npm run docs:reference`) -->
 ```
 LAYOUT

@@ -1,8 +1,10 @@
-// Generates docs/reference/components.md from meta/element-specs.json, and
+// Generates docs/reference/components.md from meta/element-specs.json,
 // refreshes the condensed component list inside the LLM agent guide
-// (site/static/wiremark-llm.md) and the Claude skill reference
+// (site/static/wiremark-llm.md) and the agent skill reference
 // (site/static/skills/wiremark/reference.md), between their BEGIN/END
-// GENERATED markers.
+// GENERATED markers, and packs the skill folder into
+// site/static/skills/wiremark.zip (the upload artifact for hosts without a
+// filesystem, e.g. claude.ai).
 //
 // Two sources of truth, deliberately:
 //  - components.md <- meta/element-specs.json, the *intended* coverage matrix.
@@ -16,7 +18,7 @@
 // Pure Node (ESM), no dependencies beyond core's own. Safe to run from any
 // working directory: all paths are resolved relative to this file.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,13 +28,17 @@ const ROOT = resolve(HERE, '..');
 const REL_SRC = 'meta/element-specs.json';
 const REL_OUT = 'docs/reference/components.md';
 const REL_LLM = 'site/static/wiremark-llm.md';
-const REL_SKILL_REF = 'site/static/skills/wiremark/reference.md';
+const REL_SKILL_DIR = 'site/static/skills/wiremark';
+const REL_SKILL_REF = `${REL_SKILL_DIR}/reference.md`;
+const REL_SKILL_ZIP = 'site/static/skills/wiremark.zip';
 const REGEN_CMD = 'npm run docs:reference';
 
 const SRC = resolve(ROOT, REL_SRC);
 const OUT = resolve(ROOT, REL_OUT);
 const LLM = resolve(ROOT, REL_LLM);
+const SKILL_DIR = resolve(ROOT, REL_SKILL_DIR);
 const SKILL_REF = resolve(ROOT, REL_SKILL_REF);
+const SKILL_ZIP = resolve(ROOT, REL_SKILL_ZIP);
 
 // Columns of the per-element property table, in render order. Each maps an
 // element's property object onto a cell value.
@@ -222,6 +228,88 @@ async function updateAgentGuides() {
   spliceGenerated(SKILL_REF, REL_SKILL_REF, body);
 }
 
+// --- Skill upload artifact (site/static/skills/wiremark.zip) ---
+//
+// Hosts without a filesystem (claude.ai chat) install skills by uploading a
+// ZIP of the skill folder, so the docs site serves one built from the exact
+// files it serves individually. Store-only (no compression) with a fixed
+// timestamp: the two markdown members are small, and identical inputs must
+// produce a byte-identical archive.
+
+const CRC_TABLE = new Uint32Array(256).map((_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c;
+});
+
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+// 2026-01-01 00:00:00 in MS-DOS date/time encoding.
+const DOS_DATE = ((2026 - 1980) << 9) | (1 << 5) | 1;
+const DOS_TIME = 0;
+
+/** Pack `entries` ([{name, data}]) into a store-only ZIP buffer. */
+function zipStore(entries) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const { name, data } of entries) {
+    const nameBuf = Buffer.from(name, 'utf8');
+    const crc = crc32(data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0); // local file header signature
+    local.writeUInt16LE(20, 4); // version needed
+    local.writeUInt16LE(DOS_TIME, 10);
+    local.writeUInt16LE(DOS_DATE, 12);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(data.length, 18); // compressed size (stored)
+    local.writeUInt32LE(data.length, 22); // uncompressed size
+    local.writeUInt16LE(nameBuf.length, 26);
+    locals.push(local, nameBuf, data);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0); // central directory signature
+    central.writeUInt16LE(20, 4); // version made by
+    central.writeUInt16LE(20, 6); // version needed
+    central.writeUInt16LE(DOS_TIME, 12);
+    central.writeUInt16LE(DOS_DATE, 14);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(nameBuf.length, 28);
+    central.writeUInt32LE(offset, 42); // local header offset
+    centrals.push(central, nameBuf);
+
+    offset += local.length + nameBuf.length + data.length;
+  }
+  const cd = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); // end of central directory signature
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(cd.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
+}
+
+/** Zip the skill folder (every file in it) for hosts that install by upload. */
+function writeSkillZip() {
+  const entries = readdirSync(SKILL_DIR, { withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => d.name)
+    .sort()
+    .map((name) => ({
+      name: `wiremark/${name}`,
+      data: readFileSync(resolve(SKILL_DIR, name)),
+    }));
+  writeFileSync(SKILL_ZIP, zipStore(entries));
+  console.log(`Wrote ${REL_SKILL_ZIP} from ${REL_SKILL_DIR}/`);
+}
+
 function main() {
   const json = JSON.parse(readFileSync(SRC, 'utf8'));
   const lines = [];
@@ -250,3 +338,4 @@ function main() {
 
 main();
 await updateAgentGuides();
+writeSkillZip();

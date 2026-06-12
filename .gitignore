@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 *.tgz
+site/static/skills/wiremark.zip
 
 # docs site (Docusaurus)
 .docusaurus/
