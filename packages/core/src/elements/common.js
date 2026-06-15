@@ -125,6 +125,13 @@ export const PRESETS = ['mobile', 'landscape', 'portrait'];
 export const DIRECTIONS = ['TD', 'LR'];
 
 /**
+ * Flex child-axis directions, shared by `Stack` and the `Wireframe` frame root so
+ * the two stay in lockstep (CONVENTION ss.4.2). Maps column->axis 'col', row->axis
+ * 'row'; the `-reverse` variants keep that axis and flip the visual order.
+ */
+export const FLEX_DIRECTIONS = ['row', 'row-reverse', 'column', 'column-reverse'];
+
+/**
  * @typedef {'start'|'center'|'end'|'stretch'} Align  // one axis of an overlay anchor
  * @typedef {{ h: Align, v: Align }} Anchor           // horizontal + vertical alignment
  */

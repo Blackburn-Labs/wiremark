@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import { parse, render } from '../../src/index.js';
 import { layout } from '../../src/layout.js';
-import { FRAME_PAD, PRESET_SIZES } from '../../src/metrics.js';
+import { PRESET_SIZES } from '../../src/metrics.js';
 
 const SRC = 'Wireframe\n  Divider';
 const SRC_LANDSCAPE = 'Wireframe landscape\n  Divider';
@@ -54,14 +54,15 @@ test('the two keyless enums resolve independent of token order', () => {
 
 test('a horizontal Divider lays out to a finite box and stretches to the frame width', () => {
   // In a sized frame the block-level rule fills the cross axis (width in a
-  // column), so its width is the frame's content width.
+  // column), so its width is the frame's content width (frame is flush -- padding
+  // defaults to 0 -- so that equals the full frame width).
   const doc = parse(SRC_LANDSCAPE);
   const box = layout(doc)[0].root.children[0];
 
   assert.ok(Number.isFinite(box.h) && box.h > 0, `h should be finite & positive, got ${box.h}`);
   assert.ok(Number.isFinite(box.w) && box.w > 0, `w should be finite & positive, got ${box.w}`);
 
-  const contentW = PRESET_SIZES.landscape.w - 2 * FRAME_PAD;
+  const contentW = PRESET_SIZES.landscape.w;
   assert.ok(
     Math.abs(box.w - contentW) <= 1,
     `divider should stretch to the frame content width (~${contentW}), got ${box.w}`,

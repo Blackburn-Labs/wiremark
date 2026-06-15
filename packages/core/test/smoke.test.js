@@ -8,7 +8,7 @@ import {
   parse, render, toFlowGraph, toMermaid,
   REGISTRY, getComponent, isKnownComponent,
 } from '../src/index.js';
-import { FRAME_PAD, PRESET_SIZES } from '../src/metrics.js';
+import { PRESET_SIZES } from '../src/metrics.js';
 import { layout } from '../src/layout.js';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
@@ -152,7 +152,7 @@ test('Phase 2: layout produces correct geometry for the dashboard', () => {
   // landscape preset sizes the frame.
   assert.deepEqual({ w: frame.w, h: frame.h }, PRESET_SIZES.landscape);
 
-  const contentW = PRESET_SIZES.landscape.w - 2 * FRAME_PAD; // 1280 - 32 = 1248
+  const contentW = PRESET_SIZES.landscape.w; // 1280: the frame is flush (padding defaults to 0)
   const [appbar, body] = frame.root.children;
 
   // The AppBar spans the full frame content width.

@@ -24,6 +24,8 @@ before concluding it does not exist.
 
 <!-- BEGIN GENERATED: component-list (source: the live element registry, packages/core/src/elements; regenerate with `npm run docs:reference`) -->
 ```
+UNIVERSAL (every element) -- to|href:R, scrollbar:(vertical|horizontal|both|none), scrollbarValue:N, scrollbarHandle:N, padding|pad:N
+
 LAYOUT
 Stack [c] [w h] -- direction:(row|row-reverse|column|column-reverse)=column*, spacing|gap:N=0, divider:B*, elevation:N=0, outline:(none|solid|dashed|dotted)=none*
 Box [c] [w h] -- elevation:N=0, outline:(none|solid|dashed|dotted)=none*

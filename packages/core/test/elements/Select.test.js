@@ -7,8 +7,10 @@ import { layout } from '../../src/layout.js';
 
 // A Select is a col container drawing its own closed field; its children are
 // Options. We wrap it in a Wireframe frame and reach the Select node/box as the
-// frame's first child.
-const wrap = (body) => `Wireframe\n  ${body}`;
+// frame's first child. The frame opts into padding=2: the frame is flush by
+// default, and a Select hard against the top edge would float its label above the
+// frame (clipped). The inset gives the floated label its room, as in real use.
+const wrap = (body) => `Wireframe padding=2\n  ${body}`;
 
 /** The Select node (first child of the frame). */
 const selNode = (line) => parse(wrap(line)).frames[0].children[0];

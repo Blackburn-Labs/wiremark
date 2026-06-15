@@ -1,4 +1,41 @@
 {
+  "universal": [
+    {
+      "name": "to",
+      "type": "reference",
+      "keyless": false,
+      "aliases": ["href"],
+      "notes": "Makes any element (or region) a clickable link to a frame #id (ss.7.2); flow.js reads it for the navigation graph. href= is the alias."
+    },
+    {
+      "name": "padding",
+      "type": "numeric",
+      "keyless": false,
+      "aliases": ["pad"],
+      "notes": "Inner padding in MUI spacing units (padding=2 -> 16px), like gap/spacing. Overrides the element's default pad when set; unset keeps the element default; padding=0 removes it."
+    },
+    {
+      "name": "scrollbar",
+      "type": "enum",
+      "values": ["vertical", "horizontal", "both", "none"],
+      "keyless": false,
+      "notes": "Draws a scrollbar affordance: reserves a thin gutter on the scrolled edge (right for vertical, bottom for horizontal) so the strip never covers content, clips overflow, and hugs the box edge."
+    },
+    {
+      "name": "scrollbarValue",
+      "type": "numeric",
+      "default": 0,
+      "keyless": false,
+      "notes": "Scroll position 0-100 (0 = start/top-left). Ignored unless scrollbar is set."
+    },
+    {
+      "name": "scrollbarHandle",
+      "type": "numeric",
+      "default": 30,
+      "keyless": false,
+      "notes": "Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set."
+    }
+  ],
   "components": [
     {
       "name": "Box",

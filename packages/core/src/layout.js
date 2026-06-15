@@ -80,10 +80,16 @@ export function isOverlay(node) {
   return typeof s.overlay === 'function' ? !!s.overlay(node) : !!s.overlay;
 }
 
-/** Resolve a container's layout spec, defaulting to a 0-gap column. @param {ResolvedNode} node @returns {{axis:string,pad?:number,gap?:number,cols?:number}} */
+/** Resolve a container's layout spec, defaulting to a 0-gap column. The universal
+ *  `padding` prop (MUI spacing units, like `gap`) overrides the element's hardcoded
+ *  pad when set; unset keeps the element default. layoutSpec returns a fresh object
+ *  each call, so mutating `pad` here is safe. @param {ResolvedNode} node @returns {{axis:string,pad?:number,gap?:number,cols?:number}} */
 function specFor(node) {
   const s = strategyFor(node.component);
-  return typeof s.layoutSpec === 'function' ? s.layoutSpec(node) : { axis: 'col', pad: 0, gap: 0 };
+  const spec = typeof s.layoutSpec === 'function' ? s.layoutSpec(node) : { axis: 'col', pad: 0, gap: 0 };
+  const p = node.props?.padding;
+  if (typeof p === 'number' && Number.isFinite(p)) spec.pad = p * SPACING;
+  return spec;
 }
 
 /**

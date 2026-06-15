@@ -78,6 +78,21 @@ function table(headers, rows) {
   return [head, sep, ...body].join('\n');
 }
 
+/** The universal-property table: props merged onto EVERY element, so they are not
+ *  repeated per component. Rendered from the JSON's `universal` array. */
+function renderUniversal(universal, lines) {
+  if (!universal || !universal.length) return;
+  lines.push('## Universal properties', '');
+  lines.push(
+    'These apply to *every* element (the registry injects them onto each component), ' +
+      'so they are NOT repeated in the per-component tables below.',
+    '',
+  );
+  const headers = PROPERTY_COLUMNS.map(([label]) => label);
+  const cells = universal.map((p) => PROPERTY_COLUMNS.map(([, get]) => get(p)));
+  lines.push(table(headers, cells), '');
+}
+
 /** The component matrix, grouped by category in first-seen order. */
 function renderComponents(components, lines) {
   if (!components || !components.length) return;
@@ -183,9 +198,15 @@ function condensedElement(def) {
   return entries.length ? `${head} -- ${entries.join(', ')}` : head;
 }
 
-/** The condensed component list, one fenced block grouped by category. */
-function condensedList(elements) {
+/** The condensed component list, one fenced block grouped by category. A leading
+ *  UNIVERSAL line (from the registry's universal props) shows the props every
+ *  element accepts, so they are not repeated on each element line. */
+function condensedList(elements, universalProps) {
   const lines = ['```'];
+  if (universalProps && Object.keys(universalProps).length) {
+    const entries = Object.entries(universalProps).map(([name, p]) => condensedProp(name, p, new Set()));
+    lines.push(`UNIVERSAL (every element) -- ${entries.join(', ')}`, '');
+  }
   let lastCategory;
   for (const def of elements) {
     if (def.category === 'root') continue; // Wireframe is covered in the prose
@@ -223,7 +244,8 @@ async function updateAgentGuides() {
   // Imported lazily so plain components.md regeneration never depends on the
   // core package's import graph being loadable.
   const { ELEMENTS } = await import('../packages/core/src/elements/index.js');
-  const body = condensedList(ELEMENTS);
+  const { UNIVERSAL_PROPS } = await import('../packages/core/src/registry.js');
+  const body = condensedList(ELEMENTS, UNIVERSAL_PROPS);
   spliceGenerated(LLM, REL_LLM, body);
   spliceGenerated(SKILL_REF, REL_SKILL_REF, body);
 }
@@ -328,6 +350,7 @@ function main() {
       `is omitted. Do not edit it by hand: change the JSON and run \`${REGEN_CMD}\`.`,
     '',
   );
+  renderUniversal(json.universal, lines);
   renderComponents(json.components, lines);
 
   const output = lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';

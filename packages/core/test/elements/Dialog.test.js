@@ -217,9 +217,11 @@ test('a populated Dialog renders without diagnostics and reaches its children', 
 // OVERLAY behavior (the engine's out-of-flow layer) -- task 15.
 // =============================================================================
 
-const FRAME_PAD = 16; // metrics.FRAME_PAD: the frame root's content inset
+const FRAME_PAD = 16; // == padding=2 (2 * SPACING): these overlay frames opt into a pad
 
-/** Content rect of a frame sized w x h (frame inset by the root frame pad). */
+/** Content rect of a frame sized w x h. The frame root defaults to pad 0 (flush), so
+ *  the overlay-positioning tests below declare `padding=2` to give the sheet a known
+ *  inset to anchor against; this mirrors that 16px content inset. */
 const contentRect = (w, h) => ({ x: FRAME_PAD, y: FRAME_PAD, w: w - 2 * FRAME_PAD, h: h - 2 * FRAME_PAD });
 
 // --- position: keyless, every value, disjoint from size ----------------------
@@ -287,7 +289,7 @@ test('position seats the sheet at the right 9-way anchor within the frame conten
   const W = 1000, H = 800;
   const c = contentRect(W, H); // {16,16,968,768}
   const near = (a, b, msg) => assert.ok(Math.abs(a - b) <= 1, `${msg}: ${a} vs ${b}`);
-  const at = (pos) => dialogBox(`Wireframe w=${W} h=${H}\n  Dialog md ${pos}\n    Typography "Body"`);
+  const at = (pos) => dialogBox(`Wireframe w=${W} h=${H} padding=2\n  Dialog md ${pos}\n    Typography "Body"`);
 
   const center = at('center');
   near(center.x, c.x + (c.w - center.w) / 2, 'center x');
@@ -412,13 +414,13 @@ test('fullScreen fills the parent content box and ignores position', () => {
   const c = contentRect(W, H);
   const near = (a, b, msg) => assert.ok(Math.abs(a - b) <= 1, `${msg}: ${a} vs ${b}`);
   // fullScreen alone fills the content rect.
-  const full = dialogBox(`Wireframe w=${W} h=${H}\n  Dialog fullScreen`);
+  const full = dialogBox(`Wireframe w=${W} h=${H} padding=2\n  Dialog fullScreen`);
   near(full.x, c.x, 'fullScreen x == content origin');
   near(full.y, c.y, 'fullScreen y == content origin');
   near(full.w, c.w, 'fullScreen w == content width');
   near(full.h, c.h, 'fullScreen h == content height');
   // fullScreen + a corner position is still the full content box (position ignored).
-  const pinned = dialogBox(`Wireframe w=${W} h=${H}\n  Dialog fullScreen topLeft`);
+  const pinned = dialogBox(`Wireframe w=${W} h=${H} padding=2\n  Dialog fullScreen topLeft`);
   near(pinned.w, c.w, 'fullScreen+topLeft still fills width');
   near(pinned.h, c.h, 'fullScreen+topLeft still fills height');
   near(pinned.x, c.x, 'fullScreen+topLeft still at content origin');
@@ -473,7 +475,7 @@ test('EDGE A: a non-stretch Dialog in a collapsed Box keeps its measured size (u
   assert.ok(dlg.w >= 640, `md dialog keeps its >=640 width despite the collapsed parent, got ${dlg.w}`);
   assert.ok(dlg.h >= 80, `dialog keeps its >=80 (MIN_H) height despite the 0-height parent, got ${dlg.h}`);
   // The frame root, by contrast, is fixed-size -- a frame-root dialog has real room.
-  const rootDlg = dialogBox('Wireframe w=600 h=400\n  Dialog md\n    Typography "x"');
+  const rootDlg = dialogBox('Wireframe w=600 h=400 padding=2\n  Dialog md\n    Typography "x"');
   assert.ok(rootDlg.w > 0 && rootDlg.h > 0 && rootDlg.x > FRAME_PAD - 1, 'a frame-root dialog has positive room');
 });
 

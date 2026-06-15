@@ -203,19 +203,19 @@ test('a rail is a thin in-flow strip (~56), much narrower than a permanent panel
 // --- overlay: pinned geometry on all four edges + paints last ----------------
 
 test('an overlay Drawer pins to its pin edge at 100% of the parent cross extent (all 4 edges)', () => {
-  // Frame 1000x800 -> content rect {16,16,968,768} (frame minus FRAME_PAD=16).
+  // Frame 1000x800, flush (frame padding defaults to 0) -> content rect {0,0,1000,800}.
   // pin alone implies the axis, so each edge stretches the perpendicular axis.
   const at = (p) => drawerBox(`Wireframe w=1000 h=800\n  Drawer overlay ${p}\n    List\n      ListItem "x"`);
   const near = (v, e, msg) => assert.ok(Math.abs(v - e) <= 1, `${msg}: ${v} vs ${e}`);
 
   const left = at('left');
-  near(left.x, 16, 'left x hugs content origin'); near(left.h, 768, 'left full parent height'); assert.ok(left.w >= 220, 'left panel width');
+  near(left.x, 0, 'left x hugs content origin'); near(left.h, 800, 'left full parent height'); assert.ok(left.w >= 220, 'left panel width');
   const right = at('right');
-  near(right.x + right.w, 984, 'right far edge meets content right edge'); near(right.h, 768, 'right full height');
+  near(right.x + right.w, 1000, 'right far edge meets content right edge'); near(right.h, 800, 'right full height');
   const top = at('top');
-  near(top.y, 16, 'top y hugs content origin'); near(top.w, 968, 'top full parent width');
+  near(top.y, 0, 'top y hugs content origin'); near(top.w, 1000, 'top full parent width');
   const bottom = at('bottom');
-  near(bottom.y + bottom.h, 784, 'bottom far edge meets content bottom edge'); near(bottom.w, 968, 'bottom full width');
+  near(bottom.y + bottom.h, 800, 'bottom far edge meets content bottom edge'); near(bottom.w, 1000, 'bottom full width');
 });
 
 test('an overlay Drawer carries an elevation shadow and paints after a later in-flow sibling', () => {

@@ -8,6 +8,18 @@
 
 This reference is generated from [`meta/element-specs.json`](../../meta/element-specs.json) -- the single source of truth for wiremark's component and property coverage. It lists the elements wiremark supports and, for each, its properties; anything out of scope is omitted. Do not edit it by hand: change the JSON and run `npm run docs:reference`.
 
+## Universal properties
+
+These apply to *every* element (the registry injects them onto each component), so they are NOT repeated in the per-component tables below.
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| to | reference |  |  | no | href | Makes any element (or region) a clickable link to a frame #id (ss.7.2); flow.js reads it for the navigation graph. href= is the alias. |
+| padding | numeric |  |  | no | pad | Inner padding in MUI spacing units (padding=2 -> 16px), like gap/spacing. Overrides the element's default pad when set; unset keeps the element default; padding=0 removes it. |
+| scrollbar | enum | vertical, horizontal, both, none |  | no |  | Draws a scrollbar affordance: reserves a thin gutter on the scrolled edge (right for vertical, bottom for horizontal) so the strip never covers content, clips overflow, and hugs the box edge. |
+| scrollbarValue | numeric |  | 0 | no |  | Scroll position 0-100 (0 = start/top-left). Ignored unless scrollbar is set. |
+| scrollbarHandle | numeric |  | 30 | no |  | Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set. |
+
 ## Components
 
 - [Layout](#layout)

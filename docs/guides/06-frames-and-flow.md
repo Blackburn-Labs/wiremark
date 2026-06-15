@@ -204,10 +204,12 @@ Wireframe #details landscape
   Typography h1 "Item details"
 ```
 
-- **Direction.** The flow runs top-down by default. Put `direction=LR` on a frame
-  to lay it out left-to-right instead (`direction=TD` is the explicit default); a
-  host may also pass `{ direction }` to the renderer. The first frame that
-  declares `direction=` sets it for the whole document.
+- **Direction.** The flow runs top-down by default. Add a top-level `Flow LR`
+  directive — on its own line, like an `Icons` block, not inside a frame — to lay
+  the whole chart out left-to-right instead (`Flow TD` is the explicit default); a
+  host may also pass `{ direction }` to the renderer, which wins over the directive.
+  Orientation is a property of the whole diagram, so it lives in one place rather
+  than on any single frame.
 - **Background templates stay out of the flow.** A `visible=false` frame (e.g. a
   `#shell` pulled in via `background=#id`) is never a flow node, but still
   composes underneath the screens that reference it.
@@ -230,7 +232,7 @@ always has, with no flow chrome.
   frame from drawing on its own.
 - `Anchor #id` names a region inside a background frame; `anchor=#id` (alias
   `at=`) composes a foreground frame's content into that region.
-- Several visible frames auto-arrange into a connected flow chart; `direction=TD`
-  (default) or `direction=LR` sets its orientation.
+- Several visible frames auto-arrange into a connected flow chart; a top-level
+  `Flow TD` (default) or `Flow LR` directive sets its orientation.
 
 Next: [Patterns & recipes](07-patterns.md).

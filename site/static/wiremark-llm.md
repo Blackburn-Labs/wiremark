@@ -91,8 +91,8 @@ fields, and a primary button that links to a `#dashboard` frame.
 9. **Comments are `//`** to end of line. `#` is reserved for ids and links.
 
 10. **Frames.** Every top-level line is a `Wireframe` root (the optional
-    `Icons` block of rule 13 is the only other top-level form):
-    `Wireframe #id preset key=value...`
+    `Icons` block of rule 13 and the `Flow` directive of rule 11 are the only
+    other top-level forms): `Wireframe #id preset key=value...`
 
     - `#id` names the frame (optional, but needed to link to it).
     - Preset: `mobile`, `landscape`, or `portrait`; or explicit `w=` **and**
@@ -100,7 +100,10 @@ fields, and a primary button that links to a `#dashboard` frame.
     - `filler=squiggle|lorem|blocks` sets the frame-wide filler style.
     - `visible=false` hides a frame that exists only as a shared background.
     - `background=#id`, `anchor=#id` (alias `at=`): see rule 12.
-    - `direction=TD|LR` sets multi-frame flow-chart direction (default `TD`).
+    - The frame lays out its children like a `Stack`: `row` / `column` (keyless,
+      default `column`; `direction=` is the keyed form), `gap=`/`spacing=` for the
+      inter-child gap, and `padding=`/`pad=` for the edge inset -- both in spacing
+      units (x8px) and both **0 by default**, so content is flush unless you ask.
 
 11. **Links and flow.** Every element accepts `to=#frame-id` (alias `href=`),
     which makes that element a clickable link to a frame: `Button "Buy"
@@ -110,7 +113,9 @@ fields, and a primary button that links to a `#dashboard` frame.
     elements inside one). Several visible frames in one document arrange
     themselves into a flow chart automatically, with connectors drawn from the
     `to=` links. A `to=` naming a frame that does not exist is accepted
-    *silently* -- no connector, no warning -- so double-check frame ids.
+    *silently* -- no connector, no warning -- so double-check frame ids. A
+    top-level `Flow LR` directive (its own line, like an `Icons` block; `Flow TD`
+    is the default) orients the whole chart left-to-right instead of top-down.
 
 12. **Shared chrome (backgrounds and anchors).** Author a repeated shell (app
     bar, nav rail) once as its own frame with `visible=false`; pull it under
@@ -265,6 +270,8 @@ exactly what renders today. Legend:
 
 <!-- BEGIN GENERATED: component-list (source: the live element registry, packages/core/src/elements; regenerate with `npm run docs:reference`) -->
 ```
+UNIVERSAL (every element) -- to|href:R, scrollbar:(vertical|horizontal|both|none), scrollbarValue:N, scrollbarHandle:N, padding|pad:N
+
 LAYOUT
 Stack [c] [w h] -- direction:(row|row-reverse|column|column-reverse)=column*, spacing|gap:N=0, divider:B*, elevation:N=0, outline:(none|solid|dashed|dotted)=none*
 Box [c] [w h] -- elevation:N=0, outline:(none|solid|dashed|dotted)=none*

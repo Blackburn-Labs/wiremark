@@ -263,15 +263,19 @@ test('connectorArrow degrades gracefully on degenerate input (< 2 points)', () =
   assert.match(connectorArrow([{ x: 0, y: 0 }, { x: 10, y: 0 }]), /<path /, 'a valid 2-point arrow still draws');
 });
 
-test('direction is a keyed Wireframe prop and an option override', () => {
-  const doc = parse('Wireframe #a landscape direction=LR\n  Typography "x"');
-  assert.equal(doc.frames[0].props.direction, 'LR');
+test('the Flow directive sets the document orientation; the render option overrides it', () => {
+  const doc = parse('Flow LR\nWireframe #a landscape\n  Typography "x"');
+  assert.equal(doc.flow, 'LR');
+  assert.deepEqual(doc.diagnostics, []);
 
-  // The render-time option wins over any in-source value.
+  // The directive drives multi-frame orientation end-to-end.
   const src = fixture('multi-frame.wiremark');
-  const td = render(src, { direction: 'TD' }).svg;
-  const lr = render(src, { direction: 'LR' }).svg;
-  assert.notEqual(td, lr, 'TD and LR produce different layouts');
+  const flowTd = render(`Flow TD\n${src}`).svg;
+  const flowLr = render(`Flow LR\n${src}`).svg;
+  assert.notEqual(flowTd, flowLr, 'the Flow directive changes the layout');
+
+  // The render-time option still wins over the in-source directive.
+  assert.equal(render(`Flow LR\n${src}`, { direction: 'TD' }).svg, flowTd, 'option overrides the directive');
 });
 
 test('single-frame files render exactly as before (no flow chrome)', () => {

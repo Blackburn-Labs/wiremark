@@ -1,4 +1,5 @@
 // @ts-check
+import { FLEX_DIRECTIONS } from './common.js';
 import { SPACING } from '../metrics.js';
 import { surfaceWith, rline, COLORS } from '../draw.js';
 
@@ -34,7 +35,7 @@ export default {
     // width/height (+ w/h aliases) are realized by `sizing: true` (CONVENTION ss.4).
     direction: {
       type: 'enum',
-      values: ['row', 'row-reverse', 'column', 'column-reverse'],
+      values: FLEX_DIRECTIONS,
       default: 'column',
     },
     spacing: { type: 'number', default: 0, aliases: ['gap'] },

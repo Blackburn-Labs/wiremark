@@ -32,6 +32,13 @@ export { FILLER_STYLES, PRESETS } from './elements/common.js';
  *    start) and `scrollbarHandle` (handle length as a % of the track, default 30) tune
  *    it; both are ignored when `scrollbar` is unset/none. All three are KEYED-only (no
  *    keyless slot -- the enum would collide with element axes like vertical/horizontal).
+ *  - `padding` (alias `pad`) overrides an element's inner padding, in MUI spacing
+ *    units (`padding=2` -> 16px), exactly like `gap`/`spacing`. Unset keeps the
+ *    element's own default pad (Drawer 1, Card/Dialog content 2, most layout
+ *    primitives 0 incl. the Wireframe frame); `padding=0` removes it. Keyed-only.
+ *    (A few elements -- List
+ *    with a subheader, Select -- use their pad for a special inset, so overriding it
+ *    there is unusual.) The layout's `specFor` applies it.
  * Sizing (`w h`) is likewise broadly available, flagged per element via `sizing`.
  * @type {Record<string, PropDef>}
  */
@@ -40,6 +47,7 @@ export const UNIVERSAL_PROPS = {
   scrollbar: { type: 'enum', values: ['vertical', 'horizontal', 'both', 'none'] },
   scrollbarValue: { type: 'number' },
   scrollbarHandle: { type: 'number' },
+  padding: { type: 'number', aliases: ['pad'] },
 };
 
 /** Component name -> definition. @type {Record<string, ComponentDef>} */

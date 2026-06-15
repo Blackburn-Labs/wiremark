@@ -189,7 +189,9 @@ test('noWrap parses both as a bare flag and keyed', () => {
 
 test('a label wider than its box word-wraps onto multiple lines (the MUI default)', () => {
   const long = 'An extremely long heading that cannot possibly fit';
-  const src = `Wireframe w=320 h=200\n  Typography h4 "${long}"`;
+  // Flush frame (padding defaults to 0) narrower than the heading, so the h4 must
+  // wrap; the content width is the full frame width now.
+  const src = `Wireframe w=288 h=200\n  Typography h4 "${long}"`;
   const { svg } = render(src);
   const lines = (svg.match(/<text /g) ?? []).length;
   assert.ok(lines >= 2, `expected multiple wrapped lines, got ${lines}`);
