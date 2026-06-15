@@ -23,8 +23,9 @@ function variantOf(node) {
  * `variant` (keyless): `regular` (default) or `dense`. dense halves the padding,
  * so the bar sits visibly tighter/shorter than regular -- mirroring Toolbar.
  *
- * `background` (keyed `hatch`/`crosshatch`) picks the tint pattern;
- * `denseBackground` packs its lines closer -- see `backgroundHatch` in draw.js.
+ * `background` (keyed `hatch`/`crosshatch`/`none`) picks the tint pattern -- `none`
+ * is an opaque, untextured bar (solid base, no hashes); `denseBackground` packs the
+ * lines closer -- see `backgroundHatch` in draw.js.
  *
  * @type {import('./common.js').ComponentDef}
  */

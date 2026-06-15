@@ -17,8 +17,8 @@ import { rrect, rpill, rline, rellipse, backgroundHatch, BACKGROUNDS, COLORS } f
  *  - radio    -> a circle; when `checked`, a smaller filled dot centered.
  *  - switch   -> a pill track (hand-drawn hatch tint when `checked`) with a round
  *                knob that sits left when off and right when on. The `background`
- *                prop (`hatch`/`crosshatch`) picks the pattern; `denseBackground`
- *                packs its lines closer.
+ *                prop (`hatch`/`crosshatch`/`none`) picks the pattern -- `none` is
+ *                an opaque, untextured track; `denseBackground` packs lines closer.
  * `disabled` recolors the strokes (and the checked switch hatch) to the muted ink.
  *
  * @type {import('./common.js').ComponentDef}

@@ -189,8 +189,11 @@ const HATCH_GAP = { normal: 6, dense: 3 };
  *  normal roughness, so it stays as wobbly as every other surface). */
 const HATCH_BASE = { fillWeight: 1, hachureAngle: -41, roughness: 0.4 };
 
-/** The `background` enum domain, shared by every tinted element + the spec. */
-export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
+/** The `background` enum domain, shared by every tinted element + the spec. The
+ *  two hatch patterns plus `'none'` -- an opaque-but-untextured surface (a solid
+ *  paper base, no hashes), for when an author wants the element to knock out what
+ *  is behind it without the wireframe tint. */
+export const BACKGROUNDS = [...Object.keys(HATCH_PATTERNS), 'none'];
 
 /**
  * Draw `box` in one of `backgroundHatch`'s four chrome shapes (rect, `'pill'`,
@@ -231,6 +234,9 @@ function paperBase(box, shape) {
  *
  * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
  * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer).
+ * `pattern === 'none'` skips the hashes entirely: an (A) caller (`base:true`) gets
+ * just the opaque paper base -- a solid, untextured surface; a (B) caller gets
+ * nothing at all (no marks, no base).
  * `opts.fill` recolors the HASHES (e.g. muted when disabled). `opts.shape`
  * hatches non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
  * rounded rect with that corner radius) -- so the hashes never poke past a
@@ -247,17 +253,20 @@ function paperBase(box, shape) {
  * hashes. The base is ALWAYS paper, independent of `opts.fill`. For a partial
  * tint pass the SUB-box you want opaque, not the full box.
  * @param {{x:number,y:number,w:number,h:number}} box
- * @param {string} [pattern]  'hatch' | 'crosshatch'
+ * @param {string} [pattern]  'hatch' | 'crosshatch' | 'none'
  * @param {boolean} [dense]
  * @param {{ base?: boolean, fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
  * @returns {string}
  */
 export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
-  const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
-  const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
   // (A) callers opt into an opaque paper base under the hashes; (B) callers omit
   // it and stay see-through over the content/track/row behind them.
   const base = opts.base ? paperBase(box, opts.shape) : '';
+  // `none` is opaque-but-untextured: the base (when opted in) with no hashes laid
+  // over it; a (B) `none` caller draws nothing.
+  if (pattern === 'none') return base;
+  const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
+  const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
   const hatch = hatchShape(box, opts.shape,
     { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE });
   return base + hatch;

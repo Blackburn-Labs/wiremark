@@ -286,10 +286,10 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
           "keyless": true,
-          "notes": "Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals)."
+          "notes": "Hand-drawn tint pattern: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured -- a solid base with no hashes)."
         },
         {
           "name": "denseBackground",
@@ -360,9 +360,9 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "keyless": true,
-          "notes": "Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true)."
+          "notes": "Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). none = opaque base, no hashes."
         },
         {
           "name": "denseBackground",
@@ -432,11 +432,12 @@
           "type": "enum",
           "values": [
             "hatch",
-            "crosshatch"
+            "crosshatch",
+            "none"
           ],
           "default": "hatch",
           "keyless": true,
-          "notes": "Opaque hatch tint on the panel (drawn only when set)."
+          "notes": "Opaque hatch tint on the panel (drawn only when set). none = opaque base, no hashes."
         },
         {
           "name": "denseBackground",
@@ -783,7 +784,7 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
           "keyless": true
         },
@@ -904,7 +905,7 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
           "keyless": true
         },
@@ -1031,7 +1032,8 @@
           "type": "enum",
           "values": [
             "hatch",
-            "crosshatch"
+            "crosshatch",
+            "none"
           ],
           "default": "hatch",
           "keyless": true
@@ -1077,7 +1079,7 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
           "keyless": true
         },
@@ -1277,10 +1279,10 @@
         {
           "name": "background",
           "type": "enum",
-          "values": ["hatch", "crosshatch"],
+          "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
           "keyless": true,
-          "notes": "Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals)."
+          "notes": "Tint pattern for the checked switch track: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured track)."
         },
         {
           "name": "denseBackground",
@@ -1461,6 +1463,20 @@
           "values": ["small", "medium", "large"],
           "default": "medium",
           "keyless": true
+        },
+        {
+          "name": "background",
+          "type": "enum",
+          "values": ["hatch", "crosshatch", "none"],
+          "keyless": true,
+          "notes": "Opaque face tint (always drawn; (A)-site base:true). Defaults to hatch, or crosshatch when selected; an explicit value (or denseBackground) overrides that default regardless of selected. none = opaque base, no hashes."
+        },
+        {
+          "name": "denseBackground",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "notes": "Packs the face tint's hatch lines closer together."
         }
       ]
     },

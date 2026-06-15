@@ -63,7 +63,7 @@ test('variant and size (two keyless enums) resolve independent of token order', 
 });
 
 test('background is a third keyless enum accepting each value', () => {
-  for (const bg of ['hatch', 'crosshatch']) {
+  for (const bg of ['hatch', 'crosshatch', 'none']) {
     const doc = parse(`Wireframe\n  Button "Go" contained ${bg}`);
     assert.deepEqual(doc.diagnostics, [], `Button ${bg} should parse cleanly`);
     assert.equal(doc.frames[0].children[0].props.background, bg);
@@ -285,6 +285,15 @@ test('contained lays an opaque paper base under the hatch; outlined/text do not'
   assert.equal(basePaths(contained), 1, 'contained should paint exactly one opaque paper base path');
   assert.equal(basePaths(outlined), 0, 'outlined draws no hatch and so no paper base');
   assert.equal(basePaths(text), 0, 'text draws no hatch and so no paper base');
+});
+
+test('contained background=none is opaque but untextured (paper base, no hashes)', () => {
+  // `none` keeps the knock-out base (so a background-frame chain can't bleed
+  // through) but draws no hatch -- a solid, plain contained surface.
+  const basePaths = (svg) => (svg.match(/<path[^>]*fill="#ffffff"[^>]*>/g) || []).length;
+  const none = render('Wireframe\n  Button "A" contained none').svg;
+  assert.equal(basePaths(none), 1, 'background=none still paints exactly one opaque paper base');
+  assert.doesNotMatch(none, /stroke="#c4c4c4"/, 'background=none draws no hatch marks');
 });
 
 test('the contained tint varies by background pattern + denseBackground', () => {

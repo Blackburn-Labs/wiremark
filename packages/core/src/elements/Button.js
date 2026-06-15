@@ -17,7 +17,8 @@ import { textIntrinsic, textOf } from '../metrics.js';
  *
  * Render by variant: `contained` -> hand-drawn hatch tint + bold label;
  * `outlined` -> a bordered surface; `text` -> no chrome, just the label. The
- * `background` prop (`hatch`/`crosshatch`) picks the contained tint's pattern and
+ * `background` prop (`hatch`/`crosshatch`/`none`) picks the contained tint's pattern
+ * -- `none` is an opaque, untextured fill (solid base, no hashes) -- and
  * `denseBackground` packs its lines closer. `size` scales padding
  * (read from SIZES by both intrinsic and render, so the padding can't drift) plus
  * the label font; `intrinsic` passes that font to `textIntrinsic` so the measured

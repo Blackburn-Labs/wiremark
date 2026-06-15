@@ -183,9 +183,50 @@ test('no icon at all renders the placeholder with NO warning', () => {
   assert.match(svg, /stroke="#9aa7b2"/);
 });
 
-test('a selected button emits a hatch tint; an unselected one does not', () => {
-  // selected -> hand-drawn hatch tint (gray hashes, COLORS.hatch); the pressed
-  // look is what discriminates selected at render.
+test('background is a keyless enum accepting each value', () => {
+  for (const bg of ['hatch', 'crosshatch', 'none']) {
+    const doc = parse(`Wireframe\n  ToggleButton "Check" ${bg}`);
+    assert.deepEqual(doc.diagnostics, [], `ToggleButton ${bg} should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.background, bg);
+  }
+  // background's domain is disjoint from size's, so the keyless slots stay
+  // order-independent and compose with the bare-icon-last reading.
+  const tb = firstChild('Wireframe\n  ToggleButton crosshatch FormatBold large');
+  assert.deepEqual(
+    { icon: tb.props.icon, size: tb.props.size, background: tb.props.background },
+    { icon: 'FormatBold', size: 'large', background: 'crosshatch' },
+  );
+});
+
+test('denseBackground resolves as a keyless flag and the keyed form', () => {
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" denseBackground').props.denseBackground, true);
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check" denseBackground=true').props.denseBackground, true);
+  // Absent when not given (the resolver injects no PropDef defaults).
+  assert.equal(firstChild('Wireframe\n  ToggleButton "Check"').props.denseBackground, undefined);
+});
+
+test('the face is always tinted now (opaque base + pattern), selected or not', () => {
+  // Both states paint a tint: the hatch hash color (COLORS.hatch) appears either way.
+  assert.match(render('Wireframe\n  ToggleButton "Check"').svg, /stroke="#c4c4c4"/);
   assert.match(render('Wireframe\n  ToggleButton "Check" selected').svg, /stroke="#c4c4c4"/);
-  assert.doesNotMatch(render('Wireframe\n  ToggleButton "Check"').svg, /stroke="#c4c4c4"/);
+});
+
+test('ToggleButton lays an opaque paper base under the tint (an (A) opaque surface)', () => {
+  // base:true paints a borderless COLORS.paper (#ffffff) base path under the hashes
+  // so a background= chain can't bleed through. The frame's own paper is a <rect>,
+  // not a <path>, so counting #ffffff-filled <path>s isolates the button's base.
+  const basePaths = (svg) => (svg.match(/<path[^>]*fill="#ffffff"[^>]*>/g) || []).length;
+  assert.equal(basePaths(render('Wireframe\n  ToggleButton "Check"').svg), 1, 'exactly one opaque paper base');
+});
+
+test('background defaults to hatch (off) / crosshatch (selected); explicit overrides regardless of selected', () => {
+  const r = (tokens) => render(`Wireframe\n  ToggleButton "Check" ${tokens}`).svg;
+  // The selected-driven default: unselected == explicit hatch, selected == explicit crosshatch.
+  assert.equal(r(''), r('background=hatch'), 'unselected defaults to hatch');
+  assert.equal(r('selected'), r('selected background=crosshatch'), 'selected defaults to crosshatch');
+  // and the two state defaults genuinely differ (hatch vs crosshatch).
+  assert.notEqual(r(''), r('selected'), 'the off and selected defaults differ by pattern');
+  // An explicit background pins the pattern regardless of selected (both directions).
+  assert.equal(r('selected background=hatch'), r('background=hatch'), 'explicit hatch overrides the selected default');
+  assert.equal(r('selected background=none'), r('background=none'), 'explicit none overrides the selected default');
 });

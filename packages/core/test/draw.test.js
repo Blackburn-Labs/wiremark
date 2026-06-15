@@ -13,7 +13,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { backgroundHatch, rpill, surface, COLORS, PALETTES, setTheme } from '../src/draw.js';
+import { backgroundHatch, BACKGROUNDS, rpill, surface, COLORS, PALETTES, setTheme } from '../src/draw.js';
 
 const BOX = { x: 10, y: 20, w: 100, h: 40 };
 
@@ -106,4 +106,39 @@ test('a PARTIAL base:true tint paints its base over EXACTLY the sub-box given (n
   const xs = [...basePath[1].matchAll(/(-?\d+\.?\d*) (-?\d+\.?\d*)/g)].map((m) => Number(m[1]));
   const maxX = Math.max(...xs);
   assert.ok(maxX <= run.x + run.w + 2, `base right edge ${maxX} must stay within the ${run.w}px run`);
+});
+
+// --- pattern 'none': opaque, but untextured -----------------------------------
+// `none` is the third background value: an (A) caller gets the solid opaque base
+// with NO hashes laid over it (a knock-out surface with no wireframe tint); a (B)
+// caller gets nothing at all.
+
+test("BACKGROUNDS exposes 'none' alongside the two hatch patterns", () => {
+  assert.deepEqual(BACKGROUNDS, ['hatch', 'crosshatch', 'none']);
+});
+
+test("pattern 'none' + base:true lays the opaque base but draws NO hashes", () => {
+  const svg = backgroundHatch(BOX, 'none', false, { base: true });
+  assert.ok(solidFills(svg).includes(COLORS.paper), 'none + base:true still lays the opaque paper base');
+  assert.equal(solidFills(svg).filter((c) => c === COLORS.paper).length, 1, 'exactly one base, nothing else');
+  assert.ok(!svg.includes(COLORS.hatch), 'none draws no hatch marks (the hatch color is absent)');
+});
+
+test("pattern 'none' + base:true is EXACTLY the base pass -- the hatch tint is that base plus a hatch layer", () => {
+  const opaque = backgroundHatch(BOX, 'none', false, { base: true });
+  const hatched = backgroundHatch(BOX, 'hatch', false, { base: true });
+  assert.ok(hatched.startsWith(opaque), 'a hatch tint is the none base with a hatch layer appended');
+  assert.ok(opaque.length < hatched.length, 'none omits the hatch layer that hatch includes');
+});
+
+test("a (B) 'none' caller (no base) draws NOTHING -- fully transparent", () => {
+  assert.equal(backgroundHatch(BOX, 'none'), '', 'translucent none = empty (no marks, no base)');
+  assert.equal(backgroundHatch(BOX, 'none', true, { base: false }), '', 'still empty with dense + base:false');
+});
+
+test("'none' honors the base SHAPE (a pill none base, not a rect)", () => {
+  const pill = backgroundHatch(BOX, 'none', false, { base: true, shape: 'pill' });
+  const rect = backgroundHatch(BOX, 'none', false, { base: true });
+  assert.notEqual(pill, rect, 'a pill none base must differ from a rect none base');
+  assert.ok(solidFills(pill).includes(COLORS.paper), 'the shaped none base is still opaque paper');
 });

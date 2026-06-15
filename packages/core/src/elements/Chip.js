@@ -16,8 +16,9 @@ import { textIntrinsic, textOf } from '../metrics.js';
  *  - `variant` filled (default) -> a hand-drawn hatch tint; outlined -> border only.
  *  - `size` medium (default) / small -> small tightens the padding + label font.
  *
- * `background` (`hatch`/`crosshatch`) picks the filled tint's pattern and
- * `denseBackground` packs its lines closer.
+ * `background` (`hatch`/`crosshatch`/`none`) picks the filled tint's pattern --
+ * `none` is opaque but untextured (solid base, no hashes) -- and `denseBackground`
+ * packs its lines closer.
  *
  * @type {import('./common.js').ComponentDef}
  */

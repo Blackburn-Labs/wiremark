@@ -132,7 +132,7 @@ No configurable properties.
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | variant | enum | regular, dense | regular | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  | Hand-drawn tint pattern: hatch (single diagonal) or crosshatch (both diagonals). |
+| background | enum | hatch, crosshatch, none | hatch | yes |  | Hand-drawn tint pattern: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured -- a solid base with no hashes). |
 | denseBackground | boolean |  | false | yes |  | Packs the background tint's hatch lines closer together. |
 
 ### Toolbar
@@ -155,7 +155,7 @@ No configurable properties.
 | icon | icon |  |  | no |  | Explicit chevron OVERRIDE; wins in both states. Unset, the per-state defaults below apply. |
 | expandedIcon | icon |  | ExpandLess | no |  | The chevron drawn when expanded (default ExpandLess, pointing up). |
 | collapsedIcon | icon |  | ExpandMore | no |  | The chevron drawn when collapsed (default ExpandMore, pointing down). |
-| background | enum | hatch, crosshatch |  | yes |  | Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). |
+| background | enum | hatch, crosshatch, none |  | yes |  | Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). none = opaque base, no hashes. |
 | denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer. |
 
 ### AccordionBody
@@ -176,7 +176,7 @@ No configurable properties.
 | orientation | enum | vertical, horizontal | vertical | yes |  | v1.0. Panel axis: vertical=tall narrow side panel, horizontal=wide short panel. anchor implies and overrides it when both are given. |
 | variant | enum | permanent, overlay, rail | permanent | yes |  | v1.0. permanent=in-flow panel; overlay=out-of-flow, pinned to anchor; rail=thin in-flow strip. |
 | divider | boolean |  | true | yes |  | Solid seam on the inner edge facing the content; divider=false suppresses it. |
-| background | enum | hatch, crosshatch | hatch | yes |  | Opaque hatch tint on the panel (drawn only when set). |
+| background | enum | hatch, crosshatch, none | hatch | yes |  | Opaque hatch tint on the panel (drawn only when set). none = opaque base, no hashes. |
 | denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer. |
 
 ### Link
@@ -303,7 +303,7 @@ No configurable properties.
 | startIcon | icon |  |  | no |  |  |
 | endIcon | icon |  |  | no |  |  |
 | fullWidth | boolean |  | false | yes |  | Express via sizing instead. |
-| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| background | enum | hatch, crosshatch, none | hatch | yes |  |  |
 | denseBackground | boolean |  | false | yes |  |  |
 
 ### Img
@@ -339,7 +339,7 @@ No configurable properties.
 | size | enum | small, medium, large | medium | yes |  |  |
 | src | string |  |  | no |  |  |
 | label | string |  |  | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| background | enum | hatch, crosshatch, none | hatch | yes |  |  |
 | denseBackground | boolean |  | false | yes |  |  |
 
 ### Chip
@@ -351,7 +351,7 @@ No configurable properties.
 | label | string |  |  | yes |  |  |
 | variant | enum | filled, outlined | filled | yes |  |  |
 | size | enum | small, medium | medium | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| background | enum | hatch, crosshatch, none | hatch | yes |  |  |
 | denseBackground | boolean |  | false | yes |  |  |
 | filler | string |  | Chip | no |  |  |
 
@@ -457,7 +457,7 @@ No configurable properties.
 | endIcon | icon |  |  | no |  | Icon name; drawn just inside the trailing edge (takes the slot a select caret would use). |
 | select | boolean |  | false | no |  | Draws a dropdown caret on the trailing edge. |
 | fullWidth | boolean |  | false | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  |  |
+| background | enum | hatch, crosshatch, none | hatch | yes |  |  |
 | denseBackground | boolean |  | false | yes |  |  |
 | filler | string |  | label fill | no |  |  |
 
@@ -471,7 +471,7 @@ No configurable properties.
 | checked | boolean |  | false | yes |  |  |
 | disabled | boolean |  | false | yes |  |  |
 | size | enum | small, medium, large | medium | yes |  |  |
-| background | enum | hatch, crosshatch | hatch | yes |  | Tint pattern for the checked switch track: hatch (single diagonal) or crosshatch (both diagonals). |
+| background | enum | hatch, crosshatch, none | hatch | yes |  | Tint pattern for the checked switch track: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured track). |
 | denseBackground | boolean |  | false | yes |  | Packs the checked switch track's hatch lines closer together. |
 
 ### Select
@@ -536,6 +536,8 @@ No configurable properties.
 | icon | icon |  |  | yes |  |  |
 | selected | boolean |  | false | yes |  |  |
 | size | enum | small, medium, large | medium | yes |  |  |
+| background | enum | hatch, crosshatch, none |  | yes |  | Opaque face tint (always drawn; (A)-site base:true). Defaults to hatch, or crosshatch when selected; an explicit value (or denseBackground) overrides that default regardless of selected. none = opaque base, no hashes. |
+| denseBackground | boolean |  | false | yes |  | Packs the face tint's hatch lines closer together. |
 
 ### ButtonGroup
 
