@@ -272,7 +272,6 @@ Grid [c] [w h] -- columns|cols:N=12, spacing|gap:N=0
 Spacer [w h]
 Anchor [w h]
 Divider -- orientation:(horizontal|vertical)=horizontal*, variant:(solid|dashed|dotted)=solid*
-Scrollbar -- orientation:(vertical|horizontal)=vertical*, scrolled:N=0*, thumb:N=30
 
 SURFACES
 Card [c] [w h] -- elevation:N=1
@@ -285,7 +284,7 @@ AccordionHeader -- title|label|text:T*, expanded:B*, disabled:B*, icon:I, expand
 AccordionBody [c]
 
 NAVIGATION
-Drawer [c] -- variant:(permanent|overlay|rail)=permanent*, orientation:(vertical|horizontal)=vertical*, anchor:(left|right|top|bottom)=left*, divider:B=true*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
+Drawer [c] -- variant:(permanent|overlay|rail)=permanent*, pin:(left|right|top|bottom)=left*, divider:B=true*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
 Link [~] -- label:T*, underline:(none|hover|always)=always, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1|body2|caption|overline|button)*, filler:(squiggle|lorem|blocks)
 MenuItem -- label:T*, selected:B*, disabled:B*
 Menubar [c]

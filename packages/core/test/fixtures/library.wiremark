@@ -49,13 +49,11 @@ Wireframe #library w=1600 h=5700
         Divider vertical
         Typography body2 "B"
     Stack column spacing=1
-      Typography subtitle2 "Scrollbar (vertical hugs a row edge / horizontal hugs a column edge)"
-      Stack row 360px 160px spacing=2 outline=dotted
-        Box * 160px outline=solid
-        Scrollbar 35 thumb=40
-      Stack column 360px spacing=2 outline=dotted
-        Box 360px 80px outline=solid
-        Scrollbar horizontal 60 thumb=30
+      Typography subtitle2 "scrollbar= prop (reserves an edge gutter; never covers content)"
+      Box 360px 160px outline=solid scrollbar=vertical scrollbarValue=35 scrollbarHandle=40
+        Typography body2 "vertical scrollbar hugs the right edge"
+      Box 360px 80px outline=solid scrollbar=both scrollbarValue=60 scrollbarHandle=30
+        Typography body2 "both: right + bottom, corner left clear"
   Typography h4 "Surfaces"
   Grid cols=2 gap=3
     Stack column spacing=1

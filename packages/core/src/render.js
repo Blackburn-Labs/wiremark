@@ -1,7 +1,7 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { isOverlay } from './layout.js';
-import { COLORS, escape, connectorArrow, centeredLabel } from './draw.js';
+import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip } from './draw.js';
 import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './metrics.js';
 
 /**
@@ -60,7 +60,24 @@ function renderBox(box, out, skipOverlays = false) {
   /** @type {string[]} */
   const inner = [];
   if (typeof s.render === 'function') inner.push(s.render(node, box));
-  for (const child of box.children) renderBox(child, inner, skipOverlays);
+  // Children. A scroll container (box.clip set alongside box.scrollbars) CLIPS them
+  // to its content rect so overflow is hidden -- the element's own chrome above and
+  // the scrollbar strip below stay OUTSIDE the clip. Mirrors the frame overflow clip.
+  /** @type {string[]} */
+  const kids = [];
+  for (const child of box.children) renderBox(child, kids, skipOverlays);
+  if (box.clip && kids.length) {
+    const c = box.clip;
+    const id = `wm-sb-clip-${Math.round(c.x)}-${Math.round(c.y)}-${Math.round(c.w)}-${Math.round(c.h)}`;
+    inner.push(`<clipPath id="${id}"><rect x="${c.x}" y="${c.y}" width="${Math.max(0, c.w)}" height="${Math.max(0, c.h)}"/></clipPath>`
+      + `<g clip-path="url(#${id})">${kids.join('')}</g>`);
+  } else {
+    for (const k of kids) inner.push(k);
+  }
+  // Universal `scrollbar` affordance: layout reserved a gutter on the scrolled edge
+  // and stashed the strip rect(s) on the box; draw them last (over the element's own
+  // chrome, but clear of content, which the gutter already excludes).
+  if (box.scrollbars) for (const sb of box.scrollbars) inner.push(scrollbarStrip(sb, sb.orientation, sb.value, sb.handle));
   // Any node carrying to=#id is a clickable region (SPEC ss.7.2); the facade
   // wraps it here so elements never draw their own link.
   out.push(node.props.to

@@ -15,31 +15,35 @@ import { SPACING } from '../metrics.js';
  *    `permanent` but thin.
  *  - `overlay` -- a TRUE OVERLAY (the engine's out-of-flow layer, shared with
  *    Dialog via `overlay`/`overlayPlacement`): it consumes NO flow space, floats
- *    ABOVE the content, and CAN anchor to a side (it isn't pushing content around).
+ *    ABOVE the content, and CAN pin to a side (it isn't pushing content around).
  *
- * The AXIS and the SIDE are two props (value sets disjoint from each other +
- * `variant` + `background`, so all stay keyless -- CONVENTION s.2.1):
- *  - `orientation` (vertical|horizontal, default vertical) -- the AXIS. `vertical` =
- *    a tall narrow side panel (a `col`); `horizontal` = a wide short panel (a `row`
- *    that stretches full width).
- *  - `anchor` (left|right|top|bottom, default the NEAR edge of the axis -- left for
- *    vertical, top for horizontal) -- the single SIDE knob. `anchor` IMPLIES the
- *    axis when given (`Drawer right` reads vertical+right, `Drawer top` reads
- *    horizontal+top); if both are given and conflict (`vertical top`), anchor WINS
- *    and the axis is derived from it (normalize, don't error -- Ruling 4 s.2.1).
- *    ONE prop drives BOTH placements (one system):
- *      - in-flow (permanent/rail) -> which side the panel is docked against, hence
- *        which edge the seam faces (see `divider`);
- *      - overlay -> which edge the panel PINS to, stretching the perpendicular axis
- *        to fill the parent, via the shared `anchorRect`.
+ * `pin` (left|right|top|bottom, default left) is the SINGLE placement knob -- the
+ * edge the panel docks against / pins to. It mirrors MUI's `Drawer anchor` prop
+ * (renamed `pin` here so it never collides with the `Anchor` element or a frame's
+ * `anchor=` composition). It IMPLIES the AXIS, so no separate orientation prop is
+ * needed: left/right read as a tall narrow VERTICAL side panel (a column of
+ * children that fills its HEIGHT); top/bottom read as a wide short HORIZONTAL bar
+ * (a row that fills its WIDTH). One knob drives EVERYTHING:
+ *   - in-flow (permanent/rail) -> which side the panel docks against, hence which
+ *     edge the seam faces (see `divider`), and which dimension it fills 100%;
+ *   - overlay -> which edge the panel PINS to, stretching the perpendicular axis to
+ *     fill the parent, via the shared `anchorRect`.
+ * (An element can't see its parent's layout direction, so the side can't be
+ * inferred from context -- but `pin` defaulting to `left` means the common case
+ * needs no token.)
  *
  * `divider` (boolean, default true) draws a solid seam on the CONTENT-FACING edge,
- * which is the OPPOSITE of the `anchor` (dock/pin) edge -- a drawer anchored left
+ * which is the OPPOSITE of the `pin` (dock/pin) edge -- a drawer pinned left
  * faces content on its right, so the seam is on the right. Same rule in-flow and
  * overlay. `divider=false` suppresses it.
  *
  * `background`/`denseBackground` tint the panel with an OPAQUE hatch (task-1
  * `base:true`): drawn only when asked (a plain Drawer is paper).
+ *
+ * In-flow drawers draw NO full box -- just an opaque paper (or hatch-tinted) fill
+ * plus the single content-facing seam, so `pin` visibly picks the one bordered
+ * edge. The full bordered sheet + elevation shadow is reserved for the floating
+ * `overlay` variant.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -66,17 +70,12 @@ const AXIS_EDGES = { vertical: ['left', 'right'], horizontal: ['top', 'bottom'] 
 const EDGE_AXIS = { left: 'vertical', right: 'vertical', top: 'horizontal', bottom: 'horizontal' };
 
 /**
- * The effective AXIS. `anchor` IMPLIES the axis when given (a `top` anchor reads as
- * horizontal, `right` as vertical) -- so a bare `Drawer right` is vertical+right and
- * `Drawer top` is horizontal+top. When the two are given and conflict
- * (`vertical top`), anchor WINS and the axis is derived from it (Ruling 4: normalize,
- * don't error). Falls back to the explicit `orientation`, else `vertical`.
+ * The effective AXIS, derived purely from `pin`: left/right read vertical, top/bottom
+ * read horizontal. With no `pin`, defaults to vertical (a left side panel).
  * @param {import('./common.js').ResolvedNode} node @returns {'vertical'|'horizontal'}
  */
 function axisOf(node) {
-  const a = node.props.anchor;
-  if (a && EDGE_AXIS[a]) return EDGE_AXIS[a]; // anchor implies (and wins) the axis
-  return node.props.orientation === 'horizontal' ? 'horizontal' : 'vertical';
+  return EDGE_AXIS[node.props.pin] ?? 'vertical';
 }
 
 /** Is the panel VERTICAL (a tall narrow column) vs horizontal (a wide short row)?
@@ -84,15 +83,14 @@ function axisOf(node) {
 const isVertical = (node) => axisOf(node) === 'vertical';
 
 /**
- * The single SIDE knob, resolved onto the effective axis. `anchor` is the edge the
- * drawer is docked against / pinned to; given, it already set the axis (axisOf), so
- * here it is simply honored; absent, it defaults to that axis's NEAR edge (left /
- * top). Drives BOTH the in-flow seam edge and the overlay pin -- one side knob, one
- * placement system. @param {import('./common.js').ResolvedNode} node @returns {'left'|'right'|'top'|'bottom'}
+ * The single SIDE knob, resolved onto the effective axis: the edge the drawer is
+ * docked against / pinned to. Honored when valid for the axis; absent, it defaults
+ * to that axis's NEAR edge (left / top). Drives BOTH the in-flow seam edge and the
+ * overlay pin -- one side knob, one placement system. @param {import('./common.js').ResolvedNode} node @returns {'left'|'right'|'top'|'bottom'}
  */
-function anchorOf(node) {
+function pinOf(node) {
   const edges = AXIS_EDGES[axisOf(node)];
-  return edges.includes(node.props.anchor) ? node.props.anchor : edges[0];
+  return edges.includes(node.props.pin) ? node.props.pin : edges[0];
 }
 
 /** The panel's own main-axis extent: the thin RAIL for the rail variant, else the
@@ -102,7 +100,7 @@ const mainExtent = (node) => (isRail(node) ? RAIL : (isVertical(node) ? PANEL_W 
 /** A panel/rail draws its seam unless `divider=false`. */
 const hasDivider = (node) => node.props.divider !== false;
 
-/** A (normalized) `anchor` edge -> the {h,v} anchor `anchorRect` takes for the
+/** A (normalized) `pin` edge -> the {h,v} anchor `anchorRect` takes for the
  *  overlay variant: pin the named edge, STRETCH the perpendicular axis to fill the
  *  parent. @type {Record<string, import('./common.js').Anchor>} */
 const OVERLAY_ANCHORS = {
@@ -112,12 +110,12 @@ const OVERLAY_ANCHORS = {
   bottom: { h: 'stretch', v: 'end' },
 };
 
-/** The CONTENT-FACING edge the seam hugs: the OPPOSITE of the `anchor` (dock/pin)
- *  edge -- a drawer anchored left faces the content on its right, so the seam is on
- *  the right. Same rule for in-flow (anchor = which side it's docked against) and
- *  overlay (anchor = which side it's pinned to). @param {import('./common.js').ResolvedNode} node @returns {'left'|'right'|'top'|'bottom'} */
+/** The CONTENT-FACING edge the seam hugs: the OPPOSITE of the `pin` (dock/pin)
+ *  edge -- a drawer pinned left faces the content on its right, so the seam is on
+ *  the right. Same rule for in-flow (pin = which side it's docked against) and
+ *  overlay (pin = which side it's pinned to). @param {import('./common.js').ResolvedNode} node @returns {'left'|'right'|'top'|'bottom'} */
 function seamEdge(node) {
-  const a = anchorOf(node);
+  const a = pinOf(node);
   return a === 'left' ? 'right' : a === 'right' ? 'left' : a === 'top' ? 'bottom' : 'top';
 }
 
@@ -141,19 +139,17 @@ export default {
   container: true,
   props: {
     variant: { type: 'enum', values: ['permanent', 'overlay', 'rail'], default: 'permanent' },
-    orientation: { type: 'enum', values: ['vertical', 'horizontal'], default: 'vertical' },
-    anchor: { type: 'enum', values: ['left', 'right', 'top', 'bottom'], default: 'left' },
+    pin: { type: 'enum', values: ['left', 'right', 'top', 'bottom'], default: 'left' },
     divider: { type: 'boolean', default: true },
     background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
     denseBackground: { type: 'boolean', default: false },
   },
   keyless: [
     { kind: 'enum', to: 'variant' },
-    { kind: 'enum', to: 'orientation' },
-    { kind: 'enum', to: 'anchor' },
+    { kind: 'enum', to: 'pin' },
     { kind: 'enum', to: 'background' },
   ],
-  notes: 'Nav panel. permanent/rail are in-flow (orientation vertical|horizontal, no pinning); overlay is out-of-flow and anchors to a side (anchor left|right|top|bottom, pinned at 100% perpendicular). divider = content-facing seam; background/denseBackground opaque-tint.',
+  notes: 'Nav panel. permanent/rail are in-flow (no pinning); overlay is out-of-flow and pins to a side (pinned at 100% perpendicular). pin (left|right|top|bottom, default left) is the single placement knob -- it implies the axis (left/right vertical, top/bottom horizontal), sets the docked side, the content-facing divider seam, and the 100% fill axis. divider = content-facing seam; background/denseBackground opaque-tint. In-flow drawers draw the seam only (no full box); the floating overlay variant is a bordered, shadowed sheet.',
 
   // The panel lays its OWN children along its main axis: a vertical panel is a
   // column, a horizontal panel a row. (Overlay only changes how the PARENT treats
@@ -163,34 +159,44 @@ export default {
   // OUT OF FLOW only for the overlay variant.
   overlay: (node) => isOverlayVariant(node),
 
-  // An overlay pins to its `anchor` edge and stretches the perpendicular axis to
+  // An overlay pins to its `pin` edge and stretches the perpendicular axis to
   // fill the parent, via the shared anchorRect. Its main-axis extent is its measured
   // size (floored by minSize); the perpendicular axis is stretched.
   overlayPlacement: (node, parent, measured) =>
-    anchorRect(parent, measured, OVERLAY_ANCHORS[anchorOf(node)] ?? OVERLAY_ANCHORS.left),
+    anchorRect(parent, measured, OVERLAY_ANCHORS[pinOf(node)] ?? OVERLAY_ANCHORS.left),
 
-  // In-flow sizing (permanent/rail): a horizontal panel stretches the cross axis
-  // (full width); a vertical panel keeps its own width. (No effect on overlay,
-  // which overlayPlacement sizes.)
-  block: (node) => !isVertical(node),
+  // Opt OUT of the container default cross-stretch (block) so the panel only ever
+  // fills the ONE dimension `fill` names -- otherwise a vertical panel in a column
+  // would block-fill its width. `fill` then drives the actual stretch.
+  block: false,
+
+  // In-flow sizing (permanent/rail): a vertical panel keeps its own width but fills
+  // the parent HEIGHT (absolute h); a horizontal panel fills the parent WIDTH
+  // (absolute w). The engine maps the requested absolute dim onto the parent's main
+  // or cross axis, so the SAME declaration fills the long dimension at a column root
+  // (vertical -> height = main, flexes) or inside a row (vertical -> height = cross,
+  // stretches). (No effect on overlay, which overlayPlacement sizes.)
+  fill: (node) => (isVertical(node) ? { h: true } : { w: true }),
 
   // Floor the main-axis extent so an empty drawer still draws docked: the thin RAIL
   // for rail, else PANEL_W (vertical width) / PANEL_MIN_H (horizontal height).
   minSize: (node) => (isVertical(node) ? { w: mainExtent(node), h: PANEL_MIN_H } : { w: PANEL_W, h: mainExtent(node) }),
 
   render: (node, box) => {
-    // Opaque panel surface: paper, plus an opaque hatch tint when asked (task-1
-    // base:true so a background-frame chain never bleeds through the gaps).
     const tinted = node.props.background !== undefined || node.props.denseBackground === true;
-    const tint = tinted
+    const overlay = isOverlayVariant(node);
+    // The panel surface. In flow it is BORDERLESS -- an opaque paper (or hatch-tinted)
+    // fill with no full box, so the only edge that reads is the seam (`pin` picks it).
+    // The floating overlay sheet keeps a full border so it reads as a bounded surface.
+    const fill = tinted
       ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true })
-      : surface(box, { fill: COLORS.paper });
-    // A tinted panel's hatch base is borderless -> draw the outline on top so the
-    // panel always reads as a bordered surface.
-    const border = tinted ? surface(box, { fill: 'none', stroke: COLORS.ink }) : '';
+      : surface(box, { fill: COLORS.paper, stroke: overlay ? COLORS.ink : 'none' });
+    // The full box border is the OVERLAY's only -- a tinted overlay needs it added on
+    // top of the borderless hatch base; a plain overlay already got its stroke above.
+    const border = tinted && overlay ? surface(box, { fill: 'none', stroke: COLORS.ink }) : '';
     // An overlay floats over content -> elevation shadow; in-flow panels sit flush.
-    const shadow = isOverlayVariant(node) ? elevationShadow(box, 2) : '';
+    const shadow = overlay ? elevationShadow(box, 2) : '';
     const seam = hasDivider(node) ? dividerLine(seamEdge(node), box) : '';
-    return shadow + tint + border + seam;
+    return shadow + fill + border + seam;
   },
 };

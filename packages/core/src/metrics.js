@@ -13,6 +13,10 @@
 export const SPACING = 8;
 /** Inner padding between a frame edge and its content. */
 export const FRAME_PAD = 16;
+/** Thickness (px) of the scrollbar gutter reserved on an element's scrolled edge by
+ *  the universal `scrollbar` prop -- the strip sits IN this gutter so it never paints
+ *  over content (layout reserves it; the render facade draws into it). */
+export const SCROLLBAR_THICKNESS = 12;
 
 /** Preset -> pixel size (SPEC ss.5.1 names presets but leaves dimensions open). */
 export const PRESET_SIZES = {

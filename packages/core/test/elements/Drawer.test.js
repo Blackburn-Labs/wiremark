@@ -9,13 +9,18 @@ import { layout, isOverlay } from '../../src/layout.js';
  * Drawer (SPEC: MUI Navigation, v1.0). Three variants:
  *  - `permanent` (default) -- a DOCKED in-flow panel; content flows beside it.
  *  - `overlay` -- a TRUE OVERLAY (the shared out-of-flow layer): consumes no flow
- *    space, pinned to the `anchor` edge at 100% of the parent cross extent, paints
+ *    space, pinned to the `pin` edge at 100% of the parent cross extent, paints
  *    last, carries an elevation shadow.
  *  - `rail` -- a thin in-flow mini-drawer (icon strip).
- * `anchor` (default left): for overlay it TRULY pins; for permanent/rail it sets
- * the axis (left/right=col, top/bottom=row) + which edge the divider hugs (it does
- * NOT teleport an in-flow drawer). `divider` (default true) toggles the inner seam.
- * `background`/`denseBackground` opaque-tint the panel (task-1 base).
+ * `pin` (left|right|top|bottom, default left) is the SINGLE placement knob. It
+ * implies the axis (left/right=vertical column panel, top/bottom=horizontal row
+ * bar) -- there is NO separate orientation prop. It sets the docked side, the
+ * content-facing divider edge, and the 100% fill axis (vertical fills height,
+ * horizontal fills width). For overlay it TRULY pins; for permanent/rail it sets
+ * the docked side + which edge the divider hugs (it does NOT teleport an in-flow
+ * drawer). `divider` (default true) toggles the inner seam. In-flow drawers draw
+ * the seam ONLY (no full box); the floating overlay variant is a bordered, shadowed
+ * sheet. `background`/`denseBackground` opaque-tint the panel (task-1 base).
  *
  * A non-overlay Drawer is the frame's first child; an overlay Drawer is appended
  * last (out of flow), so `drawerBox` finds it by component.
@@ -40,9 +45,9 @@ test('a bare Drawer parses clean as a container with the spec defaults unset in 
   assert.deepEqual(doc.diagnostics, []);
   const drawer = doc.frames[0].children[0];
   assert.equal(drawer.component, 'Drawer');
-  // The resolver injects no defaults; the strategy applies anchor=left /
+  // The resolver injects no defaults; the strategy applies pin=left /
   // variant=permanent / divider(true) itself.
-  assert.equal(drawer.props.anchor, undefined);
+  assert.equal(drawer.props.pin, undefined);
   assert.equal(drawer.props.variant, undefined);
   assert.equal(drawer.props.divider, undefined);
 });
@@ -63,57 +68,77 @@ test('a Drawer stacks its children inside, in order', () => {
   assert.deepEqual(box.children.map((c) => c.node.component), ['Typography', 'Typography']);
 });
 
-// --- anchor: keyless + keyed, and REAL axis/stretch geometry ------------------
+// --- pin: keyless + keyed, and REAL axis/stretch geometry --------------------
 
-test('anchor is keyless and accepts each enum value', () => {
-  for (const a of ['left', 'right', 'top', 'bottom']) {
-    const doc = parse(`Wireframe\n  Drawer ${a}`);
-    assert.deepEqual(doc.diagnostics, [], `anchor=${a} should parse clean`);
-    assert.equal(doc.frames[0].children[0].props.anchor, a);
+test('pin is keyless and accepts each enum value', () => {
+  for (const p of ['left', 'right', 'top', 'bottom']) {
+    const doc = parse(`Wireframe\n  Drawer ${p}`);
+    assert.deepEqual(doc.diagnostics, [], `pin=${p} should parse clean`);
+    assert.equal(doc.frames[0].children[0].props.pin, p);
   }
 });
 
-test('anchor also resolves in keyed form', () => {
-  const doc = parse('Wireframe\n  Drawer anchor=right');
+test('pin also resolves in keyed form', () => {
+  const doc = parse('Wireframe\n  Drawer pin=right');
   assert.deepEqual(doc.diagnostics, []);
-  assert.equal(doc.frames[0].children[0].props.anchor, 'right');
+  assert.equal(doc.frames[0].children[0].props.pin, 'right');
 });
 
-test('left/right anchors are vertical panels; they stack children in a column', () => {
-  for (const a of ['left', 'right']) {
-    const SRC = `Wireframe\n  Drawer ${a}\n    Typography "A"\n    Typography "B"`;
+test('left/right pins are vertical panels; they stack children in a column', () => {
+  for (const p of ['left', 'right']) {
+    const SRC = `Wireframe\n  Drawer ${p}\n    Typography "A"\n    Typography "B"`;
     const [c0, c1] = findByComponent(layout(parse(SRC))[0].root, 'Drawer').children;
-    assert.ok(c1.y > c0.y, `${a}: second child should sit below the first (col)`);
-    assert.equal(c0.x, c1.x, `${a}: column children share an x`);
+    assert.ok(c1.y > c0.y, `${p}: second child should sit below the first (col)`);
+    assert.equal(c0.x, c1.x, `${p}: column children share an x`);
   }
 });
 
-test('orientation sets the AXIS: vertical stacks children in a column, horizontal in a row', () => {
-  const vert = findByComponent(layout(parse('Wireframe\n  Drawer vertical\n    Typography "A"\n    Typography "B"'))[0].root, 'Drawer').children;
+test('pin sets the AXIS: left/right (vertical) stacks children in a column, top/bottom (horizontal) in a row', () => {
+  const vert = findByComponent(layout(parse('Wireframe\n  Drawer left\n    Typography "A"\n    Typography "B"'))[0].root, 'Drawer').children;
   assert.ok(vert[1].y > vert[0].y && vert[0].x === vert[1].x, 'vertical: children stack in a column');
-  const horiz = findByComponent(layout(parse('Wireframe\n  Drawer horizontal\n    Typography "A"\n    Typography "B"'))[0].root, 'Drawer').children;
+  const horiz = findByComponent(layout(parse('Wireframe\n  Drawer top\n    Typography "A"\n    Typography "B"'))[0].root, 'Drawer').children;
   assert.ok(horiz[1].x > horiz[0].x, 'horizontal: children sit side by side in a row');
 });
 
 test('a vertical panel keeps its panel width; a horizontal panel stretches full-width', () => {
-  const frameW = layout(parse('Wireframe\n  Drawer vertical'))[0].w;
-  const vert = drawerBox('Wireframe\n  Drawer vertical');
-  const horiz = drawerBox('Wireframe\n  Drawer horizontal');
+  const frameW = layout(parse('Wireframe\n  Drawer left'))[0].w;
+  const vert = drawerBox('Wireframe\n  Drawer left');
+  const horiz = drawerBox('Wireframe\n  Drawer top');
   assert.ok(vert.w < frameW, `vertical panel (${vert.w}) should be narrower than the frame (${frameW})`);
   assert.ok(horiz.w > vert.w, `horizontal panel (${horiz.w}) should be wider than the vertical panel (${vert.w})`);
   assert.ok(horiz.w >= frameW - 40, `horizontal panel (${horiz.w}) should span ~the full frame width (${frameW})`);
 });
 
-test('the seam edge follows anchor (the content-facing side), drawing distinct chrome per side', () => {
-  // Within each axis, the two anchors put the seam on opposite (content-facing)
-  // edges, so they render differently. (anchor is normalized to the axis, so we
-  // pair each orientation with its valid edges.)
-  const vLeft = render('Wireframe\n  Drawer vertical left').svg;   // seam right
-  const vRight = render('Wireframe\n  Drawer vertical right').svg; // seam left
-  const hTop = render('Wireframe\n  Drawer horizontal top').svg;   // seam bottom
-  const hBottom = render('Wireframe\n  Drawer horizontal bottom').svg; // seam top
-  for (const svg of [vLeft, vRight, hTop, hBottom]) assert.match(svg, /stroke-width="2"/);
-  assert.equal(new Set([vLeft, vRight, hTop, hBottom]).size, 4, 'each (orientation, anchor) puts the seam on a distinct edge');
+test('a vertical Drawer fills its long axis: 100% height in a full-height row (no Stack wrapper needed)', () => {
+  // The `fill` capability: a left (vertical) drawer in a row whose height is the
+  // frame height stretches to fill that height (its cross axis), so authors no
+  // longer wrap it in a `Stack column 100%`.
+  const root = layout(parse('Wireframe w=1000 h=800\n  Stack row * *\n    Drawer left\n      List\n        ListItem "x"\n    Box * *'))[0].root;
+  const rowBox = findByComponent(root, 'Stack');
+  const drawer = findByComponent(root, 'Drawer');
+  assert.ok(Math.abs(drawer.h - rowBox.h) < 1e-6, `the vertical drawer (${drawer.h}) should fill its row's height (${rowBox.h})`);
+});
+
+test('a vertical Drawer at a column root flex-fills the remaining frame height (full fill, main axis)', () => {
+  // At the column root, height is the MAIN axis -> the `fill` hook flexes the drawer
+  // to consume the leftover height beneath an AppBar.
+  const root = layout(parse('Wireframe w=1000 h=800\n  AppBar\n    Button "File"\n  Drawer left\n    List\n      ListItem "x"'))[0].root;
+  const appbar = findByComponent(root, 'AppBar');
+  const drawer = findByComponent(root, 'Drawer');
+  // The drawer should be much taller than its content floor -- it ate the leftover.
+  assert.ok(drawer.h > 400, `the column-root drawer (${drawer.h}) should flex-fill the leftover height`);
+  assert.ok(drawer.y >= appbar.y + appbar.h - 1e-6, 'the drawer sits below the AppBar');
+});
+
+test('the seam edge follows pin (the content-facing side), drawing distinct chrome per side', () => {
+  // Each pin puts the seam on the opposite (content-facing) edge, so all four render
+  // differently. pin alone implies the axis -- no orientation token needed.
+  const left = render('Wireframe\n  Drawer left').svg;     // seam right
+  const right = render('Wireframe\n  Drawer right').svg;   // seam left
+  const top = render('Wireframe\n  Drawer top').svg;       // seam bottom
+  const bottom = render('Wireframe\n  Drawer bottom').svg; // seam top
+  for (const svg of [left, right, top, bottom]) assert.match(svg, /stroke-width="2"/);
+  assert.equal(new Set([left, right, top, bottom]).size, 4, 'each pin puts the seam on a distinct edge');
 });
 
 // --- variant: keyless + keyed, each value ------------------------------------
@@ -177,20 +202,19 @@ test('a rail is a thin in-flow strip (~56), much narrower than a permanent panel
 
 // --- overlay: pinned geometry on all four edges + paints last ----------------
 
-test('an overlay Drawer pins to its anchor edge at 100% of the parent cross extent (all 4 edges)', () => {
+test('an overlay Drawer pins to its pin edge at 100% of the parent cross extent (all 4 edges)', () => {
   // Frame 1000x800 -> content rect {16,16,968,768} (frame minus FRAME_PAD=16).
-  // anchor lives on the orientation's axis, so pair them: vertical+left/right,
-  // horizontal+top/bottom.
-  const at = (o, a) => drawerBox(`Wireframe w=1000 h=800\n  Drawer overlay ${o} ${a}\n    List\n      ListItem "x"`);
+  // pin alone implies the axis, so each edge stretches the perpendicular axis.
+  const at = (p) => drawerBox(`Wireframe w=1000 h=800\n  Drawer overlay ${p}\n    List\n      ListItem "x"`);
   const near = (v, e, msg) => assert.ok(Math.abs(v - e) <= 1, `${msg}: ${v} vs ${e}`);
 
-  const left = at('vertical', 'left');
+  const left = at('left');
   near(left.x, 16, 'left x hugs content origin'); near(left.h, 768, 'left full parent height'); assert.ok(left.w >= 220, 'left panel width');
-  const right = at('vertical', 'right');
+  const right = at('right');
   near(right.x + right.w, 984, 'right far edge meets content right edge'); near(right.h, 768, 'right full height');
-  const top = at('horizontal', 'top');
+  const top = at('top');
   near(top.y, 16, 'top y hugs content origin'); near(top.w, 968, 'top full parent width');
-  const bottom = at('horizontal', 'bottom');
+  const bottom = at('bottom');
   near(bottom.y + bottom.h, 784, 'bottom far edge meets content bottom edge'); near(bottom.w, 968, 'bottom full width');
 });
 
@@ -206,10 +230,16 @@ test('an overlay Drawer carries an elevation shadow and paints after a later in-
   assert.ok(item > later, `the overlay drawer (idx ${item}) must paint after the later sibling (idx ${later})`);
 });
 
+test('a plain in-flow Drawer draws NO elevation shadow (only the floating overlay does)', () => {
+  // Seam-only in flow: no shadow, no full box -- the seam is the only chrome.
+  assert.doesNotMatch(render('Wireframe\n  Drawer permanent left').svg, /<path opacity=/, 'a permanent drawer should not float');
+  assert.match(render('Wireframe w=900 h=700\n  Drawer overlay left\n    List\n      ListItem "x"').svg, /<path opacity=/, 'an overlay drawer floats');
+});
+
 test('an overlay Drawer in a collapsed parent fills ~0 on the stretched axis (EDGE A degenerate, finite)', () => {
   // Consistent with Dialog's overlay-in-collapsed-parent: a stretch overlay fills
   // the parent extent, and an overlay-only Box collapses to ~0 -> the drawer's
-  // stretched (height, for a left anchor) axis is ~0. Finite, documented, pinned.
+  // stretched (height, for a left pin) axis is ~0. Finite, documented, pinned.
   const root = layout(parse('Wireframe\n  Box outline=solid\n    Drawer overlay left\n      List\n        ListItem "x"'))[0].root;
   const boxBox = findByComponent(root, 'Box');
   const drawer = findByComponent(root, 'Drawer');
@@ -225,7 +255,8 @@ test('divider is a keyless boolean defaulting on; divider=false suppresses the i
   assert.equal(parse('Wireframe\n  Drawer divider').frames[0].children[0].props.divider, true);
   assert.match(render('Wireframe\n  Drawer permanent').svg, /stroke-width="2"/);
   assert.match(render('Wireframe\n  Drawer permanent divider').svg, /stroke-width="2"/);
-  // divider=false removes the seam.
+  // divider=false removes the seam (and an in-flow drawer draws no full box), so no
+  // stroke-width="2" remains anywhere.
   assert.equal(parse('Wireframe\n  Drawer divider=false').frames[0].children[0].props.divider, false);
   assert.doesNotMatch(render('Wireframe\n  Drawer permanent divider=false').svg, /stroke-width="2"/);
 });
@@ -250,11 +281,11 @@ test('background is keyless and resolves; denseBackground is a keyless boolean',
 
 // --- Keyless: enums + booleans co-resolve in any order ------------------------
 
-test('anchor, variant, background, and the booleans all resolve keyless together, any order', () => {
+test('pin, variant, background, and the booleans all resolve keyless together, any order', () => {
   const doc = parse('Wireframe\n  Drawer overlay right crosshatch divider denseBackground');
   assert.deepEqual(doc.diagnostics, []);
   const d = doc.frames[0].children[0];
-  assert.equal(d.props.anchor, 'right');
+  assert.equal(d.props.pin, 'right');
   assert.equal(d.props.variant, 'overlay');
   assert.equal(d.props.background, 'crosshatch');
   assert.equal(d.props.divider, true);
@@ -268,6 +299,12 @@ test('the removed `open` prop is a hard error (unknown prop), not silently accep
   assert.throws(() => parse('Wireframe\n  Drawer open=false'), /open/i);
 });
 
+test('the dropped `orientation` prop is gone: vertical/horizontal are unknown bare tokens', () => {
+  assert.throws(() => parse('Wireframe\n  Drawer vertical'), /Drawer/);
+  assert.throws(() => parse('Wireframe\n  Drawer horizontal'), /Drawer/);
+  assert.throws(() => parse('Wireframe\n  Drawer orientation=vertical'), /orientation/);
+});
+
 test('the dropped `persistent`/`temporary` variant values are hard errors (bad enum)', () => {
   assert.throws(() => parse('Wireframe\n  Drawer persistent'), /Drawer/);
   assert.throws(() => parse('Wireframe\n  Drawer temporary'), /Drawer/);
@@ -277,7 +314,7 @@ test('the dropped `persistent`/`temporary` variant values are hard errors (bad e
 
 // --- Errors: duplicate keyless slot + bad enum value --------------------------
 
-test('two anchor tokens (same keyless enum slot twice) is a hard error', () => {
+test('two pin tokens (same keyless enum slot twice) is a hard error', () => {
   assert.throws(() => parse('Wireframe\n  Drawer left right'), /Drawer/);
 });
 
@@ -289,8 +326,8 @@ test('an unknown bare token is a hard error (not a silent drop)', () => {
   assert.throws(() => parse('Wireframe\n  Drawer sideways'), /Drawer/);
 });
 
-test('a bad keyed anchor value is a hard error', () => {
-  assert.throws(() => parse('Wireframe\n  Drawer anchor=middle'), /anchor/);
+test('a bad keyed pin value is a hard error', () => {
+  assert.throws(() => parse('Wireframe\n  Drawer pin=middle'), /pin/);
 });
 
 test('a bad keyed variant value is a hard error', () => {

@@ -1,7 +1,7 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { diagnostic } from './errors.js';
-import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
+import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING, SCROLLBAR_THICKNESS } from './metrics.js';
 
 /**
  * Stage (4) -- LAYOUT.  Document -> box geometry.
@@ -33,6 +33,8 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {number} x @property {number} y @property {number} w @property {number} h
  * @property {ResolvedNode} node
  * @property {Box[]} children
+ * @property {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>} [scrollbars]  // reserved scrollbar gutter strips (universal `scrollbar` prop); painted by the render facade
+ * @property {Rect} [clip]  // content rect a scroll container clips its children to (overflow hidden); set with `scrollbars`
  *
  * @typedef {Object} LaidOutFrame
  * @property {string} [id]
@@ -82,6 +84,46 @@ export function isOverlay(node) {
 function specFor(node) {
   const s = strategyFor(node.component);
   return typeof s.layoutSpec === 'function' ? s.layoutSpec(node) : { axis: 'col', pad: 0, gap: 0 };
+}
+
+/**
+ * The scrollbar gutter an element reserves from the universal `scrollbar` prop:
+ * `gw` (right gutter, eats width) for vertical/both, `gh` (bottom gutter, eats
+ * height) for horizontal/both. Reserved in measure (the element grows to hold both
+ * its content AND the gutter) and in place (the content rect shrinks), so the strip
+ * the render facade draws into the gutter never overlaps content. No prop / `none`
+ * -> {0,0}, so an element without a scrollbar is byte-identical to before.
+ * @param {ResolvedNode} node @returns {{ gw: number, gh: number }}
+ */
+function scrollGutter(node) {
+  const sb = node.props?.scrollbar;
+  if (!sb || sb === 'none') return { gw: 0, gh: 0 };
+  return {
+    gw: sb === 'vertical' || sb === 'both' ? SCROLLBAR_THICKNESS : 0,
+    gh: sb === 'horizontal' || sb === 'both' ? SCROLLBAR_THICKNESS : 0,
+  };
+}
+
+/**
+ * The scrollbar strip rect(s) to draw, anchored FLUSH to the element's BOX edges
+ * (like a browser scrollbar: hard against the border, with the element's padding
+ * INSIDE it -- the content rect already cleared the gutter, so there is no overlap).
+ * A vertical strip hugs the right edge over the full box height; a horizontal one the
+ * bottom edge over the full width; for `both`, each stops short of the other so the
+ * bottom-right corner is left empty (the classic scrollbar corner). Each carries the
+ * node's value/handle for the render facade.
+ * @param {ResolvedNode} node @param {Rect} box  the element's full box region
+ * @param {{gw:number,gh:number}} g
+ * @returns {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>}
+ */
+function scrollStrips(node, box, g) {
+  /** @type {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>} */
+  const strips = [];
+  const value = node.props?.scrollbarValue;
+  const handle = node.props?.scrollbarHandle;
+  if (g.gw > 0) strips.push({ x: box.x + box.w - g.gw, y: box.y, w: g.gw, h: box.h - g.gh, orientation: 'vertical', value, handle });
+  if (g.gh > 0) strips.push({ x: box.x, y: box.y + box.h - g.gh, w: box.w - g.gw, h: g.gh, orientation: 'horizontal', value, handle });
+  return strips;
 }
 
 // --- pass 1: intrinsic measurement (bottom-up) --------------------------------
@@ -143,23 +185,27 @@ export function measure(node, avail) {
 function measureContainer(node, spec, avail) {
   const pad = spec.pad ?? 0;
   const gap = spec.gap ?? 0;
+  // A scrollbar reserves a gutter on the scrolled edge: children get gw/gh LESS
+  // inner space, and the container grows by gw/gh to hold both content and the
+  // strip (no scrollbar -> {0,0}, so this is byte-identical to before).
+  const { gw, gh } = scrollGutter(node);
   // Overlay children are OUT OF FLOW: they add nothing to the parent's content
   // size and seed no gap. Measuring over the flow kids only is what makes a
-  // container's size identical whether or not a Dialog/Drawer/Scrollbar overlays
-  // it (the regression guard: with no overlays this is `node.children` verbatim).
+  // container's size identical whether or not a Dialog/Drawer overlays it (the
+  // regression guard: with no overlays this is `node.children` verbatim).
   const kids = (node.children ?? []).filter((k) => !isOverlay(k));
   const totalGap = gap * Math.max(0, kids.length - 1);
 
   if (spec.axis === 'row') {
-    const innerH = avail && Number.isFinite(avail.h) ? /** @type {number} */ (avail.h) - 2 * pad : undefined;
+    const innerH = avail && Number.isFinite(avail.h) ? /** @type {number} */ (avail.h) - 2 * pad - gh : undefined;
     const sizes = kids.map((k) => measure(k, innerH != null ? { h: innerH } : undefined));
     const w = sizes.reduce((a, sz) => a + sz.w, 0) + totalGap;
     const h = innerH != null ? innerH : sizes.reduce((a, sz) => Math.max(a, sz.h), 0);
-    return { w: w + 2 * pad, h: h + 2 * pad };
+    return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
   }
   if (spec.axis === 'grid') {
     const cols = Math.max(1, Math.floor(spec.cols ?? 1));
-    const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad : undefined;
+    const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad - gw : undefined;
     const cellW = innerW != null ? (innerW - gap * (cols - 1)) / cols : undefined;
     const sizes = kids.map((k) => measure(k, cellW != null ? { w: cellW } : undefined));
     const cw = sizes.reduce((a, sz) => Math.max(a, sz.w), 0);
@@ -167,14 +213,14 @@ function measureContainer(node, spec, avail) {
     const rows = Math.ceil(kids.length / cols) || 0;
     const w = innerW != null ? innerW : cols * cw + gap * (cols - 1);
     const h = rows * ch + gap * Math.max(0, rows - 1);
-    return { w: w + 2 * pad, h: h + 2 * pad };
+    return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
   }
   // col
-  const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad : undefined;
+  const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad - gw : undefined;
   const sizes = kids.map((k) => measure(k, innerW != null ? { w: innerW } : undefined));
   const w = innerW != null ? innerW : sizes.reduce((a, sz) => Math.max(a, sz.w), 0);
   const h = sizes.reduce((a, sz) => a + sz.h, 0) + totalGap;
-  return { w: w + 2 * pad, h: h + 2 * pad };
+  return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
 }
 
 // --- pass 2: placement (top-down) --------------------------------------------
@@ -187,10 +233,13 @@ function measureContainer(node, spec, avail) {
 export function place(node, region) {
   /** @type {Box} */
   const box = { x: region.x, y: region.y, w: region.w, h: region.h, node, children: [] };
+  const g = scrollGutter(node);
   if (isContainer(node)) {
     const spec = specFor(node);
     const pad = spec.pad ?? 0;
-    const content = { x: region.x + pad, y: region.y + pad, w: region.w - 2 * pad, h: region.h - 2 * pad };
+    // The content rect excludes both the padding AND any scrollbar gutter (gw on the
+    // right, gh at the bottom), so children never lay out under the strip.
+    const content = { x: region.x + pad, y: region.y + pad, w: region.w - 2 * pad - g.gw, h: region.h - 2 * pad - g.gh };
     const kids = node.children ?? [];
     // OUT-OF-FLOW split: flow kids arrange exactly as before (so an overlay-free
     // container is byte-identical -- `flowKids` then equals `kids`); overlay kids
@@ -199,6 +248,20 @@ export function place(node, region) {
     const overlayKids = kids.filter((k) => isOverlay(k));
     box.children = spec.axis === 'grid' ? arrangeGrid(flowKids, content, spec) : arrangeLinear(flowKids, content, spec);
     for (const child of overlayKids) box.children.push(placeOverlay(child, content));
+    if (g.gw > 0 || g.gh > 0) {
+      box.scrollbars = scrollStrips(node, region, g);
+      // A scroll container CLIPS its content so overflow is hidden (the strip implies
+      // the rest scrolls). Clip at the BOX edge (outside the padding) minus only the
+      // scrollbar gutter -- NOT at the content rect: hand-drawn strokes wobble a few
+      // px past their box, so a content-rect clip would shave the edges of normal
+      // content. The padding (and that wobble) stays inside the clip; only content
+      // overflowing the box edge is hidden.
+      box.clip = { x: region.x, y: region.y, w: region.w - g.gw, h: region.h - g.gh };
+    }
+  } else if (g.gw > 0 || g.gh > 0) {
+    // A leaf carrying the universal `scrollbar` prop: no children to keep clear, so
+    // the strip just hugs the box's own scrolled edge.
+    box.scrollbars = scrollStrips(node, region, g);
   }
   return box;
 }
@@ -258,6 +321,14 @@ function arrangeLinear(children, content, spec) {
     else if (tok?.unit === 'fill') flex = 1;
     else if (tok?.unit === 'flex') flex = /** @type {number} */ (tok.value);
     if (main == null && flex === 0 && s.flex === true) flex = 1; // a flexible filler (Spacer, ss.5.2)
+    // ABSOLUTE-AXIS fill on the MAIN dim: an element declaring `fill` for the
+    // dimension that happens to be this parent's main axis flexes like `*` (the
+    // cross dim is handled in crossExtent). Only with NO explicit main token above
+    // (a px/%/fill/flex token always wins). See common.js's `fill` contract.
+    if (main == null && flex === 0 && s.fill) {
+      const f = typeof s.fill === 'function' ? s.fill(child) : s.fill;
+      if (f && (horiz ? f.w : f.h)) flex = 1;
+    }
     if (main == null && flex === 0) {
       // Measure against the cross extent this child will actually get, so an
       // aspect-locked subtree (Img `ratio=`) reserves the right main extent.
@@ -343,9 +414,14 @@ function crossExtent(child, horiz, crossAvail, mainAvail) {
       return measure(child, horiz ? { w: mainExtent } : { h: mainExtent })[horiz ? 'h' : 'w'];
   }
   // `block` may be a static boolean OR a per-node predicate (e.g. Button stretches
-  // only when fullWidth). Containers stretch to fill by default.
+  // only when fullWidth). Containers stretch to fill by default. The `fill` hook
+  // (common.js) is the axis-absolute generalization: a fill request on the dim that
+  // is THIS parent's cross axis stretches to crossAvail, exactly like block. An
+  // element with no `fill` hook leaves this byte-identical to before.
+  const fo = typeof s.fill === 'function' ? s.fill(child) : s.fill;
+  const fillCross = fo && (horiz ? fo.h : fo.w);
   const block = typeof s.block === 'function' ? s.block(child) : (s.block ?? isContainer(child));
-  if (block) return crossAvail;
+  if (block || fillCross) return crossAvail;
   // An inline leaf keeps its intrinsic cross size, but never wider than the space
   // available -- a long label is clamped rather than overflowing the parent.
   return Math.min(measure(child)[horiz ? 'h' : 'w'], crossAvail);

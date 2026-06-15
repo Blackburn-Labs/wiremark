@@ -7,7 +7,7 @@ Wireframe #users landscape
       TextField "Search users"
       Spacer
       Button "Add user" contained to=#new
-    Table medium
+    Table medium scrollbar=horizontal scrollbarValue=20 scrollbarHandle=45
       TableHead
         TableRow
           TableCell "Name"
@@ -36,7 +36,6 @@ Wireframe #users landscape
           TableCell "Total"
           TableCell ""
           TableCell "10" align=right
-    Scrollbar horizontal 20 thumb=45
     Stack row spacing=2
       Typography body2 "Rows per page: 25"
       Spacer

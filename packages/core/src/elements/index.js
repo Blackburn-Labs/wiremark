@@ -68,12 +68,11 @@ import DialogActions from './DialogActions.js';
 import Snackbar from './Snackbar.js';
 import Progress from './Progress.js';
 import Skeleton from './Skeleton.js';
-import Scrollbar from './Scrollbar.js';
 
 /** Every element definition, grouped by category. @type {import('./common.js').ComponentDef[]} */
 export const ELEMENTS = [
   Wireframe,
-  Stack, Box, Grid, Spacer, Anchor, Divider, Scrollbar,
+  Stack, Box, Grid, Spacer, Anchor, Divider,
   Card, CardHeader, CardContent, CardActions, AppBar, Toolbar,
   AccordionHeader, AccordionBody,
   Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,

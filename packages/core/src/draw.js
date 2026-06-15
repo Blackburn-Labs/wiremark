@@ -545,3 +545,71 @@ export function surfaceWith(box, opts = {}) {
   out += rrect(box.x, box.y, box.w, box.h, rectOpts);
   return out;
 }
+
+/** Default handle length, as a percent of the track's long axis. */
+const SCROLL_DEFAULT_HANDLE = 30;
+/** Smallest handle the eye still reads as a control, in px (a floor under handle%). */
+const SCROLL_MIN_HANDLE = 16;
+/** Inset (px) of the handle inside the track on each side, so it reads as nested. */
+const SCROLL_HANDLE_INSET = 2;
+/** Corner radius (px) for the track and handle pills. */
+const SCROLL_RADIUS = 6;
+
+/** Clamp `n` to [lo, hi], falling back to `fallback` when not finite. */
+const clampScroll = (/** @type {*} */ n, /** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ fallback) => {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : fallback;
+};
+
+/**
+ * The scrollbar handle's absolute rect inside a strip `rect`. Pure + exported so the
+ * geometry (clamping + the value-to-position mapping) can be asserted directly. The
+ * handle spans the SHORT axis (inset on each side) and is `handle`% of the LONG axis
+ * -- floored to SCROLL_MIN_HANDLE, capped to the track length -- seated along the
+ * leftover track by `value`% (0 -> start/top/left, 100 -> end). Both inputs clamp to
+ * [0,100]; non-finite inputs fall back to their defaults. The long axis is the rect's
+ * height (vertical) or width (horizontal).
+ * @param {{x:number,y:number,w:number,h:number}} rect
+ * @param {boolean} horiz
+ * @param {*} value @param {*} handle
+ * @returns {{ x:number, y:number, w:number, h:number }}
+ */
+export function scrollHandleGeometry(rect, horiz, value, handle) {
+  const valuePct = clampScroll(value, 0, 100, 0);
+  const handlePct = clampScroll(handle, 0, 100, SCROLL_DEFAULT_HANDLE);
+  const longLen = horiz ? rect.w : rect.h;
+  const shortLen = horiz ? rect.h : rect.w;
+  const len = Math.min(longLen, Math.max(SCROLL_MIN_HANDLE, (handlePct / 100) * longLen));
+  const offset = (valuePct / 100) * Math.max(0, longLen - len);
+  const thick = Math.max(1, shortLen - 2 * SCROLL_HANDLE_INSET);
+  return horiz
+    ? { x: rect.x + offset, y: rect.y + SCROLL_HANDLE_INSET, w: len, h: thick }
+    : { x: rect.x + SCROLL_HANDLE_INSET, y: rect.y + offset, w: thick, h: len };
+}
+
+/**
+ * A scrollbar strip drawn INTO the reserved gutter `rect`: a faint track pill plus a
+ * hand-drawn rounded handle. The universal `scrollbar` prop's one drawing primitive,
+ * shared by every element through the render facade. `orientation` is 'horizontal'
+ * (thumb travels left..right) or anything else (vertical, top..bottom). `value`% is
+ * the scroll position (0 = start), `handle`% the handle length (default 30). Geometry
+ * is deterministic (seeds derive from rect), so the SVG is stable.
+ * @param {{x:number,y:number,w:number,h:number}} rect  the reserved gutter strip
+ * @param {string} orientation @param {*} [value] @param {*} [handle]
+ * @returns {string}
+ */
+export function scrollbarStrip(rect, orientation, value, handle) {
+  const horiz = orientation === 'horizontal';
+  const track = rroundrect(rect.x, rect.y, rect.w, rect.h, Math.min(SCROLL_RADIUS, rect.w / 2, rect.h / 2), {
+    stroke: COLORS.muted,
+    strokeWidth: 1,
+  });
+  const t = scrollHandleGeometry(rect, horiz, value, handle);
+  const thumb = rroundrect(t.x, t.y, t.w, t.h, Math.min(SCROLL_RADIUS, t.w / 2, t.h / 2), {
+    fill: COLORS.muted,
+    fillStyle: 'solid',
+    stroke: COLORS.ink,
+    strokeWidth: 1.2,
+  });
+  return track + thumb;
+}

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import { parse, render } from '../../src/index.js';
 import { layout } from '../../src/layout.js';
-import { getComponent } from '../../src/registry.js';
+import { getComponent, UNIVERSAL_PROPS } from '../../src/registry.js';
 
 /**
  * TableBody -- the body row-group of a Table (FAMILIES.md, FAMILY 1). An invisible
@@ -36,9 +36,9 @@ test('TableBody is registered as a v1.0 content container with no props', () => 
   assert.equal(def.tier, 'v1.0');
   assert.equal(def.category, 'content');
   assert.equal(def.container, true);
-  // No declared props beyond the universal injected ones (to/href). The spec slice
-  // is empty; the only schema surface is the universal link prop.
-  const own = Object.keys(def.props).filter((k) => k !== 'to' && k !== 'href');
+  // No declared props beyond the universal injected ones (to/href, scrollbar*). The
+  // spec slice is empty; the only schema surface is the universal props.
+  const own = Object.keys(def.props).filter((k) => !(k in UNIVERSAL_PROPS) && k !== 'href');
   assert.deepEqual(own, [], `TableBody should declare no own props, got ${own.join(',')}`);
 });
 

@@ -185,37 +185,6 @@
       ]
     },
     {
-      "name": "Scrollbar",
-      "category": "Layout",
-      "children": false,
-      "properties": [
-        {
-          "name": "orientation",
-          "type": "enum",
-          "values": [
-            "vertical",
-            "horizontal"
-          ],
-          "default": "vertical",
-          "keyless": true,
-          "notes": "Place vertical in a row, horizontal in a column: the strip stretches the container's cross axis only (a block leaf cannot grow the main axis), so against-the-grain placement reads as the wrong silhouette."
-        },
-        {
-          "name": "scrolled",
-          "type": "numeric",
-          "default": 0,
-          "keyless": true,
-          "notes": "How far scrolled, percent 0-100 (0 = start/top-left). Clamped; out-of-range degrades, never throws."
-        },
-        {
-          "name": "thumb",
-          "type": "numeric",
-          "default": 30,
-          "keyless": false
-        }
-      ]
-    },
-    {
       "name": "Card",
       "category": "Surfaces",
       "children": true,
@@ -385,7 +354,7 @@
       "children": true,
       "properties": [
         {
-          "name": "anchor",
+          "name": "pin",
           "type": "enum",
           "values": [
             "left",
@@ -395,18 +364,7 @@
           ],
           "default": "left",
           "keyless": true,
-          "notes": "v1.0. Pins the edge for overlay; sets the docked side + divider edge in flow. Implies the axis when given (right=>vertical, top=>horizontal) and overrides a conflicting orientation."
-        },
-        {
-          "name": "orientation",
-          "type": "enum",
-          "values": [
-            "vertical",
-            "horizontal"
-          ],
-          "default": "vertical",
-          "keyless": true,
-          "notes": "v1.0. Panel axis: vertical=tall narrow side panel, horizontal=wide short panel. anchor implies and overrides it when both are given."
+          "notes": "v1.0. The single placement knob (left default). Sets the docked/pinned side, the content-facing divider edge, the 100% fill axis, and the child-stacking axis. Implies the panel axis (left/right=>vertical side panel, top/bottom=>horizontal bar), so no separate orientation prop is needed -- mirrors MUI's Drawer anchor (renamed pin to avoid colliding with the Anchor element / a frame's anchor= composition)."
         },
         {
           "name": "variant",
@@ -418,7 +376,7 @@
           ],
           "default": "permanent",
           "keyless": true,
-          "notes": "v1.0. permanent=in-flow panel; overlay=out-of-flow, pinned to anchor; rail=thin in-flow strip."
+          "notes": "v1.0. permanent=in-flow panel (seam only, no full box); overlay=out-of-flow floating sheet, pinned to the pin edge; rail=thin in-flow strip."
         },
         {
           "name": "divider",

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import { parse, render } from '../../src/index.js';
 import { layout } from '../../src/layout.js';
-import { getComponent } from '../../src/registry.js';
+import { getComponent, UNIVERSAL_PROPS } from '../../src/registry.js';
 
 /**
  * TableHead -- the header row-group of a Table (FAMILIES.md, FAMILY 1). An
@@ -60,8 +60,8 @@ test('TableHead is registered as a v1.0 content container with no own props', ()
   assert.equal(def.container, true);
   // The spec slice is empty; a child cannot read Table's size/etc. through the
   // engine, so TableHead deliberately declares no own props. The only schema
-  // surface is the universal injected link prop (to/href).
-  const own = Object.keys(def.props).filter((k) => k !== 'to' && k !== 'href');
+  // surface is the universal injected props (to/href, scrollbar*).
+  const own = Object.keys(def.props).filter((k) => !(k in UNIVERSAL_PROPS) && k !== 'href');
   assert.deepEqual(own, [], `TableHead should declare no own props, got ${own.join(',')}`);
 });
 

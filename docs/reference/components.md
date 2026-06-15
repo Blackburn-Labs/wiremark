@@ -82,16 +82,6 @@ This reference is generated from [`meta/element-specs.json`](../../meta/element-
 | width | size |  |  | yes | w |  |
 | height | size |  |  | yes | h |  |
 
-### Scrollbar
-
-*Accepts children: no*
-
-| Name | Type | Values | Default | Keyless | Aliases | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| orientation | enum | vertical, horizontal | vertical | yes |  | Place vertical in a row, horizontal in a column: the strip stretches the container's cross axis only (a block leaf cannot grow the main axis), so against-the-grain placement reads as the wrong silhouette. |
-| scrolled | numeric |  | 0 | yes |  | How far scrolled, percent 0-100 (0 = start/top-left). Clamped; out-of-range degrades, never throws. |
-| thumb | numeric |  | 30 | no |  |  |
-
 ## Surfaces
 
 ### Card
@@ -172,9 +162,8 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| anchor | enum | left, right, top, bottom | left | yes |  | v1.0. Pins the edge for overlay; sets the docked side + divider edge in flow. Implies the axis when given (right=>vertical, top=>horizontal) and overrides a conflicting orientation. |
-| orientation | enum | vertical, horizontal | vertical | yes |  | v1.0. Panel axis: vertical=tall narrow side panel, horizontal=wide short panel. anchor implies and overrides it when both are given. |
-| variant | enum | permanent, overlay, rail | permanent | yes |  | v1.0. permanent=in-flow panel; overlay=out-of-flow, pinned to anchor; rail=thin in-flow strip. |
+| pin | enum | left, right, top, bottom | left | yes |  | v1.0. The single placement knob (left default). Sets the docked/pinned side, the content-facing divider edge, the 100% fill axis, and the child-stacking axis. Implies the panel axis (left/right=>vertical side panel, top/bottom=>horizontal bar), so no separate orientation prop is needed -- mirrors MUI's Drawer anchor (renamed pin to avoid colliding with the Anchor element / a frame's anchor= composition). |
+| variant | enum | permanent, overlay, rail | permanent | yes |  | v1.0. permanent=in-flow panel (seam only, no full box); overlay=out-of-flow floating sheet, pinned to the pin edge; rail=thin in-flow strip. |
 | divider | boolean |  | true | yes |  | Solid seam on the inner edge facing the content; divider=false suppresses it. |
 | background | enum | hatch, crosshatch, none | hatch | yes |  | Opaque hatch tint on the panel (drawn only when set). none = opaque base, no hashes. |
 | denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer. |
