@@ -295,7 +295,7 @@ Breadcrumbs [c] -- separator:T*
 Stepper [c] -- orientation:(horizontal|vertical)=horizontal*
 Step -- label:T*, active:B*, completed:B*
 Pagination -- count:N=1, page:N=1
-BottomNavigation [c] -- value:T, showLabels:B*
+BottomNavigation [c] -- value|v|val:T, showLabels:B*
 BottomNavigationAction -- label:T*, icon:I
 
 CONTENT
@@ -303,7 +303,7 @@ Typography [~] -- label:T*, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1
 Button -- label:T*, variant:(text|outlined|contained)=text*, size:(small|medium|large)=medium*, disabled:B*, startIcon:I, endIcon:I, fullWidth:B*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
 
 INPUTS
-TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value:T, multiline:B*, required:B*, placeholder:T, helperText|helper:T, error:B*, disabled:B*, rows:N, defaultValue:T, size:(small|medium)=medium*, startIcon:I, endIcon:I, fullWidth:B*, select:B*, background:(hatch|crosshatch|none)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
+TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value|v|val:T, multiline:B*, required:B*, placeholder:T, helperText|helper:T, error:B*, disabled:B*, rows:N, defaultValue:T, size:(small|medium)=medium*, startIcon:I, endIcon:I, fullWidth:B*, select:B*, background:(hatch|crosshatch|none)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
 
 CONTENT
 Img [w h] -- ratio:A, alt:T, src:T

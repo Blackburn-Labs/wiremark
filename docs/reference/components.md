@@ -264,7 +264,7 @@ No configurable properties.
 
 | Name | Type | Values | Default | Keyless | Aliases | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| value | string |  |  | no |  |  |
+| value | string |  |  | no | v, val |  |
 | showLabels | boolean |  | false | no |  |  |
 
 ### BottomNavigationAction
@@ -443,7 +443,7 @@ No configurable properties.
 | --- | --- | --- | --- | --- | --- | --- |
 | label | string |  |  | yes |  | Optional. Absent: nothing drawn, no space reserved. Outlined: rests inside the empty field, floats onto the top border once a value/placeholder shows. |
 | variant | enum | outlined, filled, standard | outlined | yes |  |  |
-| value | string |  |  | no |  |  |
+| value | string |  |  | no | v, val |  |
 | defaultValue | string |  |  | no |  |  |
 | multiline | boolean |  | false | yes |  |  |
 | required | boolean |  | false | yes |  | Appends a * marker to the label. |

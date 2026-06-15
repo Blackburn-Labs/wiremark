@@ -111,6 +111,14 @@ test('keyed props (placeholder/value/defaultValue/rows/select) resolve clean', (
   assert.equal(tf.props.fullWidth, true);
 });
 
+test('value accepts its v/val aliases (keyed string)', () => {
+  for (const alias of ['v', 'val']) {
+    const doc = parse(`Wireframe\n  TextField "Email" ${alias}="rob@x.com"`);
+    assert.deepEqual(doc.diagnostics, [], `${alias}= should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.value, 'rob@x.com', `${alias}= should map to value`);
+  }
+});
+
 test('startIcon/endIcon resolve as keyed icon names and annotate node.icons', () => {
   const doc = parse('Wireframe\n  TextField "Search" startIcon=Search endIcon=Close');
   assert.deepEqual(doc.diagnostics, []);

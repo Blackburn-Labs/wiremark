@@ -31,7 +31,7 @@ export default {
   category: 'navigation',
   container: true,
   props: {
-    value: { type: 'string' },
+    value: { type: 'string', aliases: ['v', 'val'] },
     showLabels: { type: 'boolean', default: false },
   },
   notes:

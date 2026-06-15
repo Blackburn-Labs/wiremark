@@ -136,7 +136,7 @@ export default {
   props: {
     label: { type: 'string' },
     variant: { type: 'enum', values: ['outlined', 'filled', 'standard'], default: 'outlined' },
-    value: { type: 'string' },
+    value: { type: 'string', aliases: ['v', 'val'] },
     multiline: { type: 'boolean', default: false },
     required: { type: 'boolean', default: false },
     placeholder: { type: 'string' },

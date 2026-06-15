@@ -644,6 +644,7 @@
         {
           "name": "value",
           "type": "string",
+          "aliases": ["v", "val"],
           "keyless": false
         },
         {
@@ -821,6 +822,7 @@
         {
           "name": "value",
           "type": "string",
+          "aliases": ["v", "val"],
           "keyless": false
         },
         {
