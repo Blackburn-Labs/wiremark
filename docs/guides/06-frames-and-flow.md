@@ -190,8 +190,8 @@ Wireframe #shell visible=false
 A single ` ```wireframe ` block can declare **several `Wireframe` frames**. When
 more than one frame is visible, wiremark arranges them as a **flow chart**: each
 frame is a node, positioned automatically over the inferred `to=#id` graph, with
-hand-drawn connectors joining linked screens (the same structure `toMermaid`
-emits).
+clean orthogonal connectors joining linked screens (a crisp diagram layer, drawn
+over the hand-sketched frames — the same structure `toMermaid` emits).
 
 ```wireframe
 Wireframe #home landscape
@@ -218,6 +218,12 @@ Wireframe #details landscape
   connector; it never hard-fails.
 - **Disconnected screens** (frames nothing links to) are packed alongside the
   linked group rather than dropped.
+- **Gaps widen to fit the wiring.** The gap between two ranks of frames is a
+  routing channel: it grows from its minimum to seat every connector that crosses
+  it on its own parallel track (so connectors never overlap each other or cut
+  through a frame) and to hold their edge labels. Captions render *inside* that
+  widened gap rather than on top of the screens, and an edge that skips a rank
+  detours around the side instead of slicing through the frames between.
 
 A lone frame is unaffected: a single-`Wireframe` document renders exactly as it
 always has, with no flow chrome.

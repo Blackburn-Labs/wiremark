@@ -2,7 +2,8 @@
 import { REGISTRY } from './registry.js';
 import { isOverlay } from './layout.js';
 import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip } from './draw.js';
-import { measureText, ARROW_HEAD, CONNECTOR_SPREAD, FRAME_FLOW_GAP } from './metrics.js';
+import { measureText, ARROW_HEAD, CONNECTOR_LABEL_PAD } from './metrics.js';
+import { inferComponents, planFlow, realizeRoutes } from './routing.js';
 
 /**
  * Stage (5) -- RENDER.  laid-out boxes -> hand-drawn SVG string.
@@ -238,159 +239,37 @@ function boundsOf(placed, conn) {
 }
 
 /**
- * Geometry for every drawable connector. Anchor points are distributed ALONG each
- * frame face (always staying on the edge) rather than stacking at the face center,
- * so connectors sharing a side do not pile up:
- *   - Each distinct frame *pair* on a face gets its own slot, ordered by the side it
- *     heads toward -- so a fan-out spreads out and aims at its targets.
- *   - The edges *within* one pair (a bidirectional a->b / b->a, or repeats) stay
- *     clustered: offset by `CONNECTOR_SPREAD` around their slot, the SAME way at both
- *     ends, so they read as two close parallel lines that still touch the edges. The
- *     same offset also nudges each one's elbow bend, so even the across-runs don't
- *     coincide.
- * A face with a single connector keeps the center. Each connector is then routed as
- * an orthogonal elbow. Pure + deterministic; exported for testing.
+ * Geometry for every drawable connector -- a thin shell over the shared channel/
+ * track planner (`routing.js`). `inferComponents` recovers the rank structure from
+ * the placed rects, `planFlow` re-derives the SAME routing plan frame-layout sized
+ * the inter-rank channels for, and `realizeRoutes` turns it into absolute
+ * polylines. Routes are returned in `graph.edges` declaration order.
+ *
+ * Each connector leaves its source's main face, crosses the inter-rank channel on
+ * an assigned parallel track (skip-rank edges detour onto a lane outside the
+ * component), and enters its target's main face -- so connectors never cut through
+ * frames, never tangle, and their captions sit on their own track inside the
+ * widened channel. Pure + deterministic; exported for testing.
  * @param {Placed[]} placed
  * @param {FlowGraph} graph
  * @param {'TD'|'LR'} dir
- * @returns {{ from: string, to: string, tail: Point, head: Point, points: Point[], label?: string }[]}
+ * @returns {{ from: string, to: string, tail: Point, head: Point, points: Point[], label?: string, labelAt?: Point }[]}
  */
 export function connectorGeometry(placed, graph, dir) {
-  const rectById = new Map();
-  for (const p of placed) if (p.frame.id != null) rectById.set(p.frame.id, p);
-
-  // Drawable edges, each tagged with the face it leaves/enters and its frame pair.
-  /** @type {{ e: *, s: Placed, d: Placed, sFace: string, dFace: string, pair: string, aimS: number, aimD: number }[]} */
-  const edges = [];
-  for (const e of graph.edges) {
-    const s = rectById.get(e.from);
-    const d = rectById.get(e.to);
-    if (!s || !d || s === d) continue; // dangling target or self-loop -- not drawn (ss.7.4)
-    edges.push({
-      e, s, d,
-      sFace: exitFace(s, d, dir),
-      dFace: entryFace(s, d, dir),
-      pair: e.from < e.to ? `${e.from} ${e.to}` : `${e.to} ${e.from}`,
-      aimS: crossCoord(centerOf(d), dir), // source end orders by where it heads
-      aimD: crossCoord(centerOf(s), dir), // target end orders by where it came from
-    });
+  /** @type {*[]} */
+  const routes = [];
+  for (const comp of inferComponents(placed, graph, dir)) {
+    const plan = planFlow(comp.nodes, comp.edges, dir);
+    routes.push(...realizeRoutes(plan, comp.nodes, comp.edges, comp.bands, comp.bbox, dir));
   }
-
-  // Within each pair, give every edge a signed ANCHOR offset around its slot, applied
-  // the SAME way at both ends -- so a bidirectional pair reads as two close parallel
-  // lines. A lone edge gets 0 (stays centred on its slot).
-  const offset = edges.map(() => 0);
-  /** @type {Map<string, number[]>} */
-  const byPair = new Map();
-  edges.forEach((edge, i) => {
-    const list = byPair.get(edge.pair);
-    if (list) list.push(i);
-    else byPair.set(edge.pair, [i]);
-  });
-  for (const idxs of byPair.values()) {
-    [...idxs].sort((a, b) => (edgeKey(edges[a].e) < edgeKey(edges[b].e) ? -1 : 1))
-      .forEach((i, t) => { offset[i] = (t - (idxs.length - 1) / 2) * CONNECTOR_SPREAD; });
-  }
-
-  // On each (frame, face), order the distinct pairs by aim and hand each a slot.
-  /** @type {Map<string, Map<string, number>>} */
-  const facePairs = new Map();
-  const note = (/** @type {string} */ fk, /** @type {string} */ pair, /** @type {number} */ aim) => {
-    let m = facePairs.get(fk);
-    if (!m) { m = new Map(); facePairs.set(fk, m); }
-    if (!m.has(pair)) m.set(pair, aim);
-  };
-  for (const edge of edges) {
-    note(`${edge.s.frame.id}|${edge.sFace}`, edge.pair, edge.aimS);
-    note(`${edge.d.frame.id}|${edge.dFace}`, edge.pair, edge.aimD);
-  }
-  /** @type {Map<string, Map<string, number>>} faceKey -> (pair -> slot fraction) */
-  const slot = new Map();
-  for (const [fk, pairs] of facePairs) {
-    const ordered = [...pairs.entries()].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1));
-    const fracs = new Map();
-    ordered.forEach(([pair], j) => fracs.set(pair, (j + 1) / (ordered.length + 1)));
-    slot.set(fk, fracs);
-  }
-  const fracOf = (/** @type {string} */ fk, /** @type {string} */ pair) =>
-    /** @type {Map<string, number>} */ (slot.get(fk)).get(pair) ?? 0.5;
-
-  // Anchor every edge, then lane the elbow BENDS by each connector's average
-  // cross-position: the leftmost path bends nearest the top of the gap, the rightmost
-  // nearest the bottom, so two opposite-direction elbows nest rather than tangle into
-  // an X -- regardless of where the asymmetric slots placed the anchors.
-  const anchors = edges.map((edge, i) => ({
-    tail: anchorOn(edge.s, edge.sFace, fracOf(`${edge.s.frame.id}|${edge.sFace}`, edge.pair), offset[i]),
-    head: anchorOn(edge.d, edge.dFace, fracOf(`${edge.d.frame.id}|${edge.dFace}`, edge.pair), offset[i]),
-  }));
-  const avgCross = (/** @type {number} */ i) => (crossCoord(anchors[i].tail, dir) + crossCoord(anchors[i].head, dir)) / 2;
-  const bend = edges.map(() => 0);
-  for (const idxs of byPair.values()) {
-    const sorted = [...idxs].sort((a, b) => avgCross(a) - avgCross(b) || a - b);
-    sorted.forEach((i, t) => { bend[i] = (t - (sorted.length - 1) / 2) * CONNECTOR_SPREAD; });
-    // A bidirectional pair's correct bend order depends on the diagonal; both
-    // orderings are cheap to test, so flip if the chosen one tangles into an X.
-    if (sorted.length === 2) {
-      const [i, j] = sorted;
-      const el = (/** @type {number} */ k, /** @type {number} */ b) => elbow(anchors[k].tail, anchors[k].head, dir, b);
-      if (pathsCross(el(i, bend[i]), el(j, bend[j]))) { const t = bend[i]; bend[i] = bend[j]; bend[j] = t; }
-    }
-  }
-
-  return edges.map((edge, i) => {
-    const { tail, head } = anchors[i];
-    const geom = { from: edge.e.from, to: edge.e.to, tail, head, points: elbow(tail, head, dir, bend[i]) };
-    return edge.e.label ? { ...geom, label: edge.e.label } : geom;
-  });
-}
-
-/** Center of a placed frame. @param {Placed} p @returns {Point} */
-function centerOf(p) {
-  return { x: p.x + p.w / 2, y: p.y + p.h / 2 };
-}
-
-/** Coordinate on the CROSS axis -- the one connectors spread along. @param {Point} pt @param {'TD'|'LR'} dir @returns {number} */
-function crossCoord(pt, dir) {
-  return dir === 'LR' ? pt.y : pt.x;
-}
-
-/** @param {*} e @returns {string} */
-function edgeKey(e) {
-  return `${e.from} ${e.to}`;
-}
-
-/** Face a connector LEAVES the source by. @param {Placed} s @param {Placed} d @param {'TD'|'LR'} dir @returns {string} */
-function exitFace(s, d, dir) {
-  const sc = centerOf(s), dc = centerOf(d);
-  if (dir === 'LR') return dc.x >= sc.x ? 'right' : 'left';
-  return dc.y >= sc.y ? 'bottom' : 'top';
-}
-
-/** Face a connector ENTERS the target by (the opposite side). @param {Placed} s @param {Placed} d @param {'TD'|'LR'} dir @returns {string} */
-function entryFace(s, d, dir) {
-  const sc = centerOf(s), dc = centerOf(d);
-  if (dir === 'LR') return dc.x >= sc.x ? 'left' : 'right';
-  return dc.y >= sc.y ? 'top' : 'bottom';
-}
-
-/**
- * Point at slot fraction `frac` plus tangential `off` along a frame face, clamped to
- * stay on the edge (tangent is horizontal for top/bottom, vertical for left/right).
- * @param {Placed} f @param {string} face @param {number} frac @param {number} off @returns {Point}
- */
-function anchorOn(f, face, frac, off) {
-  const len = face === 'top' || face === 'bottom' ? f.w : f.h;
-  const along = Math.max(4, Math.min(len - 4, len * frac + off));
-  if (face === 'top') return { x: f.x + along, y: f.y };
-  if (face === 'bottom') return { x: f.x + along, y: f.y + f.h };
-  if (face === 'left') return { x: f.x, y: f.y + along };
-  return { x: f.x + f.w, y: f.y + along }; // right
+  routes.sort((a, b) => a.index - b.index);
+  return routes.map(({ index, ...r }) => r);
 }
 
 /**
  * Draw a clean (non-sketch) arrow for every drawable connector (see
- * `connectorGeometry`), with the edge's optional label at the midpoint. Returns the
- * markup and the bounds it occupies.
+ * `connectorGeometry`), with the edge's optional label anchored on its across-run.
+ * Returns the markup and the bounds it occupies.
  * @param {Placed[]} placed
  * @param {FlowGraph} graph
  * @param {'TD'|'LR'} dir
@@ -406,14 +285,14 @@ function renderConnectors(placed, graph, dir) {
       : { minX: x, minY: y, maxX: x, maxY: y };
   };
 
-  for (const { points, label } of connectorGeometry(placed, graph, dir)) {
+  for (const { points, label, labelAt } of connectorGeometry(placed, graph, dir)) {
     markup += connectorArrow(points);
     for (const p of points) grow(p.x, p.y);
     const tip = points[points.length - 1];
     grow(tip.x - ARROW_HEAD, tip.y - ARROW_HEAD);
     grow(tip.x + ARROW_HEAD, tip.y + ARROW_HEAD);
-    if (label) {
-      const lab = connectorLabel(labelCenter(points, dir), label);
+    if (label && labelAt) {
+      const lab = connectorLabel(labelAt, label);
       markup += lab.markup;
       grow(lab.bounds.minX, lab.bounds.minY);
       grow(lab.bounds.maxX, lab.bounds.maxY);
@@ -423,81 +302,16 @@ function renderConnectors(placed, graph, dir) {
 }
 
 /**
- * Route a connector as an orthogonal elbow: straight out of the source face, one
- * right-angle bend, then straight into the target face -- so the arrowhead always
- * meets an edge square-on. Axis-aligned endpoints stay a single straight segment.
- * The across-run sits in the inter-rank GAP immediately past the source (not the
- * midpoint of the whole span), so a skip-rank edge doesn't sweep its horizontal run
- * through an intervening frame; for adjacent ranks that band IS the only gap, so the
- * run lands at the gap centre as before. `bend` nudges the run along the flow axis,
- * clamped within that gap, so parallel connectors don't share an across-run.
- * @param {Point} tail @param {Point} head @param {'TD'|'LR'} dir @param {number} [bend]
- * @returns {Point[]}
- */
-function elbow(tail, head, dir, bend = 0) {
-  const EPS = 0.5;
-  if (dir === 'LR') {
-    if (Math.abs(tail.y - head.y) < EPS) return [tail, head];
-    const dx = Math.sign(head.x - tail.x) || 1;
-    const gapEnd = tail.x + dx * Math.min(FRAME_FLOW_GAP, Math.abs(head.x - tail.x));
-    const mx = between(tail.x + dx * (FRAME_FLOW_GAP / 2) + bend, tail.x, gapEnd);
-    return [tail, { x: mx, y: tail.y }, { x: mx, y: head.y }, head];
-  }
-  if (Math.abs(tail.x - head.x) < EPS) return [tail, head];
-  const dy = Math.sign(head.y - tail.y) || 1;
-  const gapEnd = tail.y + dy * Math.min(FRAME_FLOW_GAP, Math.abs(head.y - tail.y));
-  const my = between(tail.y + dy * (FRAME_FLOW_GAP / 2) + bend, tail.y, gapEnd);
-  return [tail, { x: tail.x, y: my }, { x: head.x, y: my }, head];
-}
-
-/** Clamp `v` strictly between `a` and `b` (with a small pad), keeping an elbow bend in the gap. @param {number} v @param {number} a @param {number} b @returns {number} */
-function between(v, a, b) {
-  const lo = Math.min(a, b), hi = Math.max(a, b);
-  const pad = Math.min(6, (hi - lo) / 3);
-  return Math.max(lo + pad, Math.min(hi - pad, v));
-}
-
-/** Do two connector polylines properly intersect (used to pick a non-crossing bend order)? @param {Point[]} a @param {Point[]} b @returns {boolean} */
-function pathsCross(a, b) {
-  for (let i = 0; i < a.length - 1; i++)
-    for (let j = 0; j < b.length - 1; j++)
-      if (segCross(a[i], a[i + 1], b[j], b[j + 1])) return true;
-  return false;
-}
-
-/** Proper segment intersection (endpoints touching don't count). @param {Point} p1 @param {Point} p2 @param {Point} p3 @param {Point} p4 @returns {boolean} */
-function segCross(p1, p2, p3, p4) {
-  const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
-  if (Math.abs(d) < 1e-9) return false;
-  const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
-  const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
-  return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
-}
-
-/**
- * Where to anchor a connector's caption. TD: the horizontal across-run (points[1]-[2])
- * sits in the wide inter-rank gap -- ideal. LR: that run is the vertical stub inside the
- * narrow column gap, so anchor on a horizontal run (points[0]-[1]) instead, keeping the
- * caption reading along the flow rather than overflowing both frames. A straight
- * connector uses its single segment.
- * @param {Point[]} points @param {'TD'|'LR'} dir @returns {Point}
- */
-function labelCenter(points, dir) {
-  if (points.length < 4) return { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
-  const [a, b] = dir === 'LR' ? [points[0], points[1]] : [points[1], points[2]];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-
-/**
- * Edge caption centered at `center`: muted text over a paper knockout so the shaft
- * doesn't strike through the glyphs.
+ * Edge caption centered at `center` (its track inside the widened channel, so it
+ * clears every frame): muted text over a paper knockout so the shaft doesn't strike
+ * through the glyphs.
  * @param {Point} center @param {string} label
  * @returns {{ markup: string, bounds: Bounds }}
  */
 function connectorLabel(center, label) {
   const fontSize = 12;
   const { w, h } = measureText(label, fontSize);
-  const pad = 3;
+  const pad = CONNECTOR_LABEL_PAD;
   const box = { x: center.x - w / 2, y: center.y - h / 2, w, h };
   const bg = `<rect x="${box.x - pad}" y="${box.y - pad}" width="${w + 2 * pad}" height="${h + 2 * pad}" fill="${COLORS.paper}"/>`;
   return {

@@ -1,5 +1,6 @@
 // @ts-check
-import { FRAME_FLOW_GAP, FRAME_SIBLING_GAP, FRAME_COMPONENT_GAP } from './metrics.js';
+import { FRAME_SIBLING_GAP, FRAME_COMPONENT_GAP } from './metrics.js';
+import { planFlow } from './routing.js';
 
 /**
  * Stage (4b) -- FRAME LAYOUT.  Position several frames as a flow chart.
@@ -52,13 +53,15 @@ export function layoutFrames(frames, graph = { nodes: [], edges: [] }, options =
 
   // Directed nav edges between two distinct, visible, anchored frames. Edges to
   // an undefined/invisible target (a dangling `to=#x`) and self-loops drop out.
-  /** @type {[LaidOutFrame, LaidOutFrame][]} */
+  // Each carries its caption + GLOBAL declaration index so routing.js plans the
+  // same channels render.js will (index ties anchors to declaration order).
+  /** @type {{ a: LaidOutFrame, b: LaidOutFrame, label?: string, index: number }[]} */
   const edges = [];
-  for (const e of graph.edges) {
+  graph.edges.forEach((e, index) => {
     const a = byId.get(e.from);
     const b = byId.get(e.to);
-    if (a && b && a !== b) edges.push([a, b]);
-  }
+    if (a && b && a !== b) edges.push({ a, b, label: e.label, index });
+  });
 
   // Lay out each connected component on its own, then pack them along the cross
   // axis (a single shelf) in declaration order.
@@ -81,13 +84,13 @@ export function layoutFrames(frames, graph = { nodes: [], edges: [] }, options =
  * as singletons. Components are returned in ascending declaration order of their
  * earliest member, and each component's members are sorted the same way.
  * @param {LaidOutFrame[]} visible
- * @param {[LaidOutFrame, LaidOutFrame][]} edges
+ * @param {{ a: LaidOutFrame, b: LaidOutFrame }[]} edges
  * @param {(f: LaidOutFrame) => number} idx
  * @returns {LaidOutFrame[][]}
  */
 function components(visible, edges, idx) {
   const adj = new Map(visible.map((f) => [f, /** @type {LaidOutFrame[]} */ ([])]));
-  for (const [a, b] of edges) { adj.get(a)?.push(b); adj.get(b)?.push(a); }
+  for (const { a, b } of edges) { adj.get(a)?.push(b); adj.get(b)?.push(a); }
 
   const seen = new Set();
   const comps = [];
@@ -111,7 +114,7 @@ function components(visible, edges, idx) {
  * Layered layout of one connected component, in main/cross coordinates with the
  * near corner at (0, 0).
  * @param {LaidOutFrame[]} comp
- * @param {[LaidOutFrame, LaidOutFrame][]} allEdges
+ * @param {{ a: LaidOutFrame, b: LaidOutFrame, label?: string, index: number }[]} allEdges
  * @param {(f: LaidOutFrame) => number} idx
  * @param {Direction} direction
  * @returns {{ pos: Map<LaidOutFrame, MainCross>, crossSpan: number, mainSpan: number }}
@@ -126,12 +129,12 @@ function layoutComponent(comp, allEdges, idx, direction) {
   }
 
   const inComp = new Set(comp);
-  const edges = allEdges.filter(([a, b]) => inComp.has(a) && inComp.has(b));
+  const edges = allEdges.filter((e) => inComp.has(e.a) && inComp.has(e.b));
   const key = (/** @type {LaidOutFrame} */ a, /** @type {LaidOutFrame} */ b) => `${idx(a)}>${idx(b)}`;
 
   // Directed adjacency over ALL edges (sorted) -- used only for cycle breaking.
   const out = new Map(comp.map((f) => [f, /** @type {LaidOutFrame[]} */ ([])]));
-  for (const [a, b] of edges) out.get(a)?.push(b);
+  for (const { a, b } of edges) out.get(a)?.push(b);
   for (const list of out.values()) list.sort((a, b) => idx(a) - idx(b));
 
   // 1. Break cycles: DFS in declaration order; an edge into a GRAY node is a back
@@ -148,14 +151,14 @@ function layoutComponent(comp, allEdges, idx, direction) {
     color.set(u, 1);
   };
   for (const s of [...comp].sort((a, b) => idx(a) - idx(b))) if (!color.has(s)) dfs(s);
-  const fwd = edges.filter(([a, b]) => !reversed.has(key(a, b)));
+  const fwd = edges.filter((e) => !reversed.has(key(e.a, e.b)));
 
   // 2. Longest-path ranking over the resulting DAG (Kahn): a frame sits one rank
   //    past its deepest predecessor, so every forward arrow points down a rank.
   const outF = new Map(comp.map((f) => [f, /** @type {LaidOutFrame[]} */ ([])]));
   const inN = new Map(comp.map((f) => [f, /** @type {LaidOutFrame[]} */ ([])]));
   const indeg = new Map(comp.map((f) => [f, 0]));
-  for (const [a, b] of fwd) { outF.get(a)?.push(b); inN.get(b)?.push(a); indeg.set(b, (indeg.get(b) ?? 0) + 1); }
+  for (const { a, b } of fwd) { outF.get(a)?.push(b); inN.get(b)?.push(a); indeg.set(b, (indeg.get(b) ?? 0) + 1); }
   const rank = new Map(comp.map((f) => [f, 0]));
   const indegLeft = new Map(indeg);
   let queue = comp.filter((f) => indegLeft.get(f) === 0).sort((a, b) => idx(a) - idx(b));
@@ -188,9 +191,8 @@ function layoutComponent(comp, allEdges, idx, direction) {
     }
   }
 
-  // 4. Coordinates. Pack each rank along the cross axis using real frame extents,
-  //    then center the ranks against the widest one. Advance the main axis by the
-  //    tallest frame in the previous rank.
+  // 4. Cross coordinates. Pack each rank along the cross axis using real frame
+  //    extents, then center the ranks against the widest one.
   const localCross = new Map();
   const rankCrossSpan = [];
   for (let r = 0; r <= maxRank; r++) {
@@ -199,19 +201,43 @@ function layoutComponent(comp, allEdges, idx, direction) {
     rankCrossSpan[r] = Math.max(0, cursor - FRAME_SIBLING_GAP);
   }
   const maxCross = Math.max(...rankCrossSpan);
+  /** @type {Map<LaidOutFrame, number>} centered cross-start of each frame */
+  const centered = new Map();
+  for (let r = 0; r <= maxRank; r++) {
+    const offset = Math.round((maxCross - rankCrossSpan[r]) / 2);
+    for (const f of ranks[r]) centered.set(f, (localCross.get(f) ?? 0) + offset);
+  }
+
+  // 5. Plan the connector routing on the centered cross positions: it returns the
+  //    per-channel widths the inter-rank gaps must grow to (FRAME_FLOW_GAP is now
+  //    only the minimum) and the cross-axis lane reservations skip edges need.
+  //    Every decision is shift-invariant, so render.js recomputes the same plan
+  //    from the placed rects -- a uniform cross shift below cannot change it.
+  const plan = planFlow(
+    comp.map((f) => ({
+      id: f.id, rank: rank.get(f) ?? 0,
+      cross0: centered.get(f) ?? 0, cross1: (centered.get(f) ?? 0) + crossExt(f),
+    })),
+    edges.map((e) => ({ from: e.a.id, to: e.b.id, label: e.label, index: e.index })),
+    direction,
+  );
+
+  // 6. Main coordinates. Shift every frame clear of the low-side lanes (a uniform
+  //    shift, so the plan still holds), then advance the main axis by each rank's
+  //    tallest frame plus that channel's planned width.
+  const shift = plan.lane.lowExtent;
   /** @type {Map<LaidOutFrame, MainCross>} */
   const pos = new Map();
   let main = 0;
   for (let r = 0; r <= maxRank; r++) {
-    const offset = Math.round((maxCross - rankCrossSpan[r]) / 2);
     let rankMain = 0;
     for (const f of ranks[r]) {
-      pos.set(f, { main, cross: (localCross.get(f) ?? 0) + offset });
+      pos.set(f, { main, cross: (centered.get(f) ?? 0) + shift });
       rankMain = Math.max(rankMain, mainExt(f));
     }
-    main += rankMain + FRAME_FLOW_GAP;
+    main += rankMain + (plan.channelWidths[r] ?? 0);
   }
-  return { pos, crossSpan: maxCross, mainSpan: Math.max(0, main - FRAME_FLOW_GAP) };
+  return { pos, crossSpan: maxCross + shift + plan.lane.highExtent, mainSpan: main };
 }
 
 /** Inclusive integer range, ascending or descending. @param {number} a @param {number} b @returns {number[]} */

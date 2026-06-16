@@ -17,7 +17,7 @@ import { layout } from '../src/layout.js';
  */
 
 const STR = 'A reasonably long label';
-const SENTENCE = 'The upload of new FDS codes will overwrite all existing codes for this Financial Data Source.';
+const SENTENCE = 'The upload of new records will overwrite all existing records for this data source.';
 const FS = 16;
 
 test('truncateText is the identity when the text fits per measureText', () => {
@@ -117,7 +117,7 @@ test('regression: icon + long heading in a row inside a narrow dialog trims inst
     'Wireframe w=460 h=260', '  Dialog', '    CardContent', '      Stack column gap=1',
     '        Stack row gap=1',
     '          Icon Warning',
-    '          Typography h6 "You have requested to delete an FDS code"',
+    '          Typography h6 "You have requested to delete this record"',
   ].join('\n');
   const root = layout(parse(src))[0].root;
   const typ = findBox(root, 'Typography');
@@ -126,5 +126,5 @@ test('regression: icon + long heading in a row inside a narrow dialog trims inst
   assert.ok(typ.x + typ.w <= 460 - 16 + 0.01, `Typography right ${typ.x + typ.w} must stay inside the dialog`);
   const svg = render(src).svg;
   assert.match(svg, new RegExp(ELLIPSIS));
-  assert.doesNotMatch(svg, /You have requested to delete an FDS code</);
+  assert.doesNotMatch(svg, /You have requested to delete this record</);
 });
