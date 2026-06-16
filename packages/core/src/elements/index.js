@@ -56,6 +56,7 @@ import Select from './Select.js';
 import Option from './Option.js';
 import Slider from './Slider.js';
 import Rating from './Rating.js';
+import Calendar from './Calendar.js';
 import ToggleButtonGroup from './ToggleButtonGroup.js';
 import ToggleButton from './ToggleButton.js';
 import ButtonGroup from './ButtonGroup.js';
@@ -79,7 +80,7 @@ export const ELEMENTS = [
   Stepper, Step, Pagination, BottomNavigation, BottomNavigationAction,
   Typography, Button, TextField, Img, Placeholder, Avatar, Chip, Icon, List, ListItem,
   Table, TableHead, TableBody, TableFooter, TableRow, TableCell, Badge,
-  Control, Select, Option, Slider, Rating,
+  Control, Select, Option, Slider, Rating, Calendar,
   ToggleButtonGroup, ToggleButton, ButtonGroup, Fab,
   Alert, Dialog, DialogHeader, DialogContent, DialogActions, Snackbar, Progress, Skeleton,
 ];

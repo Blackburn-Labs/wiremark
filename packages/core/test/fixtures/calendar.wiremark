@@ -1,0 +1,21 @@
+// Calendar element -- every variant and the common knobs, for visual review.
+// smoke.test.js renders each fixture; this one exercises month/compact/week/year,
+// value/today/events highlights, weekStart, and the sizing forms.
+Wireframe #calendar w=1180 h=1099
+  Typography h4 "Calendar"
+  Stack row spacing=4
+    Stack column spacing=2
+      Typography subtitle2 "month (default) -- value + today + events"
+      Calendar "June 2026" value=16 today=12 events
+    Stack column spacing=2
+      Typography subtitle2 "compact -- sidebar, weekStart=mon"
+      Calendar compact "Feb 2026" value=14 weekStart=mon
+      Typography subtitle2 "week -- the week of the 10th"
+      Calendar week value=10
+  Stack row spacing=4
+    Stack column spacing=2 320px
+      Typography subtitle2 "sidebar fill -- compact at 100% width"
+      Calendar compact 100%
+    Stack column spacing=2
+      Typography subtitle2 "year -- 12 mini-months"
+      Calendar "2026" year

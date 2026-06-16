@@ -333,6 +333,7 @@ Select [c] -- label:T*, variant:(outlined|filled|standard)=outlined*, value|v|va
 Option -- label|text:T*, subtext:T, selected:B*, startIcon:I, endIcon:I
 Slider -- value|n|v|val:N=0*, min:N=0, max:N=100, orientation:(horizontal|vertical)=horizontal*
 Rating -- value|n|v|val:N=0*, max:N=5, icon:I=Star, emptyIcon:I=StarBorder
+Calendar [w h] -- month|title:T*, variant:(month|compact|week|year)=month*, value|v|val|selected:N, today:N, weekStart:(sun|mon)=sun, weekdays:B=true*, header|controls:B=true*, events:B*
 ToggleButtonGroup [c] -- orientation:(horizontal|vertical)=horizontal*, size:(small|medium|large)=medium*
 ToggleButton -- icon:I*, selected:B*, size:(small|medium|large)=medium*, background:(hatch|crosshatch|none)*, denseBackground:B*
 ButtonGroup [c] -- variant:(text|outlined|contained)=outlined*, orientation:(horizontal|vertical)=horizontal*

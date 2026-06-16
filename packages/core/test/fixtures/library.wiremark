@@ -1,4 +1,4 @@
-Wireframe #library w=1600 h=5700
+Wireframe #library w=1600 h=6380
   Typography h3 "wiremark component reference"
   Typography body2 "Every implemented component with common variants, grouped by category."
   Divider
@@ -292,6 +292,10 @@ Wireframe #library w=1600 h=5700
         Fab "Add"
         Fab "Edit" extended
         Fab "Add" small
+    Stack column spacing=1
+      Typography subtitle2 "Calendar (month / compact)"
+      Calendar "June 2026" value=16 today=12 events
+      Calendar compact value=14 weekStart=mon
   Typography h4 "Feedback"
   Grid cols=2
     Stack column spacing=1

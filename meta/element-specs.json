@@ -1418,6 +1418,96 @@
       ]
     },
     {
+      "name": "Calendar",
+      "category": "Inputs",
+      "children": false,
+      "description": "An embeddable month/scheduling calendar. A bare Calendar renders a clean month with good defaults; variants cover a dense sidebar picker, a single-week strip, and a 12-month year overview. Day cells are laid out from the parsed month string, so real months align on the correct weekday.",
+      "examples": [
+        { "code": "Calendar", "description": "Full June 2026 month with clean defaults." },
+        { "code": "Calendar \"March 2026\"", "description": "A real March (31 days, starts Sunday)." },
+        { "code": "Calendar compact", "description": "Dense, sidebar-sized month." },
+        { "code": "Calendar \"Feb 2026\" compact value=14", "description": "Compact February with day 14 selected." },
+        { "code": "Calendar \"2026-06\" value=16 today=16 events", "description": "Selected day, a today ring, and event dots." },
+        { "code": "Calendar week value=10", "description": "The single week containing the 10th." },
+        { "code": "Calendar \"2026\" year", "description": "A 3x4 overview of all twelve months." },
+        { "code": "Stack column\n  Calendar compact 100%", "description": "In a sidebar: fill the column width; the height follows." }
+      ],
+      "properties": [
+        {
+          "name": "month",
+          "type": "string",
+          "aliases": ["title"],
+          "keyless": true,
+          "description": "Header text, smart-parsed to lay out the real month. Accepts \"MonthName YYYY\" (full or 3-letter) and \"YYYY-MM\"; a bare \"YYYY\" feeds the year variant. An unparseable string (e.g. \"Sprint A\") becomes the title over a canonical grid. Defaults to \"June 2026\"."
+        },
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["month", "compact", "week", "year"],
+          "default": "month",
+          "keyless": true,
+          "description": "Calendar form: month (full, main content), compact (dense, sidebar), week (one-week strip), or year (3x4 mini-month overview)."
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "aliases": ["v", "val", "selected"],
+          "keyless": false,
+          "description": "Selected day-of-month, drawn as a filled highlight. Keyed only (a bare number is a sizing token)."
+        },
+        {
+          "name": "today",
+          "type": "numeric",
+          "keyless": false,
+          "description": "Day-of-month marked as today, drawn as an outlined ring."
+        },
+        {
+          "name": "weekStart",
+          "type": "enum",
+          "values": ["sun", "mon"],
+          "default": "sun",
+          "keyless": false,
+          "description": "First column of the week: Sunday or Monday. Shifts the weekday header and the first day's offset."
+        },
+        {
+          "name": "weekdays",
+          "type": "boolean",
+          "default": true,
+          "keyless": true,
+          "description": "Show the weekday header row (S M T W ...). Set weekdays=false to hide it."
+        },
+        {
+          "name": "header",
+          "type": "boolean",
+          "default": true,
+          "aliases": ["controls"],
+          "keyless": true,
+          "description": "Show the title and prev/next chevron row. Set header=false to hide it."
+        },
+        {
+          "name": "events",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "description": "Sprinkle deterministic event-indicator dots under day numbers (off by default, so a drop-in Calendar stays clean)."
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "aliases": ["w"],
+          "keyless": true,
+          "description": "Footprint width (px | % | * | flex), positional (first sizing token). The grid scales to fill it; width drives a proportional height unless height is also pinned."
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "aliases": ["h"],
+          "keyless": true,
+          "description": "Footprint height (px | % | * | flex), positional (second sizing token). Overrides the width-derived height and stretches the grid to fill the exact box."
+        }
+      ]
+    },
+    {
       "name": "ToggleButtonGroup",
       "category": "Inputs",
       "children": false,

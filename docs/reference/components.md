@@ -519,6 +519,23 @@ No configurable properties.
 | icon | icon |  | Star | no |  |  |
 | emptyIcon | icon |  | StarBorder | no |  |  |
 
+### Calendar
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| month | string |  |  | yes | title |  |
+| variant | enum | month, compact, week, year | month | yes |  |  |
+| value | numeric |  |  | no | v, val, selected |  |
+| today | numeric |  |  | no |  |  |
+| weekStart | enum | sun, mon | sun | no |  |  |
+| weekdays | boolean |  | true | yes |  |  |
+| header | boolean |  | true | yes | controls |  |
+| events | boolean |  | false | yes |  |  |
+| width | size |  |  | yes | w |  |
+| height | size |  |  | yes | h |  |
+
 ### ToggleButtonGroup
 
 *Accepts children: no*
