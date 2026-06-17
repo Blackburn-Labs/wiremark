@@ -12,7 +12,7 @@
       "type": "numeric",
       "keyless": false,
       "aliases": ["pad"],
-      "notes": "Inner padding in MUI spacing units (padding=2 -> 16px), like gap/spacing. Overrides the element's default pad when set; unset keeps the element default; padding=0 removes it."
+      "notes": "Inner padding in spacing units (padding=2 -> 16px), like gap/spacing. Overrides the element's default pad when set; unset keeps the element default; padding=0 removes it."
     },
     {
       "name": "scrollbar",
@@ -41,33 +41,45 @@
       "name": "Box",
       "category": "Layout",
       "children": true,
+      "description": "A generic sized container that stacks its children in a column and is invisible by default, so a bare Box is a zero-overhead region that only carries a size and groups content. Optional chrome turns it into a visible panel: a keyless `outline` border (none/solid/dashed/dotted) and a numeric `elevation` shadow, each drawn only when set. Its width/height are positional sizing tokens interpreted by the parent's distribution, so with none given it fills naturally.",
+      "examples": [
+        { "code": "Box", "description": "An invisible region that carries a size and groups children; draws nothing of its own." },
+        { "code": "Box solid\n  Typography \"Panel\"", "description": "A solid-bordered panel wrapping its content." },
+        { "code": "Box dashed 200 120\n  Typography \"Placeholder\"", "description": "A dashed-outline box pinned to 200x120 px (width then height)." },
+        { "code": "Box solid elevation=3\n  Typography \"Card\"", "description": "An outlined, elevated card: a border plus a soft drop shadow." },
+        { "code": "Box dotted 100%\n  Typography \"Full-width slot\"", "description": "A dotted-outline slot that fills the available width." }
+      ],
       "properties": [
         {
           "name": "width",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width (px | % | * | flex), positional (first sizing token, alias w) and interpreted by the parent's distribution. A bare number is a flex weight, `*` fills; the keyed forms width=/w= are rejected. Defaults to content."
         },
         {
           "name": "height",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height (px | % | * | flex), positional (second sizing token, alias h). A bare number is a flex weight, `*` fills; the keyed forms height=/h= are rejected. Defaults to content."
         },
         {
           "name": "elevation",
           "type": "numeric",
           "default": "0",
-          "keyless": false
+          "keyless": false,
+          "description": "Numeric drop-shadow depth, keyed only (e.g. elevation=3); a bare number is read as a sizing token instead. Any value > 0 paints a soft shadow at reduced opacity; defaults to 0 (no shadow)."
         },
         {
           "name": "outline",
           "type": "enum",
           "values": ["none", "solid", "dashed", "dotted"],
           "default": "none",
-          "keyless": true
+          "keyless": true,
+          "description": "Border style, one of none, solid, dashed, or dotted, written bare as a keyless enum (e.g. Box dashed). Defaults to none, which draws no border and keeps a bare Box invisible."
         }
       ]
     },
@@ -75,53 +87,69 @@
       "name": "Stack",
       "category": "Layout",
       "children": true,
+      "description": "An invisible flexbox container that arranges its children along one axis. `Stack column` (the default) stacks top-to-bottom and `Stack row` runs left-to-right, with `-reverse` variants flipping the visual order along that axis; `spacing=` (alias `gap=`) sets the inter-child gap in spacing units. By default it draws nothing of its own -- its only visible effect is where it places children -- but optional chrome adds an `outline` border, a numeric `elevation` shadow, and a `divider` rule in each gap. Bare-number children become flex weights and `Spacer` flexes, distributed along the main axis.",
+      "examples": [
+        { "code": "Stack row spacing=2\n  Button \"Save\"\n  Button \"Cancel\"", "description": "A horizontal actions bar with a 2-unit gap between buttons." },
+        { "code": "Stack column spacing=2\n  Typography \"Title\"\n  Typography \"Subtitle\"", "description": "The default column: children stacked top-to-bottom." },
+        { "code": "Stack row-reverse spacing=1\n  Button \"A\"\n  Button \"B\"\n  Button \"C\"", "description": "Reversed row -- children lay out right-to-left (C, B, A)." },
+        { "code": "Stack column spacing=2 divider\n  Typography \"Row 1\"\n  Typography \"Row 2\"\n  Typography \"Row 3\"", "description": "A divider rule drawn in each gap between list rows." },
+        { "code": "Stack column spacing=2 outline=solid elevation=2\n  Typography \"Card body\"", "description": "Opt-in chrome: a solid border plus an elevation shadow turn the stack into a card." },
+        { "code": "Stack row spacing=2\n  Button \"Left\"\n  Spacer\n  Button \"Right\"", "description": "A Spacer flexes to push the two buttons to opposite ends of the row." }
+      ],
       "properties": [
         {
           "name": "direction",
           "type": "enum",
           "values": ["row", "row-reverse", "column", "column-reverse"],
           "default": "column",
-          "keyless": true
+          "keyless": true,
+          "description": "Main axis and child order, keyless. One of row | row-reverse | column | column-reverse; the -reverse variants flip the visual order along the axis. Defaults to column (top-to-bottom)."
         },
         {
           "name": "spacing",
           "type": "numeric",
           "default": 0,
           "keyless": false,
-          "aliases": ["gap"]
+          "aliases": ["gap"],
+          "description": "Inter-child gap in spacing units (resolved as spacing * SPACING px), keyed via spacing= or its gap= alias. Defaults to 0 (children touch)."
         },
         {
           "name": "divider",
           "type": "boolean",
           "keyless": true,
-          "default": false
+          "default": false,
+          "description": "Keyless boolean flag; a bare `divider` draws a muted separator rule in each gap between adjacent children (only when there is more than one child). Defaults to false (no rule)."
         },
         {
           "name": "width",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width (px | % | * | flex), supplied as positional sizing -- the first bare sizing token, e.g. `Stack row 300` or `Stack 100%`. Keyless-only: the keyed width=/w= forms throw \"unknown property\". Defaults to content width."
         },
         {
           "name": "height",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height (px | % | * | flex), supplied as positional sizing -- the second bare sizing token, e.g. `Stack row 300 100`. Keyless-only: the keyed height=/h= forms throw \"unknown property\". Defaults to content height."
         },
         {
           "name": "elevation",
           "type": "numeric",
           "default": "0",
-          "keyless": false
+          "keyless": false,
+          "description": "Numeric drop-shadow depth (mirrors Box), keyed via elevation=. Any value > 0 paints a shadow surface; defaults to 0 (none)."
         },
         {
           "name": "outline",
           "type": "enum",
           "values": ["none", "solid", "dashed", "dotted"],
           "default": "none",
-          "keyless": true
+          "keyless": true,
+          "description": "Border style: none | solid | dashed | dotted. Works both keyless (bare, e.g. `Stack column solid`) and keyed (outline=solid). Defaults to none (invisible)."
         }
       ]
     },
@@ -129,34 +157,46 @@
       "name": "Grid",
       "category": "Layout",
       "children": true,
+      "description": "An explicit grid container that flows its children into equal-width cells, row by row. `columns` (alias `cols`) sets how many columns there are, defaulting to 12, and once a row fills the next child wraps to a new row; `spacing` (alias `gap`) adds uniform gaps between rows and columns. The grid draws nothing of its own and, as a block container, fills its parent's width by default while its height follows the measured rows.",
+      "examples": [
+        { "code": "Grid columns=3\n  Card\n  Card\n  Card\n  Card\n  Card\n  Card", "description": "Six cards in a 3-column grid: two full rows." },
+        { "code": "Grid columns=2 gap=2\n  Box 80 60\n  Box 80 60\n  Box 80 60\n  Box 80 60", "description": "A 2x2 grid with row/column gaps (gap is the spacing alias)." },
+        { "code": "Grid\n  Chip\n  Chip\n  Chip", "description": "Default 12 columns: three chips sit on one row." },
+        { "code": "Grid cols=4 spacing=1\n  Avatar\n  Avatar\n  Avatar\n  Avatar", "description": "Four avatars across one row (cols alias) with single-step spacing." },
+        { "code": "Grid 240px columns=2\n  Card\n  Card", "description": "Pin the grid to a 240px footprint (positional width); the two columns share it." }
+      ],
       "properties": [
         {
           "name": "columns",
           "type": "numeric",
           "default": 12,
           "keyless": false,
-          "aliases": ["cols"]
+          "aliases": ["cols"],
+          "description": "Number of equal-width columns children flow into, row by row; alias `cols`. Defaults to 12. Keyed only (`columns=N` / `cols=N`); the count is floored to a positive integer (`columns=2.5` behaves as 2, and 0/negative clamp to 1)."
         },
         {
           "name": "spacing",
           "type": "numeric",
           "default": 0,
           "keyless": false,
-          "aliases": ["gap"]
+          "aliases": ["gap"],
+          "description": "Uniform gap between rows and columns, multiplied by the SPACING unit; alias `gap`. Defaults to 0 (no gap). Keyed only (`spacing=N` / `gap=N`)."
         },
         {
           "name": "width",
           "type": "size",
           "default": "100%",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width as the first positional sizing token -- a bare number (a flex weight), `Npx` (pixels), `N%`, or `*` (fill). There is no keyed form: `width=`/`w=` throw \"unknown property\". Defaults to filling the parent's width; the columns divide whatever width the grid takes."
         },
         {
           "name": "height",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height as the second positional sizing token -- a bare number (a flex weight), `Npx` (pixels), `N%`, or `*` (fill). There is no keyed form: `height=`/`h=` throw \"unknown property\". Defaults to content -- the measured height of the rows."
         }
       ]
     },
@@ -164,20 +204,30 @@
       "name": "Divider",
       "category": "Layout",
       "children": false,
+      "description": "A thin separator rule that splits content along its container's cross axis. A bare Divider is a solid full-width horizontal line (placed in a column); orientation=vertical turns it into a full-height rule, the idiomatic placement between row children. The line is block-stretched to the parent's cross extent, contributing only a little breathing room on its own axis, and the variant selects a solid, dashed, or dotted stroke. Divider takes no sizing tokens of its own — its long dimension always comes from the container.",
+      "examples": [
+        { "code": "Divider", "description": "A plain solid horizontal rule, full-width in its column." },
+        { "code": "Divider dashed", "description": "A horizontal rule with a dashed stroke." },
+        { "code": "Stack column\n  Typography \"Section A\"\n  Divider\n  Typography \"Section B\"", "description": "Separating two stacked sections with a horizontal rule." },
+        { "code": "Stack row 240 80\n  Button \"Cut\"\n  Divider vertical\n  Button \"Copy\"", "description": "A vertical rule between row children, filling the row height (the size goes on the Stack, not the Divider)." },
+        { "code": "Stack row 240 80\n  Button \"Edit\"\n  Divider vertical dotted\n  Button \"Share\"", "description": "A dotted vertical divider; the two keyless enums parse in either order." }
+      ],
       "properties": [
         {
           "name": "orientation",
           "type": "enum",
           "values": ["horizontal", "vertical"],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Direction of the rule, an enum written bare as a keyless token: horizontal (the default) draws a full-width line in a column, vertical draws a full-height line between row children. The line block-stretches to the parent's cross axis, so its long dimension comes from the container, never from a sizing token on the Divider itself."
         },
         {
           "name": "variant",
           "type": "enum",
           "values": ["solid", "dashed", "dotted"],
           "default": "solid",
-          "keyless": true
+          "keyless": true,
+          "description": "Stroke style, an enum written bare as a keyless token: solid (the default), dashed, or dotted, reusing the shared box-outline dash arrays. Its value domain is disjoint from orientation, so tokens like `vertical dashed` parse in any order."
         }
       ]
     },
@@ -185,20 +235,28 @@
       "name": "Spacer",
       "category": "Layout",
       "children": false,
+      "description": "A flexible or fixed gap between siblings in a Stack. Given a size token it is a fixed gap (`Spacer 16px`, `Spacer 24px 8px`); unsized it flexes, absorbing the leftover main-axis space of its Stack to push the following siblings to the far edge. A bare number is a flex weight, so `Spacer 2` pulls twice as hard as a plain `Spacer`. Sizing is positional and axis-independent: the first token is always width, the second height -- so a single-token `Spacer 16px` sizes a row's main (horizontal) axis, but in a column the gap lives on the second token (`Spacer 0 24px`). Its intrinsic size is 0x0, so an unsized Spacer in an axis with no slack collapses to nothing rather than injecting a phantom gap, and it draws nothing of its own.",
+      "examples": [
+        { "code": "Stack row 100% *\n  Button \"Cancel\"\n  Spacer\n  Button \"Save\"", "description": "Unsized Spacer in a stretched row: it absorbs the slack and pushes Save to the right edge." },
+        { "code": "Stack row\n  Box 50px 20px\n  Spacer 16px\n  Box 50px 20px", "description": "A fixed 16px gap between two boxes in a row (the single token is width, which is the row's main axis)." },
+        { "code": "Stack column\n  Typography \"Header\"\n  Spacer 0 24px\n  Typography \"Body\"", "description": "A fixed 24px vertical gap in a column: the column's main axis is height, the SECOND token -- a lone `Spacer 24px` would be 24px wide and 0 tall, adding no vertical gap." },
+        { "code": "Stack row\n  Box 40px 20px\n  Spacer 24px 8px\n  Box 40px 20px", "description": "Two sizing tokens: 24px wide, 8px tall." },
+        { "code": "Stack row 100% *\n  Button \"A\"\n  Spacer 2\n  Button \"B\"\n  Spacer\n  Button \"C\"", "description": "Flex weights: the weight-2 Spacer takes twice the leftover space of the plain (weight-1) one." }
+      ],
       "properties": [
         {
           "name": "width",
           "type": "size",
-          "default": "1",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width as the FIRST positional sizing token -- always width, regardless of stack direction (px | % | * | a bare number, which is a flex weight). With a fixed value the Spacer is a fixed gap of that width; unsized it flexes to absorb leftover space. The keyed `w=`/`width=` form throws \"unknown property\"; the literal word `flex` is not a token (it throws \"unexpected token\"), and the spec's \"default 1\" is intentionally not realized as a fixed intrinsic (the intrinsic is 0)."
         },
         {
           "name": "height",
           "type": "size",
-          "default": "1",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height as the SECOND positional sizing token (px | % | * | a bare number = flex weight). Pins the cross extent for a row (`Spacer 24px 8px`) and the main axis for a column (`Spacer 0 24px`). The keyed `h=`/`height=` form throws \"unknown property\"; the literal word `flex` is not a token, and the spec's \"default 1\" is not realized as a fixed intrinsic (the intrinsic is 0)."
         }
       ]
     },
@@ -206,18 +264,27 @@
       "name": "Anchor",
       "category": "Layout",
       "children": false,
+      "description": "An invisible, named layout region used for background/foreground composition: a background frame declares `Anchor #id` to mark where foreground content belongs, and another frame drops into it with `background=#bg anchor=#id` (alias `at=`). Strategy-wise it is a zero-intrinsic, flexing, block-stretching leaf -- an unsized `Anchor #id` claims its container's leftover space on both axes (\"the rest of this container\"), while sizing tokens pin a fixed region. It draws nothing of its own and requires an `#id` (an Anchor without one warns at parse time, since it can never be targeted).",
+      "examples": [
+        { "code": "Anchor #content", "description": "A named region that fills its container's leftover space on both axes; foreground frames compose into it." },
+        { "code": "Stack row 100% *\n  Box 240px *\n  Anchor #main", "description": "A 240px rail with a #main region filling everything to its right." },
+        { "code": "Anchor #console * 200px", "description": "A fixed 200px-tall strip pinned by positional sizing (full width, 200px height)." },
+        { "code": "Stack column\n  AppBar\n    Toolbar\n      Typography h6 \"Acme\"\n  Anchor #body", "description": "App-bar shell where the #body region takes all the vertical slack below the bar." }
+      ],
       "properties": [
         {
           "name": "width",
           "type": "size",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width, positional (the first sizing token, e.g. `Anchor #x 240px`). Accepts `px`, `%`, `*` (fill), or a bare number (a flex weight) -- note the literal word `flex` is not a token and throws. Unset, the region flexes to fill the container's main-axis slack. Sizing is positional only: keyed `width=`/`w=` throw \"unknown property\"."
         },
         {
           "name": "height",
           "type": "size",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height, positional (the second sizing token, e.g. `Anchor #x * 200px`). Accepts `px`, `%`, `*` (fill), or a bare number (a flex weight) -- the literal word `flex` is not a token and throws. Unset, the region block-stretches to fill the cross axis. Sizing is positional only: keyed `height=`/`h=` throw \"unknown property\"."
         }
       ]
     },
@@ -225,43 +292,65 @@
       "name": "Card",
       "category": "Surfaces",
       "children": true,
+      "description": "A paper surface that stacks its content in a column. Loose children are auto-wrapped in an implicit CardContent, so a bare Card just works; for the classic product-card shape, supply explicit CardHeader / CardContent / CardActions sub-parts and they stack in order. A single numeric `elevation` (default 1) governs the whole look: `elevation=0` is a bordered paper with no shadow, while any `elevation>=1` lifts the paper with a drop shadow. An empty Card still draws thanks to a 160x100 minimum size.",
+      "examples": [
+        { "code": "Card\n  Typography h6 \"Card title\"\n  Typography body2 \"Some supporting copy.\"", "description": "Loose children auto-wrap in an implicit CardContent; default elevation 1 draws a drop shadow." },
+        { "code": "Card elevation=0\n  Typography body2 \"Flat, bordered paper -- no shadow.\"", "description": "Flat, border-only paper (the look the removed variant=outlined used to select)." },
+        { "code": "Card elevation=8\n  Typography body2 \"Lifted high off the page.\"", "description": "A higher elevation lifts the paper further off the page." },
+        { "code": "Card\n  CardHeader \"Product\" subheader=\"In stock\"\n  CardContent\n    Typography body2 \"Description of the product.\"\n  CardActions\n    Button \"Buy\"\n    Button \"More\"", "description": "Explicit sub-parts: header band, padded body, and an action row stacked in order." },
+        { "code": "Card 240 160\n  Typography body2 \"Fixed 240x160 card.\"", "description": "Positional sizing tokens pin the card to a fixed 240x160 footprint." }
+      ],
       "properties": [
         {
           "name": "elevation",
           "type": "numeric",
           "default": "1",
-          "keyless": false
+          "keyless": false,
+          "description": "Sole look control, keyed only (numeric, default 1). A bare number is read as a sizing token, so elevation must be written `elevation=N`. 0 draws a bordered paper with no shadow; any value >= 1 lifts the paper with a drop shadow whose offset and opacity grow with the number (then saturate). The old `variant` enum was removed -- `variant=outlined` and the bare tokens `outlined`/`elevation` now throw, so use `elevation=0` for the outlined look."
         }
       ]
     },
     {
       "name": "CardHeader",
       "category": "Surfaces",
-      "children": true,
+      "children": false,
+      "description": "The title region of a Card: a full-width band that draws a bold title, an optional muted subheader stacked beneath it, an optional leading icon, and a trailing close icon. It is a leaf built entirely from its own props (not a container), so it spans the Card column's full width and its height grows when a subheader is present. By default it draws a real trailing Close X; pass closeIcon=none to drop it. Known icon names render as clean vector artwork; unknown ones fall back to a placeholder glyph plus a warning.",
+      "examples": [
+        { "code": "CardHeader \"Account Settings\"", "description": "Plain header: bold title plus the default trailing Close X." },
+        { "code": "CardHeader \"Jane Doe\" subheader=\"Administrator\"", "description": "Title with a muted subheader line; the band lays out taller." },
+        { "code": "CardHeader \"Profile\" icon=Person", "description": "Leading icon at the left edge, with the text shifted right." },
+        { "code": "CardHeader \"Notifications\" closeIcon=none", "description": "Suppress the trailing close icon for a clean header." },
+        { "code": "CardHeader \"Options\" closeIcon=MoreVert", "description": "Swap the trailing slot for a custom action icon." },
+        { "code": "Card\n  CardHeader \"Account\" subheader=\"Manage your profile\" icon=Person\n  CardContent\n    Typography \"Body text\"", "description": "The intended home: a header band atop a Card, over a CardContent body." }
+      ],
       "properties": [
         {
           "name": "title",
           "type": "string",
           "aliases": ["label", "text"],
-          "keyless": true
+          "keyless": true,
+          "description": "The bold primary label. Keyless (write it bare, e.g. CardHeader \"Account\") or keyed via title=/label=/text=; setting it both ways is a duplicate error. Defaults to a \"Title\" placeholder when unset."
         },
         {
           "name": "subheader",
           "aliases": ["subtext"],
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "A second, smaller muted line stacked under the title; keyed only (alias subtext), and its value must be quoted. Adding one increases the band's height. No default (omitted)."
         },
         {
           "name": "icon",
           "type": "icon",
           "default": null,
-          "keyless": false
+          "keyless": false,
+          "description": "Optional leading icon NAME drawn at the left edge (keyed only: icon=Person; the value may be bare or quoted, PascalCase). A known name draws real artwork, an unknown one a placeholder glyph plus a warning. Defaults to null (no leading icon)."
         },
         {
           "name": "closeIcon",
           "type": "icon",
           "default": "Close",
-          "keyless": false
+          "keyless": false,
+          "description": "Trailing icon NAME at the right edge (keyed only). Defaults to \"Close\", so a plain header draws a real Close X; pass closeIcon=none to omit it, or any other name (e.g. MoreVert) to swap it."
         }
       ]
     },
@@ -269,40 +358,63 @@
       "name": "CardContent",
       "category": "Surfaces",
       "children": true,
+      "description": "The body region of a Card. CardContent stacks its children in a generously padded column (2 spacing units of inset, one unit of gap between children) and draws nothing of its own -- the surrounding Card supplies the paper, so it must live inside a Card. It takes no properties of its own; it exists purely to inset and stack a card's body content.",
+      "examples": [
+        { "code": "Card\n  CardContent\n    Typography h5 \"Card title\"\n    Typography body2 \"Supporting body text for the card.\"", "description": "The common case: a padded body region holding a title and body text inside a Card." },
+        { "code": "Card\n  CardHeader \"Mountain trip\"\n  CardContent\n    Typography body2 \"Three days in the alps.\"\n  CardActions\n    Button \"Share\" text", "description": "Body region between a CardHeader and a CardActions bar in a full card." },
+        { "code": "Card\n  CardContent\n    Typography h6 \"Settings\"\n    TextField \"Email\"\n    Button \"Save\" contained", "description": "Any controls work as children; they stack in the padded column with even spacing." }
+      ],
       "properties": []
     },
     {
       "name": "CardActions",
       "category": "Surfaces",
       "children": true,
+      "description": "The action button row of a Card -- a transparent region that lays its children (typically a couple of Buttons) in a padded left-to-right row and draws nothing of its own; the Card supplies the paper beneath. A single spacing unit of padding and gap keeps the actions tight against the card's lower edge. It has no properties of its own: behavior comes entirely from its children and its containing Card.",
+      "examples": [
+        { "code": "Card\n  CardContent\n    Typography h6 \"Trip to Tokyo\"\n  CardActions\n    Button \"Book\"\n    Button \"Details\"", "description": "The conventional Card footer: a content slot above, two action buttons in the row below." },
+        { "code": "Card\n  CardActions\n    Button \"Agree\"\n    Button text \"Disagree\"", "description": "A bare actions row of text-style buttons (Button's default variant is already text); the second names it explicitly." },
+        { "code": "Card\n  CardActions\n    Button startIcon=Share\n    Button startIcon=Favorite", "description": "Icon-only action buttons (an icon with no label) sit side by side in the padded row." }
+      ],
       "properties": []
     },
     {
       "name": "AppBar",
       "category": "Surfaces",
       "children": true,
+      "description": "A full-width top app bar -- the surface that usually wraps a Toolbar. It lays its children out in a row inside one variant-sized unit of padding and draws a light hand-drawn hatch behind them (never a solid flood-fill, so it still reads as a wireframe). The default regular variant gives a standard header; dense halves the padding for a tighter, shorter bar. It always stretches to the container's full width and its height follows the content.",
+      "examples": [
+        { "code": "AppBar\n  Toolbar\n    Typography h6 \"Acme\"", "description": "Standard full-width bar wrapping a Toolbar title." },
+        { "code": "AppBar dense\n  Toolbar\n    Typography h6 \"Acme\"\n    Button \"Sign in\"", "description": "Dense (tighter, shorter) bar with a title and an action." },
+        { "code": "AppBar background=none\n  Toolbar\n    Typography h6 \"Dashboard\"", "description": "Opaque, untextured bar -- a solid base with no hatch lines." },
+        { "code": "AppBar background=crosshatch\n  Toolbar\n    Icon menu\n    Typography h6 \"Mail\"", "description": "Crosshatch tint (both diagonals) behind a menu icon and title." },
+        { "code": "AppBar denseBackground\n  Toolbar\n    Typography h6 \"Settings\"", "description": "Default hatch packed closer together via the denseBackground flag." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
           "values": ["regular", "dense"],
           "default": "regular",
-          "keyless": true
+          "keyless": true,
+          "description": "Bar density: regular (default) or dense, where dense halves the inner padding so the bar sits tighter and shorter. Written keyless as a bare enum (AppBar dense) or keyed (variant=dense)."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
-          "keyless": true,
-          "notes": "Hand-drawn tint pattern: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured -- a solid base with no hashes)."
+          "keyless": false,
+          "notes": "Hand-drawn tint pattern: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured -- a solid base with no hashes).",
+          "description": "Hand-drawn tint pattern for the bar: hatch (single diagonal, default), crosshatch (both diagonals), or none (an opaque, untextured solid base). Keyed only -- write background=crosshatch; a bare token throws."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Packs the background tint's hatch lines closer together."
+          "notes": "Packs the background tint's hatch lines closer together.",
+          "description": "Boolean flag (default false) that packs the background tint's hatch lines closer together. Resolves both bare (denseBackground) and keyed (denseBackground=true)."
         }
       ]
     },
@@ -310,13 +422,21 @@
       "name": "Toolbar",
       "category": "Surfaces",
       "children": true,
+      "description": "An invisible horizontal content row, almost always placed inside an AppBar, that lays its children out left-to-right like a Stack or Box but paints nothing itself (the AppBar draws the bar). The keyless `variant` controls density: the default `regular` puts a full spacing unit between items, while `dense` halves it (SPACING/2) to mirror AppBar's dense metric, so an `AppBar dense` wrapping a `Toolbar dense` reads as one consistently tighter bar.",
+      "examples": [
+        { "code": "AppBar\n  Toolbar\n    Typography h6 \"Acme\"", "description": "The shell idiom: an AppBar draws the bar, the Toolbar flows a brand title inside it." },
+        { "code": "Toolbar\n  Typography h6 \"Acme\"\n  Button \"Sign in\"", "description": "Standalone (no AppBar): a row of items with the default regular inter-item gap." },
+        { "code": "AppBar dense\n  Toolbar dense\n    Icon menu\n    Typography h6 \"Dashboard\"", "description": "A consistently denser bar -- dense AppBar plus dense Toolbar halve the gap between the menu icon and title." },
+        { "code": "AppBar\n  Toolbar\n    Icon menu\n    Typography h6 \"Inbox\"\n    Avatar", "description": "A typical app header row: leading menu icon, title, and a trailing avatar." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
           "values": ["regular", "dense"],
           "default": "regular",
-          "keyless": true
+          "keyless": true,
+          "description": "Row density. One of `regular` | `dense`, default `regular`; `dense` halves the inter-item gap (SPACING/2 instead of SPACING). Idiomatically written as a bare keyless enum (`Toolbar dense`), though the keyed form `variant=dense` is also accepted. The default is never injected: an omitted variant stays absent on the node, and the layout treats anything but `dense` as `regular`."
         }
       ]
     },
@@ -324,58 +444,75 @@
       "name": "AccordionHeader",
       "category": "Surfaces",
       "children": false,
+      "description": "The clickable summary bar of an expandable panel, drawn as a full-width bordered bar with a left-aligned title and an expand/collapse chevron pinned to the right. It is an independent sibling of AccordionBody (there is no Accordion parent), so headers and bodies are simply placed one after another. The chevron reads the open/closed state from its direction -- ExpandLess (up) when expanded, ExpandMore (down) when collapsed -- and a disabled header mutes its border, title, and chevron in gray.",
+      "examples": [
+        { "code": "AccordionHeader \"Shipping & returns\"", "description": "A collapsed section bar with a down (ExpandMore) chevron and a left-aligned title." },
+        { "code": "AccordionHeader \"Order details\" expanded", "description": "Open state: the chevron flips to ExpandLess (pointing up)." },
+        { "code": "AccordionHeader \"Archived\" disabled", "description": "Muted bar -- border, title, and chevron all drawn in gray." },
+        { "code": "AccordionHeader \"Payment\" icon=Check", "description": "Override the chevron with an explicit icon (icon= is keyed-only) that wins in both states." },
+        { "code": "AccordionHeader \"Filters\" background=hatch", "description": "Opt-in diagonal hatch tint over an opaque paper base (background= is keyed-only)." },
+        { "code": "Stack column\n  AccordionHeader \"Shipping\" expanded\n  AccordionHeader \"Billing\"", "description": "Two stacked section headers, the first open and the second collapsed." }
+      ],
       "properties": [
         {
           "name": "title",
           "type": "string",
           "aliases": ["label", "text"],
-          "keyless": true
+          "keyless": true,
+          "description": "The summary text shown left-aligned in the bar; keyless (a bare quoted string) and also settable via title=/label=/text=. Defaults to the placeholder \"Section\" when unset."
         },
         {
           "name": "expanded",
           "type": "boolean",
           "keyless": true,
-          "default": false
+          "default": false,
+          "description": "Keyless boolean flag selecting the chevron DIRECTION -- ExpandLess (up) when present, ExpandMore (down) otherwise -- so open/closed reads from the glyph. Defaults to false (collapsed)."
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless boolean flag that mutes the whole bar -- border, title, and chevron -- in the muted gray ink. Defaults to false."
         },
         {
           "name": "icon",
           "type": "icon",
           "keyless": false,
-          "notes": "Explicit chevron OVERRIDE; wins in both states. Unset, the per-state defaults below apply."
+          "notes": "Explicit chevron OVERRIDE; wins in both states. Unset, the per-state defaults below apply.",
+          "description": "Keyed-only (icon=) explicit chevron override that wins in BOTH states; takes an icon name, bare or quoted (e.g. icon=Check). Has no default -- when unset the per-state defaults apply; icon=none suppresses the glyph, and an unknown name falls back to the placeholder glyph with a diagnostic."
         },
         {
           "name": "expandedIcon",
           "type": "icon",
           "default": "ExpandLess",
           "keyless": false,
-          "notes": "The chevron drawn when expanded (default ExpandLess, pointing up)."
+          "notes": "The chevron drawn when expanded (default ExpandLess, pointing up).",
+          "description": "Keyed-only (expandedIcon=) chevron drawn in the expanded state; takes an icon name, bare or quoted. Defaults to ExpandLess (pointing up)."
         },
         {
           "name": "collapsedIcon",
           "type": "icon",
           "default": "ExpandMore",
           "keyless": false,
-          "notes": "The chevron drawn when collapsed (default ExpandMore, pointing down)."
+          "notes": "The chevron drawn when collapsed (default ExpandMore, pointing down).",
+          "description": "Keyed-only (collapsedIcon=) chevron drawn in the collapsed state; takes an icon name, bare or quoted. Defaults to ExpandMore (pointing down)."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
-          "keyless": true,
-          "notes": "Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). none = opaque base, no hashes."
+          "keyless": false,
+          "notes": "Optional opaque hatch tint across the bar (drawn only when set; (A)-site base:true). none = opaque base, no hashes.",
+          "description": "Optional opaque hatch tint across the header bar: hatch, crosshatch, or none (opaque, no hash lines); drawn only when set. Keyed only -- write background=hatch; a bare token throws."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Packs the background hatch lines closer."
+          "notes": "Packs the background hatch lines closer.",
+          "description": "Keyless boolean flag that packs the background hatch lines closer together for a denser tint (it also triggers the tint on its own even without background= set, defaulting that tint to hatch). Defaults to false."
         }
       ]
     },
@@ -383,12 +520,27 @@
       "name": "AccordionBody",
       "category": "Surfaces",
       "children": true,
+      "description": "The expanded panel that sits beneath an AccordionHeader, drawn as a bordered paper surface holding arbitrary children. There is no Accordion parent: AccordionHeader and AccordionBody are independent siblings an author stacks one after another, and they read as one unit because both span the full frame width and the body butts directly against the bar above it. It stacks its children in a padded column with one spacing unit of inset and gap. The body is always rendered regardless of the preceding header's expanded state (siblings cannot read each other through the engine), and a minSize keeps even an empty body drawing as a visible panel; omit the body entirely for a collapsed look.",
+      "examples": [
+        { "code": "AccordionHeader \"Shipping\" expanded\nAccordionBody\n  Typography \"Ships in 2-3 business days.\"", "description": "The canonical pairing: an expanded header bar with its body panel stacked directly beneath as one unit." },
+        { "code": "AccordionBody\n  Typography \"Standard delivery is free over $50.\"\n  Button \"Track order\" outlined", "description": "Arbitrary children stack in a padded column with one spacing unit between them." },
+        { "code": "AccordionBody", "description": "An empty body still draws a visible bordered panel (minSize keeps it from collapsing)." }
+      ],
       "properties": []
     },
     {
       "name": "Drawer",
       "category": "Navigation",
       "children": true,
+      "description": "A navigation side panel holding a column or row of children. The single `pin` knob (left/right/top/bottom, default left) picks the docked edge and implies the axis: left/right read as a tall vertical column panel, top/bottom as a wide horizontal bar. `permanent` (default) and `rail` are in-flow -- content flows beside them, and rail is a slim icon strip -- while `overlay` floats out of flow, pins to its edge at 100% of the parent's perpendicular extent, and carries an elevation shadow. In-flow drawers draw just an opaque paper fill plus the content-facing divider seam (no full box); only the overlay variant is a bordered, shadowed sheet.",
+      "examples": [
+        { "code": "Drawer\n  Typography \"Inbox\"\n  Typography \"Drafts\"\n  Typography \"Sent\"", "description": "Default permanent left panel: a docked vertical column of nav items." },
+        { "code": "Drawer right\n  Typography \"Filters\"\n  Typography \"Sort\"", "description": "Pinned to the right edge, so the seam now faces content on its left." },
+        { "code": "Drawer rail\n  Icon home\n  Icon search\n  Icon settings", "description": "The slim rail mini-drawer: a thin (~56px) in-flow icon strip." },
+        { "code": "Drawer top\n  Typography \"Tab A\"\n  Typography \"Tab B\"", "description": "A top pin reads horizontal: a wide short bar laying its children in a row." },
+        { "code": "Drawer overlay left\n  List\n    ListItem \"Home\"\n    ListItem \"Profile\"\n    ListItem \"Settings\"", "description": "The floating overlay variant: out of flow, pinned full-height, with a border and shadow." },
+        { "code": "Drawer crosshatch denseBackground divider=false\n  Typography \"Palette\"", "description": "Opaque crosshatch tint, packed dense, with the content-facing seam suppressed." }
+      ],
       "properties": [
         {
           "name": "pin",
@@ -401,7 +553,8 @@
           ],
           "default": "left",
           "keyless": true,
-          "notes": "v1.0. The single placement knob (left default). Sets the docked/pinned side, the content-facing divider edge, the 100% fill axis, and the child-stacking axis. Implies the panel axis (left/right=>vertical side panel, top/bottom=>horizontal bar), so no separate orientation prop is needed -- mirrors MUI's Drawer anchor (renamed pin to avoid colliding with the Anchor element / a frame's anchor= composition)."
+          "notes": "v1.0. The single placement knob (left default). Sets the docked/pinned side, the content-facing divider edge, the 100% fill axis, and the child-stacking axis. Implies the panel axis (left/right=>vertical side panel, top/bottom=>horizontal bar), so no separate orientation prop is needed -- mirrors MUI's Drawer anchor (renamed pin to avoid colliding with the Anchor element / a frame's anchor= composition).",
+          "description": "Which edge the panel docks/pins against. Keyless enum (left | right | top | bottom), default left. It implies the axis (left/right => a vertical column panel, top/bottom => a horizontal row bar), the docked side, the content-facing divider edge, and the 100%-fill axis; the seam always hugs the opposite (content-facing) edge."
         },
         {
           "name": "variant",
@@ -413,14 +566,16 @@
           ],
           "default": "permanent",
           "keyless": true,
-          "notes": "v1.0. permanent=in-flow panel (seam only, no full box); overlay=out-of-flow floating sheet, pinned to the pin edge; rail=thin in-flow strip."
+          "notes": "v1.0. permanent=in-flow panel (seam only, no full box); overlay=out-of-flow floating sheet, pinned to the pin edge; rail=thin in-flow strip.",
+          "description": "The drawer kind. Keyless enum (permanent | overlay | rail), default permanent. permanent is an in-flow docked panel (seam only, no full box); overlay is an out-of-flow floating sheet that pins to the pin edge at 100% of the parent's perpendicular extent, with a border and elevation shadow; rail is a thin in-flow icon strip (~56px)."
         },
         {
           "name": "divider",
           "type": "boolean",
           "default": true,
           "keyless": true,
-          "notes": "Solid seam on the inner edge facing the content; divider=false suppresses it."
+          "notes": "Solid seam on the inner edge facing the content; divider=false suppresses it.",
+          "description": "Draws the heavier solid seam on the content-facing edge (opposite the pin edge). Keyless boolean, default true; a bare `divider` keeps it on, `divider=false` suppresses it (leaving an untinted in-flow drawer with no visible chrome)."
         },
         {
           "name": "background",
@@ -432,14 +587,16 @@
           ],
           "default": "hatch",
           "keyless": true,
-          "notes": "Opaque hatch tint on the panel (drawn only when set). none = opaque base, no hashes."
+          "notes": "Opaque hatch tint on the panel (drawn only when set). none = opaque base, no hashes.",
+          "description": "Opaque hatch tint for the panel, drawn only when requested (a plain Drawer is paper). Keyless enum (hatch | crosshatch | none); none lays an opaque base with no hash lines. Resolves to hatch when a tint is requested without naming one."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Packs the background hatch lines closer."
+          "notes": "Packs the background hatch lines closer.",
+          "description": "Packs the background hatch lines closer together (and, on its own, requests the hatch tint). Keyless boolean, default false."
         }
       ]
     },
@@ -447,17 +604,28 @@
       "name": "Link",
       "category": "Navigation",
       "children": false,
+      "description": "Inline hyperlink text: a non-block leaf that sizes to its label rather than stretching, drawn on its baseline with an underline rule just beneath to read as a link. The keyless label is the visible text and a keyless `variant` scales the font off the shared Typography scale (default `inherit`, which falls back to the inherited base size); pair it with the universal `to=#id`/`href=#id` to point at a frame. The underline is drawn by default and is suppressed only by `underline=none`.",
+      "examples": [
+        { "code": "Link \"Forgot password?\"", "description": "A plain inline link with the default underline." },
+        { "code": "Link \"Sign up\" to=#register", "description": "Label plus a nav anchor to the #register frame (the facade wraps it in an <a>)." },
+        { "code": "Link \"Read the docs\" h4", "description": "Keyless variant bumps the font up the Typography scale to h4 size." },
+        { "code": "Link \"Plain text\" underline=none", "description": "Suppress the underline rule, leaving bare label text." },
+        { "code": "Link \"Terms\" body2 to=#terms", "description": "Smaller body2 link wired to a frame; label and variant are order-independent." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The visible link text, resolved keyless from the bare/quoted string literal (the first keyless slot). With no label (and no filler) the leaf falls back to the placeholder text \"link\"."
         },
         {
           "name": "underline",
-          "type": "boolean",
-          "default": true,
-          "keyless": true
+          "type": "enum",
+          "values": ["none", "hover", "always"],
+          "default": "always",
+          "keyless": false,
+          "description": "Underline behavior: none, hover, or always (default). underline=none suppresses the rule. Keyed only -- underline=true and bare values throw."
         },
         {
           "name": "variant",
@@ -479,13 +647,16 @@
           ],
           "default": "inherit",
           "keyless": true,
-          "notes": "Shares Typography scale."
+          "notes": "Shares Typography scale.",
+          "description": "Typography scale that scales the rendered font, resolved keyless (the second keyless slot, order-independent with the label). One of h1-h6, subtitle1/2, body1/2, caption, overline, button; defaults to `inherit`, which is not a scale key and so falls back to the base (body) size."
         },
         {
           "name": "filler",
-          "type": "string",
+          "type": "enum",
+          "values": ["squiggle", "lorem", "blocks"],
           "keyless": false,
-          "notes": "Filler control."
+          "notes": "Filler control.",
+          "description": "Greeking style for a link with no label: squiggle, lorem, or blocks (keyed, e.g. filler=lorem). With neither a label nor filler the link draws the word \"link\"."
         }
       ]
     },
@@ -493,23 +664,34 @@
       "name": "MenuItem",
       "category": "Navigation",
       "children": false,
+      "description": "A single label in a horizontal menu bar (File / Edit / View). MenuItem is an inline leaf sized to its label rather than stretched to fill the bar, so it reads as a top-level menu word, not a full-width dropdown row. A selected item gets a light hand-drawn hatch tint across its box, and a disabled one draws its label in muted ink. With no label it falls back to the placeholder \"Menu\".",
+      "examples": [
+        { "code": "Stack row\n  MenuItem \"File\"\n  MenuItem \"Edit\"\n  MenuItem \"View\"", "description": "A row of menu-bar labels, each sized to its own text." },
+        { "code": "Stack row\n  MenuItem \"File\" selected\n  MenuItem \"Edit\"", "description": "The highlighted item, drawn with a hand-drawn hatch tint." },
+        { "code": "Stack row\n  MenuItem \"Edit\"\n  MenuItem \"Format\" disabled", "description": "A disabled item, its label in muted ink." },
+        { "code": "Stack row\n  MenuItem \"Home\" to=#next", "description": "A navigating item: to= links the label to another frame." },
+        { "code": "Stack row\n  MenuItem label=\"Help\"", "description": "The label given keyed instead of as a bare quoted string." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The menu label text, set keyless as a bare quoted string (the single literal slot) or keyed as label=. Unset, it falls back to the placeholder \"Menu\"; a second quoted string is an error."
         },
         {
           "name": "selected",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless boolean flag marking the highlighted item; draws a borderless hand-drawn hatch tint across the box. Defaults to false (absent when omitted)."
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless boolean flag for the inactive state; renders the label in muted ink. Defaults to false (absent when omitted)."
         }
       ]
     },
@@ -517,12 +699,27 @@
       "name": "Menubar",
       "category": "Navigation",
       "children": true,
+      "description": "A horizontal application menu bar -- the classic File/Edit/View strip. It holds MenuItem children, laid out in a row, and draws its own chrome: a faint surface fill across the full bar plus a heavier bottom rule dividing it from the content below. It is an AppBar-lite -- unlike AppBar it does not hatch its region, and unlike a Toolbar it is not invisible. It declares no props; per-item selected/disabled state lives on each MenuItem, and an empty Menubar still renders its bar chrome.",
+      "examples": [
+        { "code": "Menubar\n  MenuItem \"File\"\n  MenuItem \"Edit\"\n  MenuItem \"View\"", "description": "The classic File/Edit/View menu strip." },
+        { "code": "Menubar\n  MenuItem \"File\" selected\n  MenuItem \"Edit\"\n  MenuItem \"Help\" disabled", "description": "Per-item state: File highlighted (hatch tint), Help muted (disabled)." },
+        { "code": "Menubar", "description": "An empty bar still draws its fill and bottom rule." },
+        { "code": "Menubar\n  MenuItem \"File\" to=#open\n  MenuItem \"Edit\"\n  MenuItem \"View\"", "description": "A menu item wired to a target frame via to=#id." }
+      ],
       "properties": []
     },
     {
       "name": "Tabs",
       "category": "Navigation",
       "children": true,
+      "description": "A strip of Tab labels with a faint hand-drawn baseline indicator rule, used to switch between views. A horizontal Tabs (the default) lays its child Tabs in a row with the baseline along the bottom edge; orientation=vertical stacks them in a column with the rule on the right edge. The variant prop (standard | scrollable | fullWidth) parses but is best-effort at wireframe fidelity -- the engine can't re-flex a child or scroll a static SVG, so each Tab still sizes to its own label. Children are Tab elements, which size to their labels and carry no selected indicator (the baseline rule is the strip's own chrome).",
+      "examples": [
+        { "code": "Tabs\n  Tab \"Overview\"\n  Tab \"Details\"\n  Tab \"Settings\"", "description": "A horizontal strip of three tabs with the baseline rule along the bottom." },
+        { "code": "Tabs vertical\n  Tab \"Profile\"\n  Tab \"Account\"\n  Tab \"Billing\"", "description": "Vertical tabs stacked in a column; the indicator rule runs down the right edge." },
+        { "code": "Tabs fullWidth\n  Tab \"All\"\n  Tab \"Active\"\n  Tab \"Archived\"", "description": "The fullWidth variant parses (best-effort); tabs still size to their labels." },
+        { "code": "Tabs scrollable\n  Tab \"Jan\"\n  Tab \"Feb\"\n  Tab \"Mar\"\n  Tab \"Apr\"\n  Tab \"May\"", "description": "The scrollable variant parses; a static wireframe has no scroll affordance." },
+        { "code": "Tabs\n  Tab \"Home\" to=#home\n  Tab \"Search\" to=#search", "description": "Tabs as navigation: each Tab links to a frame via the universal to=#id." }
+      ],
       "properties": [
         {
           "name": "orientation",
@@ -532,7 +729,8 @@
             "vertical"
           ],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Layout axis of the strip, written keyless or keyed (orientation=): horizontal (default) lays the tabs in a row with the baseline along the bottom edge, vertical stacks them in a column with the rule on the right edge. Defaults aren't injected, so a bare Tabs has no orientation prop and reads as horizontal."
         },
         {
           "name": "variant",
@@ -543,7 +741,8 @@
             "fullWidth"
           ],
           "default": "standard",
-          "keyless": true
+          "keyless": true,
+          "description": "Strip style, written keyless or keyed (variant=): standard (default), scrollable, or fullWidth. Best-effort only -- scrollable and fullWidth parse but a parent can't re-flex its Tabs nor scroll a static SVG, so each Tab still sizes to its own label."
         }
       ]
     },
@@ -551,11 +750,20 @@
       "name": "Tab",
       "category": "Navigation",
       "children": false,
+      "description": "One labeled tab within a `Tabs` strip. Keyless text is its label; an unlabeled Tab falls back to the filler default \"Tab\". A Tab is an intrinsic-width inline leaf (`block:false`), so it sizes to its own label rather than stretching the strip -- horizontal tabs sit side by side and vertical tabs stack, each at its own extent, with the strip's baseline chrome owned by `Tabs`. It draws no selected/underline indicator (the spec slice has no `selected` prop), and `to=#id` turns a tab into a navigation link.",
+      "examples": [
+        { "code": "Tab \"Overview\"", "description": "A single labeled tab." },
+        { "code": "Tab", "description": "Unlabeled: renders the filler default \"Tab\"." },
+        { "code": "Tabs\n  Tab \"Overview\"\n  Tab \"Details\"\n  Tab \"Settings\"", "description": "A horizontal strip of three tabs side by side." },
+        { "code": "Tabs vertical\n  Tab \"Inbox\"\n  Tab \"Sent\"", "description": "A vertical strip: tabs stack in a column." },
+        { "code": "Tabs\n  Tab \"Home\" to=#home\n  Tab \"Account\"", "description": "A tab as a navigation link via the universal to=#id." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The tab's text, drawn as a centered label. Keyless (the bare quoted literal, e.g. `Tab \"Overview\"`) and also accepts the keyed form `label=\"...\"`; at most one quoted literal lands here, so a second collides. Defaults to the filler \"Tab\" when unset."
         }
       ]
     },
@@ -563,12 +771,19 @@
       "name": "Breadcrumbs",
       "category": "Navigation",
       "children": true,
+      "description": "A horizontal navigation trail that lays its children (typically Link/Typography) out in a row and draws a muted separator glyph between each adjacent pair, e.g. Home / Library / Data. The separator defaults to \"/\" and can be any string. With 0 or 1 child there are no gaps, so no separator is drawn; per-link navigation is each child's own to=#id, not the trail's.",
+      "examples": [
+        { "code": "Breadcrumbs\n  Link \"Home\" to=#home\n  Link \"Library\"\n  Typography \"Data\"", "description": "Default \"/\" trail; the last crumb is plain Typography (current page) and earlier crumbs link." },
+        { "code": "Breadcrumbs \">\"\n  Link \"Home\"\n  Link \"Reports\"\n  Typography \"Q3\"", "description": "Custom \">\" separator, written bare as a keyless literal." },
+        { "code": "Breadcrumbs separator=\"/\"\n  Link \"Files\"\n  Typography \"readme.md\"", "description": "Same separator via the keyed form; a two-crumb trail draws one divider." }
+      ],
       "properties": [
         {
           "name": "separator",
           "type": "string",
           "default": "/",
-          "keyless": true
+          "keyless": true,
+          "description": "The glyph drawn (muted, centered) in each gap between adjacent crumbs. Any string; default \"/\"; an empty string falls back to \"/\". Writable bare as a keyless literal (Breadcrumbs \">\") or keyed (separator=\">\")."
         }
       ]
     },
@@ -576,6 +791,13 @@
       "name": "Stepper",
       "category": "Navigation",
       "children": true,
+      "description": "A horizontal or vertical sequence of Step children with connector rules bridging the gaps between them. The keyless `orientation` enum drives the layout axis -- `vertical` stacks the Steps in a column, while horizontal (the default, and the fallback for any non-`vertical` value) lays them out in a row, exactly like Tabs. A faint connector rule is drawn in each gap between consecutive Steps, derived from their laid-out boxes; with fewer than two Steps there is no gap and nothing is drawn. Step numbering is not synthesized, so the connectors carry no numbers.",
+      "examples": [
+        { "code": "Stepper\n  Step \"Cart\"\n  Step \"Address\"\n  Step \"Payment\"", "description": "A horizontal three-step strip with two connector rules between the steps." },
+        { "code": "Stepper vertical\n  Step \"Account\"\n  Step \"Profile\"\n  Step \"Done\"", "description": "Stacked column layout; the connector runs down each gap." },
+        { "code": "Stepper orientation=vertical\n  Step \"One\"\n  Step \"Two\"", "description": "Same vertical layout via the keyed spelling of orientation." },
+        { "code": "Stepper\n  Step \"Only\"", "description": "A single Step has no gap to bridge, so no connector is drawn." }
+      ],
       "properties": [
         {
           "name": "orientation",
@@ -585,30 +807,43 @@
             "vertical"
           ],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Layout axis of the step sequence, one of horizontal | vertical (default horizontal). `vertical` stacks Steps in a column with connectors running down the gaps; horizontal -- and any other non-`vertical` value -- rows them left-to-right. Keyless (a bare `vertical`/`horizontal` token) or keyed (`orientation=vertical`)."
         }
       ]
     },
     {
       "name": "Step",
       "category": "Navigation",
-      "children": true,
+      "children": false,
+      "description": "One stage in a Stepper: a state circle followed by its label. Three render states are real and distinct -- plain (light ring + centre dot), active (heavier ring + dot, bolder label), and completed (filled circle + check mark). Because the engine hands a Step only its own node, it cannot know its position, so the circle is always a dot or check, never an auto-incremented index. It is a leaf (block:false) that sizes to its circle + label and does not stretch the Stepper's cross axis; it takes no children (any nested content is dropped).",
+      "examples": [
+        { "code": "Stepper\n  Step \"Cart\" completed\n  Step \"Address\" active\n  Step \"Payment\"", "description": "A checkout Stepper: one done, one active, one upcoming." },
+        { "code": "Step \"Shipping\"", "description": "A plain step -- light ring, centre dot." },
+        { "code": "Step \"Review\" active", "description": "The current step -- heavier ring, bolder label." },
+        { "code": "Step \"Cart\" completed", "description": "A finished step -- filled circle with a check mark." },
+        { "code": "Step completed \"Done\" active", "description": "Label and both flags resolve in any token order." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The stage name drawn to the right of the circle. Written bare or quoted as the keyless literal (Step \"Address\"), or with the keyed label= form (label=\"Address\") -- both resolve. Defaults to \"Step\", filled in at render time rather than injected by the resolver (the prop stays unset on the node when omitted)."
         },
         {
           "name": "active",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Marks the current step: a heavier circle stroke and a bolder label. Keyless boolean flag -- bare `active` sets it true (or keyed active=true/false). Schema default is false, but the prop is left unset on the node when omitted."
         },
         {
           "name": "completed",
           "type": "boolean",
-          "keyless": true
+          "default": false,
+          "keyless": true,
+          "description": "Marks a finished step: a filled circle with a two-stroke check instead of the dot. Keyless boolean flag -- bare `completed` sets it true (or keyed completed=true/false). Schema default is false, but the prop is left unset on the node when omitted."
         }
       ]
     },
@@ -616,18 +851,28 @@
       "name": "Pagination",
       "category": "Navigation",
       "children": false,
+      "description": "A row of numbered page cells flanked by prev/next chevrons. It is an inline leaf that draws its own chrome: square cells numbered 1..count, the current page cell tinted with a hatch accent, plus a `<` cell on the left and a `>` cell on the right. Width grows with `count` (one cell per page); an out-of-range `page` simply highlights nothing rather than erroring. Both props are keyed-only and the control accepts no sizing tokens.",
+      "examples": [
+        { "code": "Pagination", "description": "Bare default: a single numbered cell between the two chevrons." },
+        { "code": "Pagination count=5", "description": "Five page cells (1-5); page 1 is the current, tinted cell by default." },
+        { "code": "Pagination count=7 page=3", "description": "Seven pages with page 3 highlighted as the current page." },
+        { "code": "Pagination count=10 page=10", "description": "Ten pages with the last page selected." },
+        { "code": "Stack column\n  List\n  Pagination count=6 page=2", "description": "Pager beneath a list in a column; sizes to its cells rather than stretching." }
+      ],
       "properties": [
         {
           "name": "count",
           "type": "numeric",
           "default": 1,
-          "keyless": false
+          "keyless": false,
+          "description": "Number of page cells, drawn as squares numbered 1..count between the two chevrons; more pages make the control wider. Keyed only (a bare number throws). Fractional values floor to whole cells (min 1); defaults to 1."
         },
         {
           "name": "page",
           "type": "numeric",
           "default": 1,
-          "keyless": false
+          "keyless": false,
+          "description": "Which page cell is the current one, drawn with a hatch accent tint and bold label. Keyed only (a bare number throws). A value outside 1..count highlights nothing and renders cleanly; defaults to 1 (highlighting the first cell)."
         }
       ]
     },
@@ -635,18 +880,27 @@
       "name": "BottomNavigation",
       "category": "Navigation",
       "children": true,
+      "description": "The fixed bottom bar of a mobile layout, holding a row of BottomNavigationAction items that split its width equally (each Action declares flex:true). It renders a full-width paper surface with a hand-drawn muted divider rule along its top edge, and as a container it stretches to fill its parent's cross axis by default, so dropping it straight under a frame yields the classic edge-to-edge bottom bar. Its value and showLabels props parse and round-trip onto node.props but are best-effort at wireframe fidelity: a parent prop cannot reach its child Actions in this engine (a strategy sees only its own node), so Actions always draw their own labels regardless.",
+      "examples": [
+        { "code": "BottomNavigation\n  BottomNavigationAction \"Home\" icon=\"Home\"\n  BottomNavigationAction \"Search\" icon=\"Search\"\n  BottomNavigationAction \"Profile\" icon=\"Person\"", "description": "A three-destination bottom bar; the Actions split the bar width equally." },
+        { "code": "BottomNavigation value=\"search\"\n  BottomNavigationAction \"Home\" icon=\"Home\"\n  BottomNavigationAction \"Search\" icon=\"Search\"", "description": "value names the selected Action (keyed and quoted; parse-only)." },
+        { "code": "BottomNavigation showLabels\n  BottomNavigationAction \"Recents\" icon=\"History\"\n  BottomNavigationAction \"Favorites\" icon=\"Favorite\"\n  BottomNavigationAction \"Nearby\" icon=\"LocationOn\"", "description": "showLabels as a bare flag (parse-only; Actions still draw their labels)." },
+        { "code": "BottomNavigation v=\"home\" showLabels\n  BottomNavigationAction \"Home\" icon=\"Home\"\n  BottomNavigationAction \"Cart\" icon=\"ShoppingCart\"\n  BottomNavigationAction \"Account\" icon=\"Person\"", "description": "value (via the v alias) and showLabels set together, in any order." }
+      ],
       "properties": [
         {
           "name": "value",
           "type": "string",
           "aliases": ["v", "val"],
-          "keyless": false
+          "keyless": false,
+          "description": "Names the currently selected Action; keyed and quoted only (aliases v, val) -- there is no keyless slot, so a bare quoted literal throws \"does not take a text literal\" and a bare unquoted token throws \"must be quoted\". No default. Parse-only: it round-trips onto node.props but cannot restyle the child Actions in this engine."
         },
         {
           "name": "showLabels",
           "type": "boolean",
           "default": false,
-          "keyless": false
+          "keyless": false,
+          "description": "Whether the Actions show their labels; keyed (showLabels=true) or as a bare flag (showLabels), defaulting to false. Parse-only: Actions always draw their own label regardless, since a parent prop cannot reach a child here."
         }
       ]
     },
@@ -654,16 +908,26 @@
       "name": "BottomNavigationAction",
       "category": "Navigation",
       "children": false,
+      "description": "One destination in a BottomNavigation bar, drawn as the classic mobile stack: a small icon on top with its label centered beneath. The keyless quoted literal is the label; icon= takes an icon NAME that renders as clean vector artwork when known and falls back to the placeholder glyph (a bordered box with a diagonal mark) when unknown or unset (an unknown name also emits a soft diagnostic). As a flex leaf, sibling Actions split the bar width equally, and an Action always draws its own label since the parent's showLabels/value never reach a child.",
+      "examples": [
+        { "code": "BottomNavigation\n  BottomNavigationAction \"Home\" icon=Home\n  BottomNavigationAction \"Search\" icon=Search\n  BottomNavigationAction \"Profile\" icon=Person", "description": "A three-tab bottom bar; the Actions split its width equally." },
+        { "code": "BottomNavigationAction \"Home\" icon=Home", "description": "A single labelled Action with a known icon, drawn as clean vector artwork." },
+        { "code": "BottomNavigationAction \"Search\"", "description": "Label only; the unset icon slot draws the placeholder glyph." },
+        { "code": "BottomNavigationAction icon=Favorite", "description": "Icon-only Action: no quoted literal, so no label text under the glyph." },
+        { "code": "BottomNavigation\n  BottomNavigationAction \"Home\" icon=Home to=#home\n  BottomNavigationAction \"Alerts\" icon=Notifications to=#alerts", "description": "Each tab links to a screen via the universal to=#id, wrapping the Action in an anchor." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The caption drawn beneath the icon, written as the keyless quoted literal (e.g. BottomNavigationAction \"Home\"). Defaults to undefined, in which case the Action draws just its icon with no label band. A long label widens the box; the stack height is fixed."
         },
         {
           "name": "icon",
           "type": "icon",
-          "keyless": false
+          "keyless": false,
+          "description": "Keyed icon NAME for the glyph above the label (PascalCase, bare or quoted -- icon=Home and icon=\"Home\" are equivalent). A known name renders clean vector artwork; an unknown or omitted name falls back to the placeholder glyph (an unknown name also emits a soft diagnostic). Keyed only -- a second bare quoted literal is rejected, not treated as the icon."
         }
       ]
     },
@@ -671,11 +935,21 @@
       "name": "Typography",
       "category": "Content",
       "children": false,
+      "description": "Text -- the wireframe's type leaf, covering everything from page headings to muted captions to placeholder copy. A bare token is the text literal (the label); two keyless enums, `variant` (font size/role, defaults to `body1`) and `align`, set in any order, plus a keyless `noWrap` flag. With a label and no `noWrap`, text word-wraps to its container's known width (the default) in columns and grids; in rows -- which measure children without a width -- and under `noWrap`, it stays one line trimmed with a trailing ellipsis. The `caption` variant draws in the muted/disabled ink so it reads as de-emphasized, and a bare `~N` with no label renders N rows of filler at the variant's size -- squiggle strokes by default, real-ish lorem words under `filler=lorem`. Typography takes no sizing token (no positional width/height); its box is intrinsic to the text.",
+      "examples": [
+        { "code": "Typography \"Sign in\"", "description": "Default body1 text on one line." },
+        { "code": "Typography h4 \"Account settings\"", "description": "A bold h4 section heading (larger variant = larger font)." },
+        { "code": "Typography caption \"Last saved 2 minutes ago\"", "description": "A caption, drawn in muted ink as de-emphasized helper text." },
+        { "code": "Typography \"Centered title\" center noWrap", "description": "Center-anchored, pinned to a single line that trims with an ellipsis if it overflows." },
+        { "code": "Typography ~3", "description": "No label: three rows of squiggle filler at body1 size." },
+        { "code": "Typography ~2 filler=lorem", "description": "Two filler rows rendered as real-ish lorem words instead of squiggles." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The text to draw, given bare as the keyless string literal (e.g. Typography \"Sign in\"). Omit it and pass a bare ~N amount instead to render filler rows rather than a string."
         },
         {
           "name": "variant",
@@ -696,7 +970,8 @@
             "button"
           ],
           "default": "body1",
-          "keyless": true
+          "keyless": true,
+          "description": "Type role, keyless: one of h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button. Drives the font size (h1-h6 also draw bold); defaults to body1, and caption inks in the muted/disabled color."
         },
         {
           "name": "align",
@@ -709,19 +984,22 @@
             "justify"
           ],
           "default": "inherit",
-          "keyless": true
+          "keyless": true,
+          "description": "Horizontal placement within the box, keyless or keyed (a bare `center` or `align=center` both work): inherit, left, center, right, or justify. center anchors at the midpoint, right at the trailing edge, and left/justify/inherit at the left edge (justify degrades to left at sketch fidelity). Defaults to inherit (left)."
         },
         {
           "name": "noWrap",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless boolean flag (bare noWrap or noWrap=true): pins the single-line form -- one line trimmed to the box with a trailing ellipsis. Defaults to false, which lets a too-wide label word-wrap to the container's known width."
         },
         {
           "name": "filler",
-          "type": "string",
-          "default": "1 line",
-          "keyless": false
+          "type": "enum",
+          "values": ["squiggle", "lorem", "blocks"],
+          "keyless": false,
+          "description": "Greeking style for placeholder body text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem; blocks currently renders like squiggle). The universal ~N sigil is the usual shorthand."
         }
       ]
     },
@@ -729,12 +1007,22 @@
       "name": "Button",
       "category": "Content",
       "children": false,
+      "description": "A clickable action control whose keyless quoted text becomes its label. Three variants set the look: contained fills a hand-drawn hatch tint under a bold label, outlined draws a bordered surface, and text (the default) draws just the label with no chrome. The label is optional -- a lone startIcon/endIcon with no label renders a compact, roughly square icon button, while a bare Button shows the \"Button\" placeholder. disabled mutes the whole control, fullWidth stretches it to fill the container cross axis, and to=#id (href= alias) makes it navigate.",
+      "examples": [
+        { "code": "Button \"Save\"", "description": "Default text variant: just a centered label, no chrome." },
+        { "code": "Button \"Save\" contained", "description": "Filled primary look via the hatch-tinted contained variant." },
+        { "code": "Button \"Cancel\" outlined large", "description": "Large bordered (outlined) button; variant and size are order-independent keyless enums." },
+        { "code": "Button \"Sending...\" contained disabled", "description": "A muted, disabled contained button." },
+        { "code": "Button \"Send\" contained startIcon=Send", "description": "Label with a leading icon adornment (startIcon is keyed; its value is bare or quoted)." },
+        { "code": "Button startIcon=Edit", "description": "Icon-only button: an icon with no label draws a compact, square glyph button." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
           "keyless": true,
-          "notes": "Optional. An icon (startIcon/endIcon) with no label draws a compact, square icon-only button. A bare Button with neither label nor icon shows a Button placeholder."
+          "notes": "Optional. An icon (startIcon/endIcon) with no label draws a compact, square icon-only button. A bare Button with neither label nor icon shows a Button placeholder.",
+          "description": "Visible button text, the keyless string literal (`Button \"Save\"`). Optional: omitting it with an icon present makes an icon-only button, and a bare Button shows the \"Button\" placeholder. The keyed form requires quoting (`label=\"Save\"`); a bare `label=Save` throws."
         },
         {
           "name": "variant",
@@ -745,50 +1033,58 @@
             "contained"
           ],
           "default": "text",
-          "keyless": true
+          "keyless": true,
+          "description": "Visual style, a keyless enum: `contained` (hatch-tinted fill + bold label), `outlined` (bordered surface), or `text` (label only, no chrome). Defaults to `text`."
         },
         {
           "name": "size",
           "type": "enum",
           "values": ["small", "medium", "large"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Scale of padding and label font, a keyless enum: `small`, `medium`, or `large`. Defaults to `medium`. Disjoint from variant/background, so the keyless tokens are order-independent."
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Mutes the whole button (chrome, icons, and label) to the muted ink. A keyless flag (`disabled`) or keyed (`disabled=true`/`disabled=false`); defaults to false (absent)."
         },
         {
           "name": "startIcon",
           "type": "icon",
-          "keyless": false
+          "keyless": false,
+          "description": "Icon drawn just inside the left edge before the label, an icon NAME (PascalCase, bare or quoted as the value). Keyed only (`startIcon=Send`); a bare `Send` token throws. With no label it becomes an icon-only button. Unknown names draw the placeholder square and warn."
         },
         {
           "name": "endIcon",
           "type": "icon",
-          "keyless": false
+          "keyless": false,
+          "description": "Icon drawn just inside the right edge after the label, an icon NAME (bare or quoted as the value). Keyed only (`endIcon=ArrowForward`); contributes to the icon-only button when no label is given."
         },
         {
           "name": "fullWidth",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Express via sizing instead."
+          "notes": "Express via sizing instead.",
+          "description": "Stretches the button to fill the container cross axis like a block leaf instead of sizing to its label. A keyless flag (`fullWidth`) or keyed (`fullWidth=true`/`fullWidth=false`); defaults to false."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
-          "keyless": true
+          "keyless": true,
+          "description": "Hatch pattern for the contained tint, a keyless enum: `hatch` (default diagonal), `crosshatch` (both diagonals), or `none` (opaque untextured fill over the opaque paper base). Defaults to `hatch`; only affects `variant=contained`."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Packs the contained hatch lines closer together for a denser tint. A keyless flag (`denseBackground`) or keyed (`denseBackground=true`); defaults to false. Only affects `variant=contained`."
         }
       ]
     },
@@ -796,12 +1092,22 @@
       "name": "TextField",
       "category": "Inputs",
       "children": false,
+      "description": "A single-line or multiline text input with an optional label. The label is optional; when set it rests inside the empty outlined/filled field and floats onto the top border (small, with a paper knockout) once a value or placeholder shows -- the standard variant drops the label instead of floating. Three variants (outlined default, filled, standard underline-only) cross with size (medium default, small), and error/disabled/required states; value/defaultValue ink the field while placeholder shows faintly only when empty, helperText sits below, and startIcon/endIcon plus a select caret are edge adornments. Always fills its column (block), so it has no positional width/height tokens.",
+      "examples": [
+        { "code": "TextField \"Email\"", "description": "Default outlined field; the label rests inside the empty box." },
+        { "code": "TextField \"Email\" value=\"jane@x.com\" helper=\"We never share it\"", "description": "A value floats the label onto the border; helper text sits below." },
+        { "code": "TextField \"Password\" required error=true helper=\"Too short\"", "description": "Required (appends *) and in the error state -- border and helper tint red." },
+        { "code": "TextField \"Bio\" filled multiline rows=4 placeholder=\"Tell us about yourself\"", "description": "A filled, 4-row multiline field with a faint placeholder." },
+        { "code": "TextField \"Search\" standard small startIcon=Search", "description": "Compact standard (underline-only) field with a leading search icon." },
+        { "code": "TextField \"Country\" select value=\"United States\"", "description": "A select-style field draws a dropdown caret on the trailing edge." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
           "keyless": true,
-          "notes": "Optional. Absent: nothing drawn, no space reserved. Outlined: rests inside the empty field, floats onto the top border once a value/placeholder shows."
+          "notes": "Optional. Absent: nothing drawn, no space reserved. Outlined: rests inside the empty field, floats onto the top border once a value/placeholder shows.",
+          "description": "Field label, keyless (the single bare string slot). Optional: absent it draws nothing and reserves no space. Outlined/filled, it rests inside the empty field then floats small onto the top border once a value or placeholder shows; standard drops it instead of floating."
         },
         {
           "name": "variant",
@@ -812,111 +1118,128 @@
             "standard"
           ],
           "default": "outlined",
-          "keyless": true
+          "keyless": true,
+          "description": "Field chrome, keyless enum: outlined (default, full box), filled (box with a tinted hatch), or standard (bottom underline only)."
         },
         {
           "name": "value",
           "type": "string",
           "aliases": ["v", "val"],
-          "keyless": false
+          "keyless": false,
+          "description": "In-field content, inked on the first row; aliases v and val. Keyed only -- a bare string is read as the label. A value also wins over a placeholder."
         },
         {
           "name": "defaultValue",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Fallback in-field content, rendered like a value when no value is set. Keyed only."
         },
         {
           "name": "multiline",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (written bare); default false. Grows the field to multiple rows. Without rows= a multiline field spans 3 rows."
         },
         {
           "name": "required",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Appends a * marker to the label."
+          "notes": "Appends a * marker to the label.",
+          "description": "Boolean flag (written bare); default false. Appends a ' *' marker to the label."
         },
         {
           "name": "placeholder",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Faint prompt text shown only when there is no value/defaultValue; keyed only. A placeholder (like a value) also floats the outlined/filled label."
         },
         {
           "name": "helperText",
           "type": "string",
           "keyless": false,
-          "aliases": ["helper"]
+          "aliases": ["helper"],
+          "description": "Sub-text drawn below the field; keyed, alias helper. Tints red in the error state."
         },
         {
           "name": "error",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (written bare); default false. Tints the field border and helper text red (error wins over disabled for the stroke)."
         },
         {
           "name": "disabled",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (written bare); default false. Mutes the border/text gray and tints the fill."
         },
         {
           "name": "rows",
           "type": "numeric",
-          "default": 1,
-          "keyless": false
+          "keyless": false,
+          "description": "Visible text rows for a multiline field (rows=4). Ignored unless the field is multiline; a multiline field with no rows shows 3. The prop carries no default of its own."
         },
         {
           "name": "size",
           "type": "enum",
           "values": ["small", "medium"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Field height, keyless enum: medium (default) or small (shorter field)."
         },
         {
           "name": "startIcon",
           "type": "icon",
           "keyless": false,
-          "notes": "Icon name (MUI PascalCase); drawn just inside the leading edge."
+          "notes": "Icon name (PascalCase); drawn just inside the leading edge.",
+          "description": "Icon name (PascalCase, forgiving spelling), drawn just inside the leading edge and reserving its width. Keyed only -- a bare token is the label, not an icon."
         },
         {
           "name": "endIcon",
           "type": "icon",
           "keyless": false,
-          "notes": "Icon name; drawn just inside the trailing edge (takes the slot a select caret would use)."
+          "notes": "Icon name; drawn just inside the trailing edge (takes the slot a select caret would use).",
+          "description": "Icon name drawn just inside the trailing edge, reserving its width. Keyed only. Claims the right slot, so it suppresses the select caret there."
         },
         {
           "name": "select",
           "type": "boolean",
           "default": false,
           "keyless": false,
-          "notes": "Draws a dropdown caret on the trailing edge."
+          "notes": "Draws a dropdown caret on the trailing edge.",
+          "description": "Boolean flag (written bare); default false. Draws a dropdown caret on the trailing edge (unless an endIcon already claims that slot)."
         },
         {
           "name": "fullWidth",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (written bare); default false. Accepted but inert in v0.1 -- a TextField always fills its column via block layout regardless."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
-          "keyless": true
+          "keyless": false,
+          "description": "Hand-drawn fill pattern for the filled variant: hatch (default), crosshatch, or none (opaque, untextured). Keyed only -- write background=crosshatch; a bare token throws."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (written bare); default false. Tightens the hatch spacing of the field tint (filled/disabled only)."
         },
         {
           "name": "filler",
-          "type": "string",
-          "default": "label fill",
-          "keyless": false
+          "type": "enum",
+          "values": ["squiggle", "lorem", "blocks"],
+          "keyless": false,
+          "description": "Greeking style for the field's value text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem)."
         }
       ]
     },
@@ -924,35 +1247,49 @@
       "name": "Img",
       "category": "Content",
       "children": false,
+      "description": "A placeholder image drawn as the classic crossed-box. It carries the full box sizing vocabulary (pixel / percent / flex `w h` tokens) plus a keyed `ratio=` for aspect (e.g. 16:9), `alt=` descriptive text, and a metadata-only `src=`. As a block leaf it fills its container's cross axis like a stretched `<img>` (its 160x120 intrinsic only shows in full when nothing constrains that axis). Sizing precedence layers `ratio` on top of the box model: with both dimensions pinned the explicit sizes win and ratio is ignored; with exactly one explicit `px`/`%` dimension the ratio derives the other; with ratio alone the cross axis fills while the main extent is ratio-derived (a `*`/flex dimension counts as \"fill\", not an explicit dimension).",
+      "examples": [
+        { "code": "Img", "description": "A bare placeholder: as a block leaf its width fills the container's cross axis (the 160x120 intrinsic is the fallback), with the 80x60 floor keeping an unconstrained one from collapsing." },
+        { "code": "Img ratio=16:9", "description": "No size given: the cross axis fills its container and the main extent is derived to keep 16:9 proportions." },
+        { "code": "Img 200 ratio=16:9", "description": "One explicit width (200px); the 16:9 ratio derives the height (112.5px)." },
+        { "code": "Img 300 200", "description": "Both dimensions pinned as positional sizing tokens; an exact 300x200 box." },
+        { "code": "Img 100% alt=\"Hero banner\"", "description": "Full-width banner with descriptive alt text." },
+        { "code": "Stack row\n  Img 50% ratio=16:9\n  Img 50% ratio=16:9", "description": "Two half-width thumbnails side by side, each height derived from 16:9." }
+      ],
       "properties": [
         {
           "name": "width",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width (px | % | * | flex), the first positional sizing token (e.g. `Img 200`, `Img 100%`); the keyed forms `width=`/`w=` throw \"unknown property\". When it is the only explicit `px`/`%` dimension, `ratio` derives the height from it (a `*`/flex width counts as fill, not an explicit dimension)."
         },
         {
           "name": "height",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height, the second positional sizing token (e.g. `Img 300 200`); the keyed forms `height=`/`h=` throw \"unknown property\". With both width and height pinned, `ratio` is ignored."
         },
         {
           "name": "ratio",
           "type": "ratio",
-          "keyless": false
+          "keyless": false,
+          "description": "Aspect ratio like `16:9`, keyed only (`ratio=16:9`); a bare `16:9` token throws \"unexpected token\". Governs only when at most one dimension is pinned: with one explicit `px`/`%` dimension it derives the other, with none the cross axis fills and the main extent is ratio-derived."
         },
         {
           "name": "alt",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Descriptive alternative text (e.g. `alt=\"Hero banner\"`), keyed only; a quoted bare string throws \"does not take a text literal\". Metadata that does not change the rendered placeholder."
         },
         {
           "name": "src",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "The real image source (e.g. `src=\"hero.png\"`), keyed only. Metadata only -- a wireframe always draws the crossed-box placeholder regardless of source, so it never affects the render."
         }
       ]
     },
@@ -960,30 +1297,43 @@
       "name": "Placeholder",
       "category": "Content",
       "children": false,
+      "description": "A stand-in box for something undecided. It draws exactly Img's no-image look (a bordered box with two crossing diagonals) and overlays an optional centered label with a finer, muted description beneath it. With no label and no description it is a pure crossed box, identical to a bare Img. It carries box-style sizing tokens, so an author reserves space directly; an unconstrained Placeholder defaults to a comfortable 160x120 and is floored so it never collapses, while each text line is trimmed to the box width so a small placeholder ellipsizes instead of spilling past the outline.",
+      "examples": [
+        { "code": "Placeholder", "description": "A pure crossed box at the default 160x120, no text." },
+        { "code": "Placeholder \"Chart goes here\"", "description": "Crossed box with a single centered label." },
+        { "code": "Placeholder \"Revenue\" description=\"Q3 by region\"", "description": "Label over a finer, muted description, straddling the center." },
+        { "code": "Placeholder 100% 200px \"Hero image\"", "description": "Reserve a full-width, 200px-tall hero slot with a label." },
+        { "code": "Placeholder 240 80", "description": "An explicitly sized stand-in (px tokens), no text." },
+        { "code": "Stack column\n  Placeholder * \"Map\"", "description": "In a column: fill the available width with a labeled stand-in." }
+      ],
       "properties": [
         {
           "name": "width",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width as a positional sizing token (px | % | * | flex) -- the first bare sizing token, e.g. `Placeholder 240 80`. The keyed forms `width=`/`w=` are not accepted. Defaults to the intrinsic 160px; an unconstrained Placeholder is floored at 80px so it never collapses, but an explicit token (even below the floor) always wins."
         },
         {
           "name": "height",
           "type": "size",
           "default": "content",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height as a positional sizing token (px | % | * | flex) -- the second bare sizing token. The keyed forms `height=`/`h=` are not accepted. Defaults to the intrinsic 120px; an unconstrained Placeholder is floored at 72px, but an explicit token (even below the floor) always wins."
         },
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "Primary centered caption drawn over the box in ink. Keyless (a bare string literal), and order-independent with the sizing tokens. Omitted by default, leaving a pure crossed box."
         },
         {
           "name": "description",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Secondary caption beneath the label in a finer, muted style. Keyed only (description=); a second bare literal is rejected. Omitted by default; renders centered on its own even without a label."
         }
       ]
     },
@@ -991,6 +1341,15 @@
       "name": "Avatar",
       "category": "Content",
       "children": false,
+      "description": "A small user/identity token rendering initials, an image placeholder, or a bare shape. Keyless text is the initials label (e.g. \"RB\"), and src= flips the chrome to a crossed-box image placeholder (a wireframe never draws the real image). The variant enum picks a genuinely different silhouette (circular, rounded, or square), and size scales the diameter, initials font, and corner radius together. An avatar keeps its intrinsic square footprint wherever it sits -- it does not stretch to the container -- and stays transparent unless a background tint is asked for.",
+      "examples": [
+        { "code": "Avatar \"RB\"", "description": "Initials avatar at the default 40px medium circular size." },
+        { "code": "Avatar \"AB\" rounded large", "description": "A large rounded-rectangle avatar showing initials." },
+        { "code": "Avatar square src=\"user.png\"", "description": "A square image placeholder (crossed box, no initials)." },
+        { "code": "Avatar \"JS\" small hatch", "description": "A small avatar tinted with a single-diagonal hatch over an opaque base." },
+        { "code": "Avatar circular crosshatch denseBackground", "description": "A bare circular avatar with a dense crosshatch tint." },
+        { "code": "Stack row\n  Avatar \"RB\"\n  Avatar \"JS\" rounded\n  Avatar square src=\"u.png\"", "description": "A row mixing initials, a rounded avatar, and an image placeholder." }
+      ],
       "properties": [
         {
           "name": "variant",
@@ -1001,7 +1360,8 @@
             "square"
           ],
           "default": "circular",
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless enum picking the silhouette: circular (default), rounded, or square. Each draws a genuinely different shape (a hand-drawn circle, a rounded rect, or a sharp rect); the keyed form variant= also works."
         },
         {
           "name": "size",
@@ -1012,17 +1372,20 @@
             "large"
           ],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless enum scaling the square diameter, initials font, and rounded corner radius together: small (32px), medium (40px, default), or large (56px). The keyed form size= also works."
         },
         {
           "name": "src",
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Keyed-only image source; must be quoted (a bare src= throws \"must be quoted\"). Its presence flips the chrome to a crossed-box image placeholder instead of initials, mirroring Img -- a wireframe never draws the real image."
         },
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The initials text, centered inside the shape. It is the one keyless literal (e.g. Avatar \"RB\"); a keyed label= must also be quoted. Ignored when src= is set."
         },
         {
           "name": "background",
@@ -1033,25 +1396,37 @@
             "none"
           ],
           "default": "hatch",
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless enum tinting the avatar with a hand-drawn hatch over an opaque paper base, shape-matched to the variant: hatch, crosshatch, or none (an opaque base with no hashes). Drawn only when set -- omit it and a bare avatar stays transparent. The keyed form background= also works."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless boolean flag (default false) that packs the background tint's hatch lines closer together for a denser look."
         }
       ]
     },
     {
       "name": "Chip",
       "category": "Content",
-      "children": true,
+      "children": false,
+      "description": "A compact label token rendered as a hand-drawn pill. Keyless text becomes the label; with no text it falls back to \"Chip\". The filled variant (the default) lays an opaque hatch-tinted base under the border, while outlined draws the border only and stays transparent. The size enum (medium default, or small) tightens both the pill padding and the label font. Because the two keyless enums (variant and size) have disjoint value domains, they can be written bare in any order.",
+      "examples": [
+        { "code": "Chip \"New\"", "description": "A filled chip labeled New, at the default medium size." },
+        { "code": "Chip \"Beta\" outlined", "description": "Outlined variant: border only, transparent (no fill)." },
+        { "code": "Chip \"On\" filled small", "description": "Small filled chip; variant and size are bare keyless enums in any order." },
+        { "code": "Chip \"Tag\" background=crosshatch", "description": "Filled tint drawn with the cross-hatch pattern instead of plain hatch (background is keyed-only)." },
+        { "code": "Chip \"Solid\" filled background=none", "description": "Opaque but untextured fill: a solid base with no hatch lines." },
+        { "code": "Chip \"Dense\" denseBackground", "description": "Packs the filled tint's hatch lines closer together." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The pill's text, supplied as the bare keyless string literal (e.g. Chip \"New\"). With no label the chip falls back to the placeholder text \"Chip\"."
         },
         {
           "name": "variant",
@@ -1061,7 +1436,8 @@
             "outlined"
           ],
           "default": "filled",
-          "keyless": true
+          "keyless": true,
+          "description": "Fill style: filled (default) lays an opaque hand-drawn hatch tint under the border; outlined draws the border only and stays transparent. Keyless enum, written bare."
         },
         {
           "name": "size",
@@ -1071,26 +1447,30 @@
             "medium"
           ],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Pill scale: medium (default) or small, where small tightens both the padding and the label font. Keyless enum, written bare."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
-          "keyless": true
+          "keyless": false,
+          "description": "Hatch pattern for the filled tint: hatch (default), crosshatch, or none (an opaque solid base with no hash lines). Keyed-only on this element -- write background=crosshatch; a bare value does not target it. Only affects the filled variant."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Boolean flag (default false) that packs the filled tint's hatch lines closer together; written bare as denseBackground or keyed as denseBackground=true. Only affects the filled variant."
         },
         {
           "name": "filler",
-          "type": "string",
-          "default": "Chip",
-          "keyless": false
+          "type": "enum",
+          "values": ["squiggle", "lorem", "blocks"],
+          "keyless": false,
+          "description": "Greeking style for a chip with no label: squiggle, lorem, or blocks (keyed, e.g. filler=lorem). A bare Chip with no label falls back to \"Chip\"."
         }
       ]
     },
@@ -1098,22 +1478,30 @@
       "name": "Icon",
       "category": "Content",
       "children": false,
+      "description": "A single glyph drawn by name from the built-in Material icon set (plus any custom Icons-block or injected packs). A bare or quoted keyless token is the icon name (`Icon Search` === `Icon \\\"Search\\\"`); a resolved name draws clean vector artwork while an unknown or omitted name falls back to a muted placeholder glyph (a bordered square with a diagonal) and warns (an omitted name draws the same placeholder but does not warn). The glyph is a fixed square sized by `fontSize` (small/medium/large/inherit, default medium) that keeps its intrinsic footprint and does not stretch to its container's cross axis. Icon takes no box-sizing vocabulary: there is no width/height (keyed or positional) -- a bare number is read as an icon name, not a size.",
+      "examples": [
+        { "code": "Icon", "description": "Nameless icon: draws the muted placeholder glyph at medium size, with no warning." },
+        { "code": "Icon Search", "description": "The Material \"Search\" glyph; the name may be bare (equivalent to Icon \"Search\")." },
+        { "code": "Icon \"Settings\" fontSize=large", "description": "Large (36px square) settings glyph; fontSize is keyed only." },
+        { "code": "Icon \"Delete\" size=small", "description": "Small (18px square) delete glyph, using the size= alias for fontSize." },
+        { "code": "Icon \"Favorite\" fontSize=inherit", "description": "inherit has no ambient size at wireframe fidelity, so it falls back to medium (24px)." },
+        { "code": "Stack row\n  Icon \"Home\"\n  Icon \"Search\"\n  Icon \"Settings\"", "description": "A row of icons; each keeps its own square footprint side by side." }
+      ],
       "properties": [
         {
-          "name": "icon",
+          "name": "name",
           "type": "icon",
-          "keyless": true
+          "keyless": true,
+          "description": "The icon name, bare or quoted (Icon Search is identical to Icon \"Search\"), drawn from the built-in Material set plus any custom icons (Icons block / injected packs); spelling is forgiving (AccountCircle and account_circle both resolve). A known name draws clean vector artwork; an unknown or omitted name draws the muted placeholder glyph and emits a soft warning. (The keyed form is name=.)"
         },
         {
-          "name": "size",
+          "name": "fontSize",
           "type": "enum",
-          "values": [
-            "small",
-            "medium",
-            "large"
-          ],
+          "values": ["small", "medium", "large", "inherit"],
           "default": "medium",
-          "keyless": true
+          "keyless": false,
+          "aliases": ["size"],
+          "description": "Glyph size: small (18px), medium (24px, default), large (36px), or inherit (no ambient size at sketch fidelity, so it falls back to medium). Keyed via fontSize= or its size= alias -- a bare token is read as the icon name, so this is keyed only."
         }
       ]
     },
@@ -1121,36 +1509,55 @@
       "name": "List",
       "category": "Content",
       "children": true,
+      "description": "A mostly-invisible vertical container that stacks ListItems in a flush column. By default it draws nothing of its own and uses zero padding and gap, so rows abut in the conventional list look (spacing between lists comes from the surrounding container). Two affordances add chrome: `dense` tightens the rows via a negative inter-row gap, and `subheader` reserves a top band and draws a small muted heading above the items.",
+      "examples": [
+        { "code": "List\n  ListItem \"Home\"\n  ListItem \"Reports\"\n  ListItem \"Settings\"", "description": "Default flush column of three rows." },
+        { "code": "List dense\n  ListItem \"Inbox\"\n  ListItem \"Sent\"\n  ListItem \"Drafts\"", "description": "Dense list: rows pulled tighter together." },
+        { "code": "List subheader=\"Library\"\n  ListItem \"Songs\"\n  ListItem \"Albums\"\n  ListItem \"Artists\"", "description": "A section heading drawn in a reserved band above the items." },
+        { "code": "List dense subheader=\"Folders\"\n  ListItem \"Documents\"\n  ListItem \"Downloads\"", "description": "Dense rows under a subheader, combining both affordances." }
+      ],
       "properties": [
         {
           "name": "dense",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Tightens the list by applying a negative inter-row gap so the same items occupy less height. Boolean, defaults to false; settable as a bare `dense` flag (resolves to true) or keyed as `dense=true`."
         }
       ]
     },
     {
       "name": "ListItem",
       "category": "Content",
-      "children": true,
+      "children": false,
+      "description": "A single full-width list row. Keyless text is the row label (default \"List item\"); the row draws a left-padded, vertically centered label above a faint bottom divider, at a fixed 40px height. As a block leaf it stretches to fill its container's cross axis, so stacking several ListItems in a column reads as a contiguous list. A `to=#id` makes the whole row navigate (the link wrapper is added by the renderer, not the element).",
+      "examples": [
+        { "code": "ListItem \"Home\"", "description": "A labeled row with the bottom divider." },
+        { "code": "ListItem \"Inbox\" to=#inbox", "description": "A row that navigates to the #inbox anchor when clicked." },
+        { "code": "ListItem ~3w", "description": "An unlabeled placeholder row filled with three lorem words via the bare filler sigil." },
+        { "code": "ListItem", "description": "Bare row falls back to the default \"List item\" label." },
+        { "code": "Stack column\n  ListItem \"Profile\"\n  ListItem \"Settings\"\n  ListItem \"Sign out\" to=#login", "description": "Several rows stacked into a contiguous list, the last one linking out." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "Row text, written bare or quoted as the first keyless literal (e.g. ListItem \"Home\"). Defaults to \"List item\" when omitted; truncated with an ellipsis to fit the row width."
         },
         {
           "name": "icon",
           "type": "icon",
           "keyless": false,
-          "default": null
+          "default": null,
+          "description": "Not rendered by the current engine -- a ListItem draws its label only; a leading icon is not implemented (icon= is rejected)."
         },
         {
           "name": "filler",
-          "type": "string",
-          "default": "1 line",
-          "keyless": false
+          "type": "enum",
+          "values": ["squiggle", "lorem", "blocks"],
+          "keyless": false,
+          "description": "Accepted but inert on ListItem -- the row always draws its label (\"List item\" when unlabeled); filler=squiggle|lorem|blocks has no visual effect. Use the universal ~N sigil for placeholder rows."
         }
       ]
     },
@@ -1158,6 +1565,14 @@
       "name": "Table",
       "category": "Content",
       "children": true,
+      "description": "The outer chrome of the table family: a bordered surface that flush-stacks its TableHead/TableBody/TableFooter groups or bare TableRows into an edge-to-edge column (a col container with pad:0 gap:0). Table itself draws only the outline; rows supply their own divider rules and selected-row tint, and cells draw their labels. Columns line up only when every row has the same cell count, since each TableCell is equal-flex and splits its row's width identically; ragged rows do not align. An empty Table still renders as a visible bordered region (minimum 160x40) rather than collapsing.",
+      "examples": [
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Name\"\n      TableCell \"Role\"\n  TableBody\n    TableRow\n      TableCell \"Ada\"\n      TableCell \"Engineer\"\n    TableRow\n      TableCell \"Grace\"\n      TableCell \"Admiral\"", "description": "A header plus body; equal cell counts make the two columns align." },
+        { "code": "Table small\n  TableRow\n    TableCell \"Item\"\n    TableCell \"Qty\"\n  TableRow\n    TableCell \"Bolts\"\n    TableCell \"40\"", "description": "Bare rows with no Head/Body grouping; the small density is parse-only (no visual change)." },
+        { "code": "Table\n  TableBody\n    TableRow selected\n      TableCell \"Ada\"\n      TableCell \"Engineer\"\n    TableRow\n      TableCell \"Grace\"\n      TableCell \"Admiral\"", "description": "The first body row is selected, drawn with a light hatch tint." },
+        { "code": "Table\n  TableRow\n    TableCell \"Total\" align=right\n    TableCell \"42\" align=right", "description": "Right-aligned cell labels for a numeric/summary row." },
+        { "code": "Table", "description": "An empty table still draws its bordered region at the 160x40 minimum." }
+      ],
       "properties": [
         {
           "name": "size",
@@ -1167,7 +1582,8 @@
             "medium"
           ],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Density knob, the keyless enum small | medium (the keyed size= form is also accepted). The schema default is medium, though the resolver injects no default, so an omitted size stays undefined. Parse-only: it resolves but carries no visual effect, because a child cell cannot read its Table's size through the layout engine, so both values lay out and draw identically."
         }
       ]
     },
@@ -1175,37 +1591,71 @@
       "name": "TableHead",
       "category": "Content",
       "children": true,
+      "description": "The header row-group of a Table: an invisible grouping container that stacks its TableRows flush (no padding, no gap) so the header abuts the body. It adds one bit of chrome the Table family otherwise omits -- a heavier full-width rule along its bottom edge, the classic line that sets a table's header off from its body -- drawn only when the head actually has rows, so an empty TableHead stays invisible. It takes no own properties: a child cannot read its parent Table's size or other props, so there is nothing here to vary.",
+      "examples": [
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Name\"\n      TableCell \"Role\"\n  TableBody\n    TableRow\n      TableCell \"Ada\"\n      TableCell \"Engineer\"", "description": "A two-column table: the TableHead labels the columns above a TableBody row." },
+        { "code": "TableHead\n  TableRow\n    TableCell \"Product\"\n    TableCell \"Price\" align=right\n    TableCell \"Stock\" align=center", "description": "Header-only group with right- and center-aligned heading cells (align is keyed)." },
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Date\"\n      TableCell \"Amount\"\n  TableBody\n    TableRow\n      TableCell \"Jun 1\"\n      TableCell \"$42\"\n    TableRow selected\n      TableCell \"Jun 2\"\n      TableCell \"$18\"", "description": "Header over a body whose second row is highlighted via the row's selected flag." }
+      ],
       "properties": []
     },
     {
       "name": "TableBody",
       "category": "Content",
       "children": true,
+      "description": "The body row-group of a Table -- an invisible `col` container that stacks its TableRows flush, exactly like an HTML `<tbody>`. It draws nothing of its own: the surrounding Table supplies the outer border and each TableRow draws its own divider rule, so head/body/footer groups and the rows within them abut with no padding or gap. It has no properties; you size and align via the Table and the TableRows/TableCells it holds.",
+      "examples": [
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Name\"\n      TableCell \"Role\"\n  TableBody\n    TableRow\n      TableCell \"Ada\"\n      TableCell \"Admin\"\n    TableRow\n      TableCell \"Linus\"\n      TableCell \"Editor\"", "description": "Standard usage: a TableBody of data rows beneath a TableHead inside a Table." },
+        { "code": "Table\n  TableBody\n    TableRow\n      TableCell \"Item\"\n      TableCell \"Qty\" align=right\n    TableRow selected\n      TableCell \"Widget\"\n      TableCell \"3\" align=right", "description": "Body-only table with a right-aligned column and one selected (hatched) row." },
+        { "code": "TableBody\n  TableRow\n    TableCell \"Standalone row\"\n    TableCell \"groups flush\"", "description": "TableBody on its own, stacking rows flush even without a wrapping Table." }
+      ],
       "properties": []
     },
     {
       "name": "TableFooter",
       "category": "Content",
       "children": true,
+      "description": "The footer row-group of a Table, holding the TableRows that summarize the body above (totals, subtotals). Like TableHead and TableBody, it is an invisible grouping container -- a transparent column that stacks its rows flush with pad:0 gap:0 so they abut and align with the head and body. It draws no chrome of its own (the enclosing Table supplies the outer border and each TableRow its own divider rule), and the spec declares no properties, so there is nothing to configure beyond the universal to= link.",
+      "examples": [
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Item\"\n      TableCell \"Amount\"\n  TableBody\n    TableRow\n      TableCell \"Widget\"\n      TableCell \"$40\"\n  TableFooter\n    TableRow\n      TableCell \"Total\"\n      TableCell \"$40\"", "description": "A full table: head, one body row, and a footer total row aligned into the same two columns." },
+        { "code": "Table\n  TableBody\n    TableRow\n      TableCell \"Subtotal\"\n      TableCell \"$120\"\n  TableFooter\n    TableRow\n      TableCell \"Tax\"\n      TableCell \"$10\"\n    TableRow\n      TableCell \"Total\"\n      TableCell \"$130\"", "description": "A footer with multiple summary rows (tax then total), stacked flush with no gap." },
+        { "code": "TableFooter\n  TableRow\n    TableCell \"Total\"\n    TableCell \"$40\"", "description": "The footer group on its own, stacking a single summary row." },
+        { "code": "TableFooter to=#summary\n  TableRow\n    TableCell \"Total\"\n    TableCell \"$40\"", "description": "Linking the whole footer to another frame with the universal to= anchor." }
+      ],
       "properties": []
     },
     {
       "name": "TableRow",
       "category": "Content",
-      "children": false,
+      "children": true,
+      "description": "One row of a Table, laying its TableCells out left-to-right with no padding or gap so equal-flex cells abut and -- for rows of equal cell count -- align into shared columns. A row holds cells, so it is a row container that stretches to the full table width and draws a faint bottom divider rule (like ListItem) so adjacent rows read as separated. A `selected` row additionally tints behind its cells with a light hand-drawn hatch to read as selected.",
+      "examples": [
+        { "code": "TableRow\n  TableCell \"Ada\"\n  TableCell \"Eng\"\n  TableCell \"Active\"", "description": "A plain three-cell row; the cells split the width evenly and abut into columns." },
+        { "code": "TableRow selected\n  TableCell \"Grace\"\n  TableCell \"Away\"", "description": "A selected row, tinted with a light hatch behind its cells." },
+        { "code": "Table small\n  TableHead\n    TableRow\n      TableCell \"Name\"\n      TableCell \"Role\"\n  TableBody\n    TableRow\n      TableCell \"Ada\"\n      TableCell \"Eng\"\n    TableRow selected\n      TableCell \"Grace\"\n      TableCell \"Eng\"", "description": "Rows in context: a header row plus a body whose second row is selected; equal cell counts align the columns." }
+      ],
       "properties": [
         {
           "name": "selected",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "When set, tints the row with a light hand-drawn hatch behind its cells -- the selected-row highlight. Keyless boolean: a bare `selected` token sets it true (the keyed `selected=true` also works). Defaults to false (unhighlighted)."
         }
       ]
     },
     {
       "name": "TableCell",
       "category": "Content",
-      "children": true,
+      "children": false,
+      "description": "One cell of a table row, rendered as a text leaf: keyless text is the cell label, defaulting to \"Cell\" when omitted. It carries flex:true so equal-count sibling cells split their TableRow's width evenly, which is what aligns columns across rows. The keyed `align` prop anchors the label left, center, or right within the cell. Despite being a Content element it draws only its own label -- arbitrary nested children are dropped at wireframe fidelity.",
+      "examples": [
+        { "code": "Table\n  TableRow\n    TableCell \"Name\"\n    TableCell \"Role\"\n    TableCell \"Status\"", "description": "Three header cells in a row; equal flex splits the width into aligned columns." },
+        { "code": "Table\n  TableHead\n    TableRow\n      TableCell \"Name\"\n      TableCell \"Amount\" align=right\n  TableBody\n    TableRow\n      TableCell \"Ada\"\n      TableCell \"$42.00\" align=right", "description": "Right-aligned numeric column kept consistent in the head and body rows." },
+        { "code": "TableCell \"Centered\" align=center", "description": "A standalone cell with its label anchored at the box midpoint." },
+        { "code": "TableCell", "description": "Bare cell with no label falls back to the default \"Cell\" text." },
+        { "code": "Table\n  TableRow\n    TableCell ~2 filler=lorem\n    TableCell ~3 filler=lorem", "description": "Placeholder cells filled with lorem text via the bare ~amount and filler style." }
+      ],
       "properties": [
         {
           "name": "align",
@@ -1216,7 +1666,8 @@
             "right"
           ],
           "default": "left",
-          "keyless": false
+          "keyless": false,
+          "description": "Anchors the label within the cell box: `left` (text-anchor start, at the left inset), `center` (middle of the box), or `right` (end, at the trailing inset). Keyed only (`align=...`) -- a bare alignment token throws `unexpected token`; an unset align is absent (the resolver injects no default) and the strategy treats it as `left`. An out-of-domain value throws."
         }
       ]
     },
@@ -1224,11 +1675,20 @@
       "name": "Badge",
       "category": "Content",
       "children": false,
+      "description": "A small, standalone notification indicator token. The default `standard` variant is a hand-drawn rounded pill carrying a short count or label; the `dot` variant is a tiny contentless ink-filled circle that ignores any content. Because this engine has no anchor-to-sibling overlay, a Badge renders as the indicator itself, inline like any other leaf -- not floated over a wrapped child (children=false); compose it next to an icon in your own layout. A bare Badge falls back to the count \"3\" so it always reads as a token.",
+      "examples": [
+        { "code": "Badge", "description": "Bare standard pill, falling back to the count \"3\"." },
+        { "code": "Badge \"9\"", "description": "Standard pill carrying an explicit count." },
+        { "code": "Badge \"99+\"", "description": "Pill with a longer label; the pill widens to fit its content." },
+        { "code": "Badge dot", "description": "The dot variant: a tiny solid circle with no text." },
+        { "code": "Badge \"5\" dot", "description": "Order-independent tokens; the dot variant ignores the content string." }
+      ],
       "properties": [
         {
           "name": "badgeContent",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The count/label drawn inside the standard pill, written as a quoted string literal (keyless, e.g. `Badge \"9\"`; the keyed `badgeContent=\"9\"` also works). Not free text -- a filler token (`~5`, `___`) hard-errors. Defaults to \"3\" when omitted; ignored entirely by the `dot` variant."
         },
         {
           "name": "variant",
@@ -1238,7 +1698,8 @@
             "dot"
           ],
           "default": "standard",
-          "keyless": true
+          "keyless": true,
+          "description": "Shape of the indicator: `standard` (a rounded pill carrying badgeContent) or `dot` (a small contentless circle). Keyless bare token (`Badge dot`) or keyed (`variant=dot`); defaults to `standard`."
         }
       ]
     },
@@ -1246,47 +1707,64 @@
       "name": "Control",
       "category": "Inputs",
       "children": false,
+      "description": "A single selection input that subsumes the old Checkbox and Switch. The variant picks the glyph -- a checkbox (square with a two-stroke tick when checked), a radio (ring with a centered filled dot), or a switch (pill track with a knob that slides left-off / right-on); checked and disabled are state flags, and size scales the glyph. It is an input leaf that keeps its intrinsic footprint in a row rather than stretching to the container, so a checkbox/radio is square and a switch is a wider pill. A checked switch tints its track with a hand-drawn hatch; disabled mutes the strokes (and the switch's hatch) to gray.",
+      "examples": [
+        { "code": "Control", "description": "Bare default: an unchecked, medium checkbox." },
+        { "code": "Control checked", "description": "Checked checkbox -- the two-stroke tick appears." },
+        { "code": "Control radio checked", "description": "Radio button with its centered filled dot (selected)." },
+        { "code": "Control switch checked", "description": "Switch in the on state: knob right, track hatched." },
+        { "code": "Control switch checked disabled", "description": "Disabled on-switch -- track and knob recolor to muted gray." },
+        { "code": "Control switch checked background=crosshatch denseBackground", "description": "On-switch whose track tint is a denser cross-hatch pattern." },
+        { "code": "Control large disabled", "description": "A large, disabled checkbox (variant/size keyless, any order)." },
+        { "code": "Stack row\n  Control checkbox checked\n  Control radio\n  Control switch checked", "description": "All three variants side by side, each keeping its intrinsic size in a row." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
           "values": ["radio", "checkbox", "switch"],
           "default": "checkbox",
-          "keyless": true
+          "keyless": true,
+          "description": "Selects the glyph: radio | checkbox | switch. Keyless enum; defaults to checkbox. Disjoint from size, so token order is free (e.g. `Control switch large` or `Control large switch`)."
         },
         {
           "name": "checked",
           "type": "boolean",
           "keyless": true,
-          "default": false
+          "default": false,
+          "description": "Marks the selected/on state -- adds the tick (checkbox), the dot (radio), or hatches the track and slides the knob right (switch). Keyless boolean flag (bare `checked`); the keyed `checked=true`/`checked=false` form also works. Defaults to false."
         },
         {
           "name": "disabled",
           "type": "boolean",
           "keyless": true,
-          "default": false
+          "default": false,
+          "description": "Recolors the strokes (and a checked switch's hatch) to the muted ink. Keyless boolean flag (bare `disabled`), keyed form also accepted. Defaults to false."
         },
         {
           "name": "size",
           "type": "enum",
           "values": ["small", "medium", "large"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Scales the glyph: small | medium | large (multipliers 0.78 / 1 / 1.25). Keyless enum, disjoint from variant; defaults to medium (matching the ported original at 1x)."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "default": "hatch",
-          "keyless": true,
-          "notes": "Tint pattern for the checked switch track: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured track)."
+          "keyless": false,
+          "notes": "Tint pattern for the checked switch track: hatch (single diagonal), crosshatch (both diagonals), or none (opaque, untextured track).",
+          "description": "Tint pattern for the checked switch track: hatch (single diagonal, default), crosshatch (both diagonals), or none (opaque, untextured). Keyed only -- write background=crosshatch; a bare token throws."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Packs the checked switch track's hatch lines closer together."
+          "notes": "Packs the checked switch track's hatch lines closer together.",
+          "description": "Packs the checked switch track's hatch lines closer together. Keyless boolean flag (bare `denseBackground`), keyed form (`denseBackground=true`) also accepted; defaults to false and only affects a checked switch."
         }
       ]
     },
@@ -1294,24 +1772,36 @@
       "name": "Select",
       "category": "Inputs",
       "children": true,
+      "description": "A dropdown form control. A bare Select draws a closed, outlined field with a faint placeholder and a ▾ caret; keyless text sets the field label and a keyless variant (outlined|filled|standard) styles the field border like TextField (filled adds a hatch tint, standard draws just a bottom rule). Set value= to show a chosen entry inside the field -- on outlined and filled fields the label then floats onto the top border, while standard drops it. Options nested beneath stack under the field as the open menu.",
+      "examples": [
+        { "code": "Select \"Country\"", "description": "Closed outlined field; the label shows as placeholder text with a ▾ caret." },
+        { "code": "Select \"Country\" value=\"Canada\"", "description": "Value fills the field; the label floats onto the top border." },
+        { "code": "Select \"Status\" filled value=\"Active\"", "description": "Filled (hatch-tinted) field that also floats its label over the chosen value." },
+        { "code": "Select \"Sort by\" standard", "description": "Standard variant: just an underline instead of a full box." },
+        { "code": "Select \"Country\"\n  Option \"United States\" selected\n  Option \"Canada\"\n  Option \"Mexico\" subtext=\"MX\"", "description": "Open menu: Options stack beneath the field, one pre-selected." },
+        { "code": "Stack row\n  Select v=\"50 rows\"", "description": "In a row the field self-sizes to show its value untrimmed (v= alias)." }
+      ],
       "properties": [
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "Field label, shown inside the closed field when no value is set, else floated above it (outlined/filled). Keyless (the bare quoted string) or keyed as label=. No default; absent if unset."
         },
         {
           "name": "variant",
           "type": "enum",
           "values": ["outlined", "filled", "standard"],
           "default": "outlined",
-          "keyless": true
+          "keyless": true,
+          "description": "Field border style: one of outlined|filled|standard. outlined/filled draw a full box (filled adds a hatch tint), standard draws only a bottom rule. Keyless enum or keyed as variant=; defaults to outlined (applied at render, not injected by the resolver)."
         },
         {
           "name": "value",
           "aliases": ["v", "val"],
           "type": "string",
-          "keyless": false
+          "keyless": false,
+          "description": "Chosen entry shown inside the closed field, taking precedence over label as the field text. Keyed only (aliases v, val); no default. Select takes no positional/sizing tokens, so there is no bare form -- a bare quoted string is the label, and a bare number throws."
         }
       ]
     },
@@ -1319,36 +1809,49 @@
       "name": "Option",
       "category": "Inputs",
       "children": false,
+      "description": "A single row in a Select's dropdown menu (its real parent; a List also works for sketching). Keyless text is the label, and a keyless `selected` flag marks the chosen row with a hand-drawn accent hatch tint and a check mark. An optional keyed `subtext` adds a smaller secondary line (and a taller row); keyed `startIcon`/`endIcon` slots draw icons at the left and far right, with an explicit `endIcon` winning the right slot over the selected check. Each option is block-stretched to fill its menu's width and carries a faint bottom divider rule like a list row.",
+      "examples": [
+        { "code": "Select \"Country\" outlined\n  Option \"United States\"\n  Option \"Canada\"\n  Option \"Mexico\"", "description": "Three plain options stacked as the open menu under a Select." },
+        { "code": "Select \"Country\"\n  Option \"United States\" selected\n  Option \"Canada\"", "description": "The selected option gets a hatch tint and a right-edge check mark." },
+        { "code": "Select \"Recipient\"\n  Option \"Alex Kim\" subtext=\"alex@example.com\"\n  Option \"Sam Lee\" subtext=\"sam@example.com\"", "description": "A secondary subtext line under each label makes a taller two-line row." },
+        { "code": "Select \"Action\"\n  Option \"Home\" startIcon=Home\n  Option \"Settings\" startIcon=Settings endIcon=ChevronRight", "description": "Leading and trailing icon slots (bare icon names)." },
+        { "code": "Select \"Account\"\n  Option \"Profile\" startIcon=Person selected\n  Option \"Sign out\" to=#login", "description": "A selected option with a start icon, plus a navigating option via to=." }
+      ],
       "properties": [
         {
           "name": "label",
           "aliases": ["text"],
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The row's primary text, written keyless (bare quoted string) or keyed as label= or its alias text=. Falls back to \"Option\" when unset."
         },
         {
           "name": "subtext",
           "type": "string",
           "keyless": false,
-          "default": null
+          "default": null,
+          "description": "An optional smaller secondary line drawn beneath the label; its presence makes the row taller (52px vs 40px). Keyed only (subtext=), value must be quoted; no default (absent when unset)."
         },
         {
           "name": "selected",
           "type": "boolean",
           "keyless": true,
-          "default": false
+          "default": false,
+          "description": "Keyless boolean flag marking the chosen row: paints a hand-drawn accent hatch tint across the box (hachure strokes, never a solid fill) and a right-edge check mark. Defaults to false (absent)."
         },
         {
           "name": "startIcon",
           "type": "icon",
           "default": null,
-          "keyless": false
+          "keyless": false,
+          "description": "Leading icon NAME drawn at the left inset; the value is a bare or quoted PascalCase name (e.g. startIcon=Home), but the prop must be named (keyed only). An unknown name falls back to the placeholder glyph with a soft diagnostic. No default."
         },
         {
           "name": "endIcon",
           "type": "icon",
           "default": null,
-          "keyless": false
+          "keyless": false,
+          "description": "Trailing icon NAME drawn at the far-right slot; bare or quoted value, prop must be named (keyed only). An explicit endIcon wins that slot over the selected check mark. An unknown name falls back to the placeholder glyph with a soft diagnostic. No default."
         }
       ]
     },
@@ -1356,32 +1859,45 @@
       "name": "Slider",
       "category": "Inputs",
       "children": false,
+      "description": "A value-selection track with a draggable thumb. The thumb is positioned by `value` along a track bounded by `min` and `max`, and `orientation` flips the track between horizontal (default) and vertical. As a block leaf it stretches to fill its parent's cross extent -- the full width of a column or the full height of a row -- and falls back to a 120px minimum length on its own. `value` is clamped to [min, max], with `min` anchored at the left (horizontal) or bottom (vertical). Slider takes no sizing token: a bare number is always `value`, so a second bare number is a duplicate-`value` error rather than a width.",
+      "examples": [
+        { "code": "Slider", "description": "Default horizontal track; thumb at value 0 (min) on the left." },
+        { "code": "Slider 30", "description": "Thumb at 30 on the default 0-100 scale (a bare number sets value)." },
+        { "code": "Slider 75 min=0 max=100", "description": "Explicit range with the thumb at 75% of the track." },
+        { "code": "Slider vertical 60", "description": "Vertical orientation, thumb at 60 (min at the bottom); the number and orientation tokens are order-free." },
+        { "code": "Stack row\n  Slider 40 vertical", "description": "In a row, a vertical slider blocks to fill the row height." },
+        { "code": "Stack column\n  Slider 50", "description": "In a column, a horizontal slider blocks to fill the column width." }
+      ],
       "properties": [
         {
           "name": "value",
           "type": "numeric",
           "aliases": ["n", "v", "val"],
           "default": 0,
-          "keyless": true
+          "keyless": true,
+          "description": "Thumb position along the track, clamped to [min, max]. Keyless (a bare number) or keyed via value= / n= / v= / val=; accepts negative and fractional numbers. Setting it twice (two bare numbers, or a bare number plus value=) is an error. Defaults to 0."
         },
         {
           "name": "min",
           "type": "numeric",
           "default": 0,
-          "keyless": false
+          "keyless": false,
+          "description": "Lower bound of the track, anchored at the left (horizontal) or bottom (vertical). Keyed only (min=). Defaults to 0; if min==max the thumb degrades to the start with no NaN."
         },
         {
           "name": "max",
           "type": "numeric",
           "default": 100,
-          "keyless": false
+          "keyless": false,
+          "description": "Upper bound of the track, anchored at the right (horizontal) or top (vertical). Keyed only (max=). Defaults to 100."
         },
         {
           "name": "orientation",
           "type": "enum",
           "values": ["horizontal", "vertical"],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Track direction, one of horizontal | vertical. Keyless (a bare token) or keyed via orientation=. Defaults to horizontal."
         }
       ]
     },
@@ -1389,31 +1905,44 @@
       "name": "Rating",
       "category": "Inputs",
       "children": false,
+      "description": "A read-only star-rating sketch: a row of star glyphs, `value` of them filled (in ink) and the rest hollow, out of `max` total -- so the footprint grows with `max`. A bare Rating draws five hand-drawn stars (none filled); `value` clamps to [0, max] and rounds, since half-stars don't read at wireframe fidelity. Setting an explicit `icon`/`emptyIcon` swaps the whole row over to that resolved artwork (e.g. `icon=Favorite` reads as a heart rating), while an omitted pair keeps the sketchy stars. Rating takes no width/height sizing -- the only bare token it accepts is the keyless `value`.",
+      "examples": [
+        { "code": "Rating", "description": "Five hand-drawn stars, none filled (the default row)." },
+        { "code": "Rating 4", "description": "Four of five stars filled (a bare number is the keyless value)." },
+        { "code": "Rating value=3 max=5", "description": "Three filled out of an explicit five, keyed spelling." },
+        { "code": "Rating 2 max=3 icon=Favorite emptyIcon=FavoriteBorder", "description": "A heart rating: two filled hearts of three, icon-mode artwork." },
+        { "code": "Rating 8 max=10", "description": "Eight of ten -- a wider row tracks the larger max." },
+        { "code": "Rating 3.6", "description": "A fractional value rounds to four filled stars." }
+      ],
       "properties": [
         {
           "name": "value",
           "type": "numeric",
           "aliases": ["n", "v", "val"],
           "default": 0,
-          "keyless": true
+          "keyless": true,
+          "description": "How many glyphs are filled, drawn in ink. Keyless (a bare number routes here, so `Rating 4`) or keyed via `value=`/`n=`/`v=`/`val=`; clamped to [0, max] and rounded (3.6 -> 4 filled). Defaults to 0."
         },
         {
           "name": "max",
           "type": "numeric",
-          "default": 100,
-          "keyless": false
+          "default": 5,
+          "keyless": false,
+          "description": "Number of star glyphs (default 5). A large max is clamped to 12 glyphs so the row still reads at sketch fidelity."
         },
         {
           "name": "icon",
           "type": "icon",
           "default": "Star",
-          "keyless": false
+          "keyless": false,
+          "description": "Icon name for filled cells, keyed only (`icon=Favorite`; a bare name throws). The value may be bare or quoted PascalCase. Setting it engages icon-mode, swapping the hand-drawn stars for that artwork (filled cells in ink). Defaults to Star, but the default is deliberately NOT drawn -- an unset row keeps the sketchy stars."
         },
         {
           "name": "emptyIcon",
           "type": "icon",
           "default": "StarBorder",
-          "keyless": false
+          "keyless": false,
+          "description": "Icon name for empty cells in icon-mode, keyed only (value bare or quoted). Defaults to StarBorder; like `icon`, the default is never drawn (an unset row stays hand-drawn stars), and if only `icon` is set the empty cells reuse that same artwork drawn muted."
         }
       ]
     },
@@ -1510,21 +2039,30 @@
     {
       "name": "ToggleButtonGroup",
       "category": "Inputs",
-      "children": false,
+      "children": true,
+      "description": "A segmented-control container that holds abutting ToggleButtons under a single unifying border. orientation lays the buttons in a row (default) or column, with pad:0 gap:0 so they sit flush as one control. A group with no buttons is meaningless, so it is always a container. size parses and lands on the group but is best-effort/cosmetic: the engine gives children no parent context, so per-button density is actually set on each ToggleButton's own size.",
+      "examples": [
+        { "code": "ToggleButtonGroup\n  ToggleButton \"FormatAlignLeft\" selected\n  ToggleButton \"FormatAlignCenter\"\n  ToggleButton \"FormatAlignRight\"", "description": "Default horizontal alignment toggle with the first button selected." },
+        { "code": "ToggleButtonGroup vertical\n  ToggleButton \"FormatBold\"\n  ToggleButton \"FormatItalic\"\n  ToggleButton \"FormatUnderlined\"", "description": "A vertical (column) segmented control." },
+        { "code": "ToggleButtonGroup small\n  ToggleButton \"FormatBold\" small selected\n  ToggleButton \"FormatItalic\" small", "description": "A dense control: group size is cosmetic, so each button repeats size to actually shrink." },
+        { "code": "ToggleButtonGroup orientation=vertical size=large\n  ToggleButton \"ViewList\" large selected\n  ToggleButton \"ViewModule\" large", "description": "Keyed orientation and size; the large density is mirrored on each button to take effect." }
+      ],
       "properties": [
         {
           "name": "orientation",
           "type": "enum",
           "values": ["horizontal", "vertical"],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Lays the buttons along this axis: one of horizontal | vertical, defaulting to horizontal (vertical -> column). Keyless (bare `horizontal`/`vertical`) or keyed `orientation=`."
         },
         {
           "name": "size",
           "type": "enum",
           "values": ["small", "medium", "large"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Intended density for the segmented control: one of small | medium | large, defaulting to medium. Keyless (bare) or keyed `size=`, but parse-only/best-effort -- the group can't resize its children (the engine gives them no parent context), so set the matching size on each ToggleButton to actually change density."
         }
       ]
     },
@@ -1532,38 +2070,52 @@
       "name": "ToggleButton",
       "category": "Inputs",
       "children": false,
+      "description": "A single icon button in a ToggleButtonGroup segmented control, with an on/off pressed state (selected) and an icon face. The face is always its own opaque, tinted surface: an unselected button defaults to a hatch pattern and a selected one to the denser crosshatch, so the pressed state reads at a glance. Three keyless slots of distinct kinds (an icon name, the size enum, the background enum) plus the selected/denseBackground flags parse in any order; the bare icon name is read last, so the enum and boolean words always win their meaning.",
+      "examples": [
+        { "code": "ToggleButton FormatBold", "description": "An unselected toggle showing the FormatBold icon over the default hatch face." },
+        { "code": "ToggleButton FormatBold selected", "description": "The pressed (selected) state, drawn with the denser crosshatch default." },
+        { "code": "ToggleButton FormatItalic large", "description": "A large-size button with a bigger square footprint and icon." },
+        { "code": "ToggleButtonGroup\n  ToggleButton FormatAlignLeft selected\n  ToggleButton FormatAlignCenter\n  ToggleButton FormatAlignRight", "description": "A segmented alignment control: the group abuts the buttons, with the left option active." },
+        { "code": "ToggleButton FormatBold selected background=hatch", "description": "Explicit background=hatch pins the pattern, overriding the selected crosshatch default." },
+        { "code": "ToggleButton Favorite crosshatch denseBackground", "description": "A crosshatch face with denseBackground packing the hatch lines closer together." }
+      ],
       "properties": [
         {
           "name": "icon",
           "type": "icon",
-          "keyless": true
+          "keyless": true,
+          "description": "The icon name drawn centered on the button face (PascalCase, forgiving spelling). Keyless literal, bare or quoted (ToggleButton FormatBold === ToggleButton \"FormatBold\"); the keyed icon= form also works, bare or quoted. A known name renders clean vector artwork, an unknown one falls back to the placeholder glyph plus a warning. The bare reading is tried last, so selected and the size/background words keep their meaning -- quote to force a colliding name."
         },
         {
           "name": "selected",
           "type": "boolean",
           "default": false,
-          "keyless": true
+          "keyless": true,
+          "description": "Whether the toggle is pressed, written as a keyless boolean flag (or selected=true/false). Defaults to false. When set, it drives the face pattern default to the denser crosshatch (vs hatch when off) unless an explicit background= pins a different one."
         },
         {
           "name": "size",
           "type": "enum",
           "values": ["small", "medium", "large"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "The button's square footprint and icon extent: one of small | medium | large, defaulting to medium. Keyless enum (or size=large); unlike the group's size, this is the button's own prop, so the density is real."
         },
         {
           "name": "background",
           "type": "enum",
           "values": ["hatch", "crosshatch", "none"],
           "keyless": true,
-          "notes": "Opaque face tint (always drawn; (A)-site base:true). Defaults to hatch, or crosshatch when selected; an explicit value (or denseBackground) overrides that default regardless of selected. none = opaque base, no hashes."
+          "notes": "Opaque face tint (always drawn; (A)-site base:true). Defaults to hatch, or crosshatch when selected; an explicit value (or denseBackground) overrides that default regardless of selected. none = opaque base, no hashes.",
+          "description": "The opaque face tint pattern: one of hatch | crosshatch | none, written keyless (or background=). No static default -- the effective pattern is hatch when unselected and crosshatch when selected, and an explicit value overrides that regardless of selected. none keeps the opaque base with no hashes."
         },
         {
           "name": "denseBackground",
           "type": "boolean",
           "default": false,
           "keyless": true,
-          "notes": "Packs the face tint's hatch lines closer together."
+          "notes": "Packs the face tint's hatch lines closer together.",
+          "description": "Packs the face tint's hatch lines closer together. Keyless boolean flag (or denseBackground=true), defaulting to false. It changes only the line density, not which pattern is drawn -- the selected-driven hatch/crosshatch default still applies unless an explicit background= pins it."
         }
       ]
     },
@@ -1571,20 +2123,30 @@
       "name": "ButtonGroup",
       "category": "Inputs",
       "children": true,
+      "description": "A fused row or column of Button children. The group itself draws no chrome -- the Buttons supply their own borders and a zero gap abuts them so the shared edges read as the classic \"fused buttons\" look. A bare ButtonGroup lays its Buttons left-to-right; orientation switches to a stacked column, and a group-level variant (text / outlined / contained) is recorded but does not override each Button's own appearance.",
+      "examples": [
+        { "code": "ButtonGroup\n  Button \"Left\"\n  Button \"Center\"\n  Button \"Right\"", "description": "Default fused row of three abutting Buttons." },
+        { "code": "ButtonGroup contained\n  Button \"Save\"\n  Button \"Cancel\"", "description": "Group-level contained variant on a two-button row." },
+        { "code": "ButtonGroup vertical\n  Button \"One\"\n  Button \"Two\"\n  Button \"Three\"", "description": "Stacked column of fused Buttons." },
+        { "code": "ButtonGroup contained vertical\n  Button \"Bold\"\n  Button \"Italic\"\n  Button \"Underline\"", "description": "Two keyless enums in one line; order is unambiguous." },
+        { "code": "ButtonGroup variant=text\n  Button \"Day\"\n  Button \"Week\"\n  Button \"Month\"", "description": "variant via its keyed spelling instead of a bare token." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
           "values": ["text", "outlined", "contained"],
           "default": "outlined",
-          "keyless": true
+          "keyless": true,
+          "description": "Group-level style, a keyless enum: text | outlined | contained, default outlined. Also accepts the keyed form variant=. Recorded but the honest sketch leaves each Button to draw its own look, so it does not override child chrome."
         },
         {
           "name": "orientation",
           "type": "enum",
           "values": ["horizontal", "vertical"],
           "default": "horizontal",
-          "keyless": true
+          "keyless": true,
+          "description": "Layout axis, a keyless enum: horizontal (default) lays the Buttons in a fused row, vertical stacks them in a fused column. Also accepts the keyed form orientation=; its value domain is disjoint from variant so the two can appear in either order on one line."
         }
       ]
     },
@@ -1592,25 +2154,36 @@
       "name": "Fab",
       "category": "Inputs",
       "children": false,
+      "description": "A floating action button: a circular (default) action chrome carrying a single centered icon, the high-emphasis primary action of a screen. The `extended` variant grows into a stadium-shaped pill that prints the icon name beside the glyph as a label; `size` (small/medium/large) scales the real drawn diameter. The keyless text is the icon NAME (so `Fab edit` reads the same as `Fab \"edit\"`), and as a fixed leaf (`block:false`) it keeps its intrinsic footprint wherever it sits rather than stretching to fill its container.",
+      "examples": [
+        { "code": "Fab \"edit\"", "description": "Default medium circular Fab with a centered edit icon." },
+        { "code": "Fab add large", "description": "Large circle; the bare token reads as the icon name (same as \"add\")." },
+        { "code": "Fab \"share\" extended", "description": "Extended pill: the share glyph at the left, \"share\" printed as the label." },
+        { "code": "Fab \"edit\" extended small", "description": "A compact extended pill; the two keyless enums resolve in any order." },
+        { "code": "Fab \"edit\" to=#next", "description": "A navigating Fab; the universal to= wraps it in a link." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
           "values": ["circular", "extended"],
           "default": "circular",
-          "keyless": true
+          "keyless": true,
+          "description": "Shape of the button: `circular` (default) draws a true circle (w === h) with the icon centered, while `extended` draws a wider stadium pill that seats the glyph plus the icon name as a printed label. Written keyless (bare `extended`) or keyed (`variant=extended`); a bad value like `variant=square` throws."
         },
         {
           "name": "size",
           "type": "enum",
-          "values": [ "small", "medium", "large"],
+          "values": ["small", "medium", "large"],
           "default": "medium",
-          "keyless": true
+          "keyless": true,
+          "description": "Scales the real drawn diameter: `small` (40px) < `medium` (default, 56px) < `large` (72px), also setting the label font. Written keyless (bare `large`) or keyed (`size=large`); a bad value like `size=huge` throws."
         },
         {
           "name": "icon",
           "type": "icon",
-          "keyless": true
+          "keyless": true,
+          "description": "The icon NAME drawn in the slot (PascalCase, forgiving spelling), keyless so a bare or quoted token (`Fab edit` === `Fab \"edit\"`) lands here; the keyed `icon=` form also works. An unset icon falls back silently to the placeholder glyph, an unknown name to the placeholder plus a soft warning. For an extended Fab this name doubles as the printed label."
         }
       ]
     },
@@ -1618,25 +2191,37 @@
       "name": "Alert",
       "category": "Feedback",
       "children": false,
+      "description": "A feedback banner: a left severity glyph followed by a message inside a bordered box. Keyless text is the message; severity (error, warning, info, success) and variant (standard, filled, outlined) are both keyless enums whose value domains are disjoint, so the tokens resolve in any order. Because the sketch is monochrome, severity is carried by a distinct leading glyph (error !, warning ?, info i, success checkmark) rather than color; severity defaults to success and variant to standard. Outlined draws a border only, while standard and filled add a hatch tint and a left accent bar -- denser and heavier when filled.",
+      "examples": [
+        { "code": "Alert \"Saved\"", "description": "Default success banner: checkmark glyph, standard tint and accent bar." },
+        { "code": "Alert error \"Upload failed\"", "description": "Error severity, shown by the leading ! glyph." },
+        { "code": "Alert warning outlined \"Your session expires soon\"", "description": "Warning (?) in the outlined variant: border only, no tint or accent bar." },
+        { "code": "Alert info filled \"A new version is available\"", "description": "Info (i) in the filled variant: dense hatch tint and a heavy left accent bar." },
+        { "code": "Alert success \"Changes published\"", "description": "Explicit success severity with the checkmark glyph." },
+        { "code": "Stack column\n  Alert error \"Could not connect to server\"", "description": "Inside a column the banner is block, so it stretches to span the full width." }
+      ],
       "properties": [
         {
           "name": "severity",
           "type": "enum",
           "values": ["error", "warning", "info", "success"],
           "default": "success",
-          "keyless": true
+          "keyless": true,
+          "description": "Which state the banner reports, drawn as a distinct leading glyph since the sketch is monochrome: error (!), warning (?), info (i), success (checkmark). Keyless bare token or keyed (severity=); defaults to success."
         },
         {
           "name": "variant",
           "type": "enum",
           "values": ["standard", "filled", "outlined"],
           "default": "standard",
-          "keyless": true
+          "keyless": true,
+          "description": "The banner's look: outlined (border only), standard (border + light hatch tint + thin left accent bar), or filled (border + dense hatch tint + heavy left accent bar). Keyless bare token or keyed (variant=); defaults to standard."
         },
         {
           "name": "label",
           "type": "string",
-          "keyless": true
+          "keyless": true,
+          "description": "The message text drawn after the severity glyph. Resolves from keyless quoted text, the keyed label= form, or a ~N filler token (which seeds placeholder lorem instead). Defaults to \"Alert\" when omitted, and is trimmed with an ellipsis if it overflows the box."
         }
       ]
     },
@@ -1644,20 +2229,31 @@
       "name": "Dialog",
       "category": "Feedback",
       "children": true,
+      "description": "A modal surface that floats above the page as a true out-of-flow overlay: it consumes no space in its parent's flow, and the frame paints it last over an opaque paper sheet and a faint backdrop scrim, so content underneath never shows through. Children stack in a padded column to form the dialog body. `position` anchors the sheet 9 ways within its parent box (center by default); `size` (a maxWidth breakpoint) sets the sheet width via a per-breakpoint floor, and `fullScreen` fills the parent on both axes. The sheet is always capped to its parent extent, so a modal never spills past its container.",
+      "examples": [
+        { "code": "Dialog\n  Typography h6 \"Delete item?\"\n  Typography \"This action cannot be undone.\"", "description": "A default content-sized, centered confirmation modal; the sheet sizes to its children." },
+        { "code": "Dialog md\n  Typography h6 \"Sign in\"\n  TextField \"Email\"\n  Button \"Continue\" contained", "description": "A medium (640px floor) form dialog, content stacked in the padded body column." },
+        { "code": "Dialog sm topRight\n  Typography \"Saved successfully\"", "description": "A small toast-like sheet anchored to the top-right corner of the parent." },
+        { "code": "Dialog fullScreen\n  Typography h5 \"Editor\"\n  Typography \"Full-screen content fills the frame.\"", "description": "A full-screen modal that fills the parent on both axes (position is ignored)." },
+        { "code": "Dialog size=lg position=bottom\n  Typography \"Wide sheet docked to the bottom edge\"", "description": "The same two enums in keyed form: a large (800px floor) sheet docked to the bottom edge." },
+        { "code": "Box 360px 280px outline=solid\n  Typography \"Settings\"\n  Dialog sm\n    Typography \"Nested modal, anchored to this Box.\"", "description": "Nested in a sized Box: the dialog positions within that Box, not the whole frame, and is capped to it." }
+      ],
       "properties": [
         {
           "name": "position",
           "type": "enum",
-          "values": [ "center", "top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"],
+          "values": ["center", "top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"],
           "default": "center",
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless 9-way anchor for the sheet within its parent content box: center (default), top, bottom, left, right, topLeft, topRight, bottomLeft, bottomRight. The default is applied by the strategy (the resolver injects none). Resolves bare or keyed; ignored entirely when size=fullScreen."
         },
         {
           "name": "size",
           "type": "enum",
-          "values": [ "fullScreen", "content", "xs", "sm", "md", "lg", "lx"],
+          "values": ["fullScreen", "content", "xs", "sm", "md", "lg", "lx"],
           "default": "content",
-          "keyless": true
+          "keyless": true,
+          "description": "Keyless maxWidth-breakpoint enum setting the sheet width: content (default) sizes to children floored to a small sheet; xs|sm|md|lg|lx are progressively wider breakpoint floors; fullScreen fills the parent on both axes (dropping the floor and ignoring position). Floors are minimums that content can exceed, but the sheet is always capped to the parent extent. Resolves bare or keyed."
         }
       ]
     },
@@ -1665,18 +2261,28 @@
       "name": "DialogHeader",
       "category": "Feedback",
       "children": false,
+      "description": "The title region of a Dialog, and the dialog counterpart of CardHeader. It is a full-width block leaf -- not a container -- that draws a bold title row plus an optional trailing close X, leaner than CardHeader (no leading icon, no subheader). The enclosing Dialog supplies the paper sheet, so the band is transparent; the close glyph is drawn by default and removed with closeIcon=\"none\". A bare DialogHeader with no title falls back to the placeholder label \"Title\".",
+      "examples": [
+        { "code": "Dialog md\n  DialogHeader \"Delete file?\"", "description": "A standard dialog title with the default trailing close X." },
+        { "code": "Dialog md\n  DialogHeader \"Read-only notice\" closeIcon=none", "description": "Title with no dismiss glyph (an undismissable header)." },
+        { "code": "Dialog\n  DialogHeader label=\"Edit profile\"", "description": "Setting the title through the label alias instead of the bare literal." },
+        { "code": "Dialog md\n  DialogHeader \"Confirm changes\"\n  DialogContent\n    Typography \"This action cannot be undone.\"", "description": "A header above a content slot inside the dialog sheet." },
+        { "code": "Dialog md\n  DialogHeader", "description": "Bare header: falls back to the placeholder title \"Title\"." }
+      ],
       "properties": [
         {
           "name": "title",
           "type": "string",
           "aliases": ["label", "text"],
-          "keyless": true
+          "keyless": true,
+          "description": "Bold title text for the dialog band. Written bare as the keyless string literal, or keyed via the canonical title= or its label=/text= aliases. Falls back to \"Title\" when unset; the band hosts no children, so the title is its only text. Only one text literal is allowed."
         },
         {
           "name": "closeIcon",
           "type": "icon",
           "default": "Close",
-          "keyless": false
+          "keyless": false,
+          "description": "Icon name for the trailing dismiss X, keyed only (e.g. closeIcon=Cancel); a bare icon token is rejected as an unexpected token. Defaults to \"Close\" so a plain header draws a real dismiss glyph; pass closeIcon=none (case-blind) to omit it. An unknown name falls back to the placeholder glyph (with a soft diagnostic)."
         }
       ]
     },
@@ -1684,31 +2290,53 @@
       "name": "DialogContent",
       "category": "Feedback",
       "children": true,
+      "description": "The body region of a Dialog, the dialog counterpart of CardContent. It is a transparent reference container that stacks its children in a generously padded vertical column (two spacing units of inset, one unit of gap) and draws nothing of its own -- the enclosing Dialog supplies the paper sheet. It takes no props; hold text, fields, or any controls here, between an optional DialogHeader and a DialogActions bar.",
+      "examples": [
+        { "code": "Dialog md\n  DialogContent\n    Typography body1 \"Are you sure you want to delete this item?\"", "description": "A simple confirmation body: prose stacked in the padded column." },
+        { "code": "Dialog\n  DialogHeader \"Delete file?\"\n  DialogContent\n    Typography body2 \"This action cannot be undone.\"\n  DialogActions\n    Button \"Cancel\" text\n    Button \"Delete\" contained", "description": "The body slot between a DialogHeader title and a DialogActions button bar." },
+        { "code": "Dialog md\n  DialogContent\n    TextField \"Email\" outlined\n    TextField \"Password\" outlined", "description": "A form dialog: two fields stack top-to-bottom, inset from the sheet edge." }
+      ],
       "properties": []
     },
     {
       "name": "DialogActions",
       "category": "Feedback",
       "children": true,
+      "description": "The action button row of a Dialog -- the dialog counterpart of CardActions. It lays its children, typically a couple of Buttons, in a single padded row and draws nothing of its own; the enclosing Dialog supplies the paper sheet beneath. Unlike CardActions, it right-aligns its buttons against the sheet's trailing edge, packing them to the right; giving a child flex or `*` defeats this, since the flex child absorbs the free space instead. It is meant to sit inside a Dialog (as the bottom action row), and an empty DialogActions still lays out cleanly.",
+      "examples": [
+        { "code": "Dialog md\n  DialogActions\n    Button \"Cancel\"\n    Button \"OK\" contained", "description": "The standard Cancel / OK pair, right-aligned at the bottom of the sheet." },
+        { "code": "Dialog\n  DialogContent\n    Typography \"This action cannot be undone.\"\n  DialogActions\n    Button \"Cancel\" text\n    Button \"Delete\" contained", "description": "A full confirmation dialog: body content above, the action row below." },
+        { "code": "Dialog md\n  DialogActions\n    Spacer\n    Button \"Save\" contained", "description": "A leading Spacer pushes a single primary button to the trailing edge (the flex Spacer absorbs the free space)." }
+      ],
       "properties": []
     },
     {
       "name": "Snackbar",
       "category": "Feedback",
       "children": false,
+      "description": "A brief dark feedback toast. It renders inline as a hand-drawn pill with a dense ink crosshatch tint -- its one \"dark\" feedback surface -- carrying the message in medium-weight ink, centered. Since this engine has no overlay layer, the bar is drawn where it is authored; the position prop cannot float it, but any non-inline value draws a small hand-drawn corner bracket pointing at the screen corner the toast would anchor to (so topRight and bottomLeft render visibly differently). A bare Snackbar falls back to the message \"Message sent\" and sizes itself to its text.",
+      "examples": [
+        { "code": "Snackbar", "description": "Bare toast: the default \"Message sent\" pill, sized to its text." },
+        { "code": "Snackbar \"Changes saved\"", "description": "Custom message as the keyless quoted literal." },
+        { "code": "Snackbar \"Upload complete\" topRight", "description": "Message plus a top-right corner bracket marking where it would anchor." },
+        { "code": "Snackbar bottomLeft \"Message sent\"", "description": "Position and message in either order -- the keyless literal and enum are disjoint, so both orderings parse." },
+        { "code": "Snackbar label=\"Connection lost\" position=topLeft", "description": "Keyed forms: the `label` alias for message and an explicit position=." }
+      ],
       "properties": [
         {
           "name": "position",
           "type": "enum",
-          "values": [ "inline", "topLeft", "topRight", "bottomLeft", "bottomRight"],
+          "values": ["inline", "topLeft", "topRight", "bottomLeft", "bottomRight"],
           "default": "inline",
-          "keyless": true
+          "keyless": true,
+          "description": "Which screen corner the toast would anchor to: inline | topLeft | topRight | bottomLeft | bottomRight (default inline). Keyless (a bare enum token) or keyed (position=). With no overlay layer the bar stays where authored, so any non-inline value just adds a hand-drawn corner bracket at the matching corner of the pill -- inline (and any unrecognized value) draws none. An invalid value is a hard error."
         },
         {
           "name": "message",
           "type": "string",
           "keyless": true,
-          "aliases": ["label"]
+          "aliases": ["label"],
+          "description": "The toast text, drawn centered in the pill; alias `label`. Keyless (a bare quoted string) or keyed (message= / label=). Defaults to \"Message sent\" when omitted."
         }
       ]
     },
@@ -1716,33 +2344,46 @@
       "name": "Progress",
       "category": "Feedback",
       "children": false,
+      "description": "A determinate progress indicator whose filled portion reflects `value` along the `min`..`max` range. The keyless `variant` enum picks the shape: linear (the default look) draws a thin horizontal bar that stretches to fill its container's width, with a crosshatched run from the left edge sized to the value fraction; circular keeps a fixed 40px square ring with a clockwise filled arc swept from 12 o'clock. `value` is a keyless number defaulting to 0 (an empty track -- the idiomatic \"just started\" state), clamped to the range; a degenerate range like min==max degrades to an empty fill rather than erroring. Progress is not a sizing leaf -- it takes no `width`/`height` tokens; the linear bar widens only because it is a block element that fills its parent's cross axis.",
+      "examples": [
+        { "code": "Progress 60", "description": "Default linear bar, 60% filled (a bare number is the value)." },
+        { "code": "Progress linear 75 large", "description": "An explicit thick linear bar at 75%." },
+        { "code": "Progress circular 40", "description": "Circular ring with a 40% arc swept clockwise from 12 o'clock." },
+        { "code": "Progress circular value=80 small", "description": "A thin-stroked circular ring at 80%." },
+        { "code": "Progress value=5 min=0 max=10", "description": "Custom range: value 5 of 0..10 fills about half." },
+        { "code": "Stack column\n  Progress linear 40", "description": "In a column the linear bar stretches to the container width; only its value is set." }
+      ],
       "properties": [
         {
           "name": "variant",
           "type": "enum",
-          "values": [ "linear", "circular"],
+          "values": ["linear", "circular"],
           "default": "indeterminate",
           "keyless": true,
-          "notes": "v1.0."
+          "notes": "v1.0.",
+          "description": "Keyless enum picking the shape: `linear` (a thin bar that blocks to fill the parent's width) or `circular` (a fixed 40px square ring with a clockwise arc). The schema default is `indeterminate`, which has no distinct wireframe geometry -- it (and anything other than `circular`) draws the linear bar. `indeterminate` is the default but is not a typeable token; only `linear` and `circular` can be written."
         },
         {
           "name": "value",
           "type": "numeric",
           "aliases": ["n", "v", "val"],
           "default": 0,
-          "keyless": true
+          "keyless": true,
+          "description": "The filled amount along [min,max], drawn as the bar's crosshatched run or the ring's arc. Keyless (a bare number, e.g. `Progress 60`) with aliases `n`/`v`/`val`; also accepted keyed (`value=`/`n=`/`v=`/`val=`). Defaults to 0 (empty track) and is clamped to the range."
         },
         {
           "name": "min",
           "type": "numeric",
           "default": 0,
-          "keyless": false
+          "keyless": false,
+          "description": "Lower bound of the value range; keyed only (numeric, e.g. `min=0`), default 0."
         },
         {
           "name": "max",
           "type": "numeric",
           "default": 100,
-          "keyless": false
+          "keyless": false,
+          "description": "Upper bound of the value range; keyed only (numeric, e.g. `max=100`), default 100. A non-positive span (e.g. min==max) degrades to an empty fill rather than dividing by zero."
         },
         {
           "name": "thickness",
@@ -1750,7 +2391,8 @@
           "values": ["small", "medium", "large"],
           "default": "medium",
           "keyless": true,
-          "notes": "Bar height for linear; ring/arc stroke width for circular."
+          "notes": "Bar height for linear; ring/arc stroke width for circular.",
+          "description": "Keyless enum (`small` | `medium` | `large`, default `medium`) scaling the variant's weight: the bar height for linear, the ring/arc stroke width for circular. It is disjoint from `variant` and `value`, so the tokens parse in any order, and it never changes the 40px circular footprint."
         }
       ]
     },
@@ -1758,6 +2400,15 @@
       "name": "Skeleton",
       "category": "Feedback",
       "children": false,
+      "description": "A gray, content-less loading placeholder -- the stand-in shown while data is in flight. A leaf with no label of its own; its only job is to occupy space in the chosen shape. The keyless variant picks the chrome: rectangular (default) is a hatch-tinted bordered box, rounded is a denser cross-hatch box with a real corner radius, circular is a hatch-tinted ellipse (square by default), and text draws muted filler lines (no box) that scale in count with the box height. Sizes to itself rather than stretching its container's cross axis, so a row of skeletons keeps each one's own width.",
+      "examples": [
+        { "code": "Skeleton", "description": "Default rectangular block placeholder at its natural 120x16 box." },
+        { "code": "Skeleton text", "description": "Muted filler lines standing in for a line of copy (no border or tint)." },
+        { "code": "Skeleton circular", "description": "A bare circular skeleton, square (40x40) so it draws as a circle." },
+        { "code": "Skeleton rounded 120px 40px", "description": "A rounded-corner box placeholder, sized 120 wide by 40 tall." },
+        { "code": "Skeleton text 100% 64px", "description": "Full-width copy placeholder; the taller box draws more filler lines." },
+        { "code": "Stack row\n  Skeleton circular 40px 40px\n  Skeleton text 200px 40px", "description": "Avatar-plus-text loading row: a circle beside ghosted copy lines." }
+      ],
       "properties": [
         {
           "name": "variant",
@@ -1769,19 +2420,22 @@
             "rounded"
           ],
           "default": "rectangular",
-          "keyless": true
+          "keyless": true,
+          "description": "Picks the placeholder chrome (keyless enum): \"text\" (muted filler lines, no box), \"circular\" (hatch-tinted ellipse, square intrinsic), \"rectangular\" (hatch-tinted bordered box), or \"rounded\" (denser cross-hatch box with a 6px corner radius). Defaults to \"rectangular\". Also accepts the keyed spelling variant=; setting it twice (keyless dup or keyless-vs-keyed) is a hard error, as is an unknown value."
         },
         {
           "name": "width",
           "type": "size",
           "keyless": true,
-          "aliases": ["w"]
+          "aliases": ["w"],
+          "description": "Footprint width, positional (first sizing token, e.g. Skeleton 200px 24px): a pixel length (200px), percentage (100%), fill (*), or a bare number as a flex weight (200). There is no keyed width=/w= prop -- the keyed spelling throws \"unknown property\" -- and the literal word \"flex\" is not a value (it throws \"unexpected token\"). The spec lists alias w, but only the positional form works. When unpinned it falls back to the intrinsic box (120, or 40 for circular)."
         },
         {
           "name": "height",
           "type": "size",
           "keyless": true,
-          "aliases": ["h"]
+          "aliases": ["h"],
+          "description": "Footprint height, positional (second sizing token): a pixel length (24px), percentage (100%), fill (*), or a bare number as a flex weight. Like width it is positional-only -- height=/h= throws \"unknown property\" and the literal word \"flex\" throws \"unexpected token\". The spec lists alias h, but only the positional form works. Unpinned it falls back to the intrinsic (16, or 40 for circular); for the text variant a taller box yields more filler lines."
         }
       ]
     }

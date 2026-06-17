@@ -41,7 +41,9 @@ const SKILL_REF = resolve(ROOT, REL_SKILL_REF);
 const SKILL_ZIP = resolve(ROOT, REL_SKILL_ZIP);
 
 // Columns of the per-element property table, in render order. Each maps an
-// element's property object onto a cell value.
+// element's property object onto a cell value. The prose column prefers the
+// richer `description` and falls back to `notes` (universal props carry only
+// `notes`; a new property without a description yet still shows something).
 const PROPERTY_COLUMNS = [
   ['Name', (p) => p.name],
   ['Type', (p) => p.type],
@@ -49,16 +51,26 @@ const PROPERTY_COLUMNS = [
   ['Default', (p) => p.default],
   ['Keyless', (p) => (p.keyless ? 'yes' : 'no')],
   ['Aliases', (p) => (p.aliases ?? []).join(', ')],
-  ['Notes', (p) => p.notes],
+  ['Description', (p) => p.description ?? p.notes],
 ];
 
-/** Escape a value for safe inclusion in a single GFM table cell. */
+/** Make data-derived prose safe for Docusaurus's MDX parser: escape bare `<` and
+ *  `{` (which MDX reads as JSX) EXCEPT inside inline code spans, where MDX keeps
+ *  them literal -- so `` `<img>` `` survives but a bare `<a>` becomes `&lt;a>`. */
+function mdxSafe(text) {
+  if (text === undefined || text === null) return text;
+  return String(text)
+    .split(/(`[^`]*`)/) // odd segments are code spans; keep them verbatim
+    .map((seg, i) => (i % 2 === 1 ? seg : seg.replace(/</g, '&lt;').replace(/\{/g, '&#123;')))
+    .join('');
+}
+
+/** Escape a value for safe inclusion in a single GFM table cell. Order matters:
+ *  pipe-escape, then MDX-escape, then turn newlines into the literal <br> tag
+ *  (which must survive the MDX-escape, so it is inserted last). */
 function escapeCell(value) {
   if (value === undefined || value === null) return '';
-  return String(value)
-    .replace(/\|/g, '\\|')
-    .replace(/\r?\n/g, '<br>')
-    .trim();
+  return mdxSafe(String(value).replace(/\|/g, '\\|').trim()).replace(/\r?\n/g, '<br>');
 }
 
 /** GitHub-slugger compatible anchor (matches GitHub and Docusaurus). */
@@ -119,6 +131,7 @@ function renderComponents(components, lines) {
     lines.push(`## ${category}`, '');
     for (const comp of byCategory.get(category)) {
       lines.push(`### ${comp.name}`, '');
+      if (comp.description) lines.push(mdxSafe(comp.description), '');
       lines.push(`*Accepts children: ${comp.children ? 'yes' : 'no'}*`, '');
       if (comp.properties && comp.properties.length) {
         const cells = comp.properties.map((p) => PROPERTY_COLUMNS.map(([, get]) => get(p)));
@@ -126,7 +139,19 @@ function renderComponents(components, lines) {
       } else {
         lines.push('No configurable properties.', '');
       }
+      renderExamples(comp.examples, lines);
     }
+  }
+}
+
+/** Render an element's `examples` as fenced wiremark blocks, each followed by its
+ *  caption. Omitted entirely when the element has no examples. */
+function renderExamples(examples, lines) {
+  if (!examples || !examples.length) return;
+  lines.push('**Examples**', '');
+  for (const ex of examples) {
+    lines.push('```wireframe', ex.code, '```', '');
+    if (ex.description) lines.push(`*${mdxSafe(ex.description)}*`, '');
   }
 }
 
