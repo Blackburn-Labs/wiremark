@@ -90,6 +90,14 @@ test('value accepts a quoted multi-word string', () => {
   assert.equal(doc.frames[0].children[0].props.value, 'my tab');
 });
 
+test('value accepts its v/val aliases (keyed string)', () => {
+  for (const alias of ['v', 'val']) {
+    const doc = parse(`Wireframe\n  BottomNavigation ${alias}="recents"\n    Typography "Home"`);
+    assert.deepEqual(doc.diagnostics, [], `${alias}= should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.value, 'recents', `${alias}= should map to value`);
+  }
+});
+
 test('a bare (unquoted) text value for value= is a hard error', () => {
   // Keyed string props require a quoted value (resolve.js coerce); a bare token is
   // rejected so wireframe authors quote free text explicitly.

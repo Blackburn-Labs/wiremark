@@ -24,6 +24,9 @@ import Typography from './Typography.js';
 import Button from './Button.js';
 import TextField from './TextField.js';
 import Img from './Img.js';
+import Chart from './Chart.js';
+import MapEl from './Map.js';
+import Placeholder from './Placeholder.js';
 import Chip from './Chip.js';
 import Icon from './Icon.js';
 import List from './List.js';
@@ -55,12 +58,16 @@ import Select from './Select.js';
 import Option from './Option.js';
 import Slider from './Slider.js';
 import Rating from './Rating.js';
+import Calendar from './Calendar.js';
 import ToggleButtonGroup from './ToggleButtonGroup.js';
 import ToggleButton from './ToggleButton.js';
 import ButtonGroup from './ButtonGroup.js';
 import Fab from './Fab.js';
 import Alert from './Alert.js';
 import Dialog from './Dialog.js';
+import DialogHeader from './DialogHeader.js';
+import DialogContent from './DialogContent.js';
+import DialogActions from './DialogActions.js';
 import Snackbar from './Snackbar.js';
 import Progress from './Progress.js';
 import Skeleton from './Skeleton.js';
@@ -73,11 +80,11 @@ export const ELEMENTS = [
   AccordionHeader, AccordionBody,
   Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,
   Stepper, Step, Pagination, BottomNavigation, BottomNavigationAction,
-  Typography, Button, TextField, Img, Avatar, Chip, Icon, List, ListItem,
+  Typography, Button, TextField, Img, Chart, MapEl, Placeholder, Avatar, Chip, Icon, List, ListItem,
   Table, TableHead, TableBody, TableFooter, TableRow, TableCell, Badge,
-  Control, Select, Option, Slider, Rating,
+  Control, Select, Option, Slider, Rating, Calendar,
   ToggleButtonGroup, ToggleButton, ButtonGroup, Fab,
-  Alert, Dialog, Snackbar, Progress, Skeleton,
+  Alert, Dialog, DialogHeader, DialogContent, DialogActions, Snackbar, Progress, Skeleton,
 ];
 
 export { FILLER_STYLES, PRESETS } from './common.js';

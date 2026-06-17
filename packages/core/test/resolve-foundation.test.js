@@ -252,9 +252,11 @@ test('REGRESSION: a Dialog followed by a Snackbar lays out and renders finitely 
   // blows the heap and this test fails (times out / aborts) rather than passing.
   const src = 'Wireframe\n  Dialog sm\n    Typography h6 "Hi"\n  Snackbar "Updated"';
   const frame = layout(parse(src))[0];
-  const dialog = frame.root.children[0];
+  // Locate by component, not index: the Dialog is an OUT-OF-FLOW overlay, so layout
+  // appends its box AFTER the in-flow Snackbar (the Snackbar is children[0] now).
+  const dialog = frame.root.children.find((c) => c.node.component === 'Dialog');
   assert.ok(Number.isFinite(dialog.w) && dialog.w > 0, `Dialog width must be finite, got ${dialog.w}`);
-  const snackbar = frame.root.children[1];
+  const snackbar = frame.root.children.find((c) => c.node.component === 'Snackbar');
   assert.ok(Number.isFinite(snackbar.w) && snackbar.w > 0, `Snackbar width must be finite, got ${snackbar.w}`);
 
   const { svg } = render(src);

@@ -118,9 +118,12 @@ test('a bare Snackbar falls back to a default toast message', () => {
 });
 
 test('Snackbar draws a dark (ink) crosshatch tint -- its one dark surface', () => {
-  // The toast is conveyed by a dense ink crosshatch fill (#22303f hashes).
+  // The toast is conveyed by a dense ink crosshatch fill (#22303f hashes), NOT a
+  // solid block -- it's a (B) caller (a translucent dark marker), so it lays NO
+  // opaque paper base (that would white-wash the dark toast).
   const { svg } = render(SRC);
-  assert.match(svg, /#22303f/);
+  assert.match(svg, /#22303f/, 'the dark ink hatch is present');
+  assert.doesNotMatch(svg, /fill="#ffffff" stroke="none"/, 'no opaque paper base under the dark toast');
 });
 
 test('a non-inline position renders the corner bracket; inline does not', () => {

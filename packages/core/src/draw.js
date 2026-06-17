@@ -1,6 +1,6 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText, textRunWidth } from './metrics.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -189,33 +189,87 @@ const HATCH_GAP = { normal: 6, dense: 3 };
  *  normal roughness, so it stays as wobbly as every other surface). */
 const HATCH_BASE = { fillWeight: 1, hachureAngle: -41, roughness: 0.4 };
 
-/** The `background` enum domain, shared by every tinted element + the spec. */
-export const BACKGROUNDS = Object.keys(HATCH_PATTERNS);
+/** The `background` enum domain, shared by every tinted element + the spec. The
+ *  two hatch patterns plus `'none'` -- an opaque-but-untextured surface (a solid
+ *  paper base, no hashes), for when an author wants the element to knock out what
+ *  is behind it without the wireframe tint. */
+export const BACKGROUNDS = [...Object.keys(HATCH_PATTERNS), 'none'];
+
+/**
+ * Draw `box` in one of `backgroundHatch`'s four chrome shapes (rect, `'pill'`,
+ * `'ellipse'`, or a numeric corner radius) with the given rough.js `opts`. Shared
+ * by the opaque base pass and the hatch pass so the two always trace the SAME
+ * outline -- the base can never extend past the hashes (or vice versa) for a
+ * curved shape.
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {'pill'|'ellipse'|number|undefined} shape
+ * @param {object} opts
+ * @returns {string}
+ */
+function hatchShape(box, shape, opts) {
+  if (shape === 'pill') return rpill(box.x, box.y, box.w, box.h, opts);
+  if (shape === 'ellipse') return rellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, opts);
+  if (typeof shape === 'number') return rroundrect(box.x, box.y, box.w, box.h, shape, opts);
+  return surface(box, opts);
+}
+
+/**
+ * A solid, BORDERLESS `COLORS.paper` fill in `box`, in the same `shape` the hatch
+ * uses -- the opaque base that makes a tinted surface knock out whatever is
+ * behind it. Always paper (themed), never the hatch's `fill`, so a disabled tint
+ * (muted hashes) is still paper-opaque. Drawn through the shared `hatchShape` so
+ * the base and the hashes can't diverge.
+ * @param {{x:number,y:number,w:number,h:number}} box
+ * @param {'pill'|'ellipse'|number|undefined} [shape]
+ * @returns {string}
+ */
+function paperBase(box, shape) {
+  return hatchShape(box, shape, { fill: COLORS.paper, fillStyle: 'solid', stroke: 'none', roughness: 0.6 });
+}
 
 /**
  * The wireframe background tint: light gray hand-drawn hashes filling `box`,
  * BORDERLESS. Draw your own border afterwards (e.g. `surface(box, { fill:
  * 'none' })`) so the tight hatch roughness doesn't stiffen the outline.
+ *
  * `pattern` is the element's `background` prop (`hatch`/`crosshatch`; unknown ->
- * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer). Pass
- * `opts.fill` to recolor the hashes (e.g. muted when disabled), and `opts.shape`
- * to hatch non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
+ * `hatch`); `dense` is its `denseBackground` flag (packs the lines closer).
+ * `pattern === 'none'` skips the hashes entirely: an (A) caller (`base:true`) gets
+ * just the opaque paper base -- a solid, untextured surface; a (B) caller gets
+ * nothing at all (no marks, no base).
+ * `opts.fill` recolors the HASHES (e.g. muted when disabled). `opts.shape`
+ * hatches non-rect chrome -- `'pill'` (stadium), `'ellipse'`, or a number (a
  * rounded rect with that corner radius) -- so the hashes never poke past a
  * curved outline.
+ *
+ * `opts.base` is OPT-IN opacity (CONVENTION s.8). Pass `base: true` when the
+ * hatch IS the element's own opaque SURFACE (an (A) caller: AppBar, contained
+ * Button, filled Chip/TextField, the switch's "on" track, a filled/standard
+ * Alert): a solid `COLORS.paper` fill in the same `shape` is laid down FIRST so
+ * nothing behind shows through the hash gaps. Leave it false (the default) when
+ * the hatch is a TRANSLUCENT highlight/marker/placeholder over content that must
+ * stay visible (a (B) caller: a selected row, a partial progress run, the dark
+ * Snackbar, a Skeleton) -- those stay byte-identical and see-through between the
+ * hashes. The base is ALWAYS paper, independent of `opts.fill`. For a partial
+ * tint pass the SUB-box you want opaque, not the full box.
  * @param {{x:number,y:number,w:number,h:number}} box
- * @param {string} [pattern]  'hatch' | 'crosshatch'
+ * @param {string} [pattern]  'hatch' | 'crosshatch' | 'none'
  * @param {boolean} [dense]
- * @param {{ fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
+ * @param {{ base?: boolean, fill?: string, shape?: 'pill'|'ellipse'|number }} [opts]
  * @returns {string}
  */
 export function backgroundHatch(box, pattern = 'hatch', dense = false, opts = {}) {
+  // (A) callers opt into an opaque paper base under the hashes; (B) callers omit
+  // it and stay see-through over the content/track/row behind them.
+  const base = opts.base ? paperBase(box, opts.shape) : '';
+  // `none` is opaque-but-untextured: the base (when opted in) with no hashes laid
+  // over it; a (B) `none` caller draws nothing.
+  if (pattern === 'none') return base;
   const fillStyle = HATCH_PATTERNS[pattern] ?? HATCH_PATTERNS.hatch;
   const hachureGap = dense ? HATCH_GAP.dense : HATCH_GAP.normal;
-  const fill = { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE };
-  if (opts.shape === 'pill') return rpill(box.x, box.y, box.w, box.h, fill);
-  if (opts.shape === 'ellipse') return rellipse(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, fill);
-  if (typeof opts.shape === 'number') return rroundrect(box.x, box.y, box.w, box.h, opts.shape, fill);
-  return surface(box, fill);
+  const hatch = hatchShape(box, opts.shape,
+    { fill: opts.fill ?? COLORS.hatch, stroke: 'none', fillStyle, hachureGap, ...HATCH_BASE });
+  return base + hatch;
 }
 
 /**
@@ -376,6 +430,40 @@ export function centeredLabel(box, str, opts = {}) {
 }
 
 /**
+ * A small "floating" label sitting ON a field's TOP border (the MUI outlined
+ * look once a value/placeholder is shown). A paper-colored rectangle is knocked
+ * out behind the text first, so the field outline doesn't strike through the
+ * label. Shared by TextField and Select so the floating look stays identical.
+ *
+ * `x` is the field's left edge and `topY` its top border y; the label is inset
+ * `indent` px from `x` and vertically centered on `topY`. The knockout spans the
+ * (truncated) text width plus `gapPad` on each side. Pass `maxW` to bound the
+ * label run; it is trimmed with an ellipsis to fit, and the knockout matches the
+ * trimmed width.
+ * @param {number} x  field left edge
+ * @param {number} topY  field top border y (the label centers on this line)
+ * @param {string} str
+ * @param {{ fontSize?: number, fill?: string, gapPad?: number, indent?: number, maxW?: number }} [opts]
+ * @returns {string}
+ */
+export function floatingLabel(x, topY, str, opts = {}) {
+  const { fontSize = 11, fill = COLORS.muted, gapPad = 4, indent = 8, maxW } = opts;
+  const shown = truncateText(str, fontSize, maxW);
+  if (!shown) return '';
+  const textX = x + indent;
+  const textW = textRunWidth(shown, fontSize);
+  // Opaque paper knockout behind the text so the outline reads as broken by the
+  // label. A plain SVG rect (not hand-drawn) keeps the gap crisp and seamless.
+  const gapX = textX - gapPad;
+  const gapY = topY - fontSize / 2 - 1;
+  const gapW = textW + gapPad * 2;
+  const gapH = fontSize + 2;
+  const knockout = `<rect x="${gapX}" y="${gapY}" width="${gapW}" height="${gapH}" fill="${COLORS.paper}"/>`;
+  // Baseline placed so the text is vertically centered on the border line.
+  return knockout + text(textX, topY + fontSize * 0.35, shown, { fontSize, fill });
+}
+
+/**
  * Draw `lines` rows of squiggle filler within a width (a sketch stand-in for
  * body text -- SPEC ss.6). Baselines step by the line height of `fontSize`.
  * @param {number} x @param {number} y  top of the first line
@@ -456,4 +544,72 @@ export function surfaceWith(box, opts = {}) {
     : line;
   out += rrect(box.x, box.y, box.w, box.h, rectOpts);
   return out;
+}
+
+/** Default handle length, as a percent of the track's long axis. */
+const SCROLL_DEFAULT_HANDLE = 30;
+/** Smallest handle the eye still reads as a control, in px (a floor under handle%). */
+const SCROLL_MIN_HANDLE = 16;
+/** Inset (px) of the handle inside the track on each side, so it reads as nested. */
+const SCROLL_HANDLE_INSET = 2;
+/** Corner radius (px) for the track and handle pills. */
+const SCROLL_RADIUS = 6;
+
+/** Clamp `n` to [lo, hi], falling back to `fallback` when not finite. */
+const clampScroll = (/** @type {*} */ n, /** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ fallback) => {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : fallback;
+};
+
+/**
+ * The scrollbar handle's absolute rect inside a strip `rect`. Pure + exported so the
+ * geometry (clamping + the value-to-position mapping) can be asserted directly. The
+ * handle spans the SHORT axis (inset on each side) and is `handle`% of the LONG axis
+ * -- floored to SCROLL_MIN_HANDLE, capped to the track length -- seated along the
+ * leftover track by `value`% (0 -> start/top/left, 100 -> end). Both inputs clamp to
+ * [0,100]; non-finite inputs fall back to their defaults. The long axis is the rect's
+ * height (vertical) or width (horizontal).
+ * @param {{x:number,y:number,w:number,h:number}} rect
+ * @param {boolean} horiz
+ * @param {*} value @param {*} handle
+ * @returns {{ x:number, y:number, w:number, h:number }}
+ */
+export function scrollHandleGeometry(rect, horiz, value, handle) {
+  const valuePct = clampScroll(value, 0, 100, 0);
+  const handlePct = clampScroll(handle, 0, 100, SCROLL_DEFAULT_HANDLE);
+  const longLen = horiz ? rect.w : rect.h;
+  const shortLen = horiz ? rect.h : rect.w;
+  const len = Math.min(longLen, Math.max(SCROLL_MIN_HANDLE, (handlePct / 100) * longLen));
+  const offset = (valuePct / 100) * Math.max(0, longLen - len);
+  const thick = Math.max(1, shortLen - 2 * SCROLL_HANDLE_INSET);
+  return horiz
+    ? { x: rect.x + offset, y: rect.y + SCROLL_HANDLE_INSET, w: len, h: thick }
+    : { x: rect.x + SCROLL_HANDLE_INSET, y: rect.y + offset, w: thick, h: len };
+}
+
+/**
+ * A scrollbar strip drawn INTO the reserved gutter `rect`: a faint track pill plus a
+ * hand-drawn rounded handle. The universal `scrollbar` prop's one drawing primitive,
+ * shared by every element through the render facade. `orientation` is 'horizontal'
+ * (thumb travels left..right) or anything else (vertical, top..bottom). `value`% is
+ * the scroll position (0 = start), `handle`% the handle length (default 30). Geometry
+ * is deterministic (seeds derive from rect), so the SVG is stable.
+ * @param {{x:number,y:number,w:number,h:number}} rect  the reserved gutter strip
+ * @param {string} orientation @param {*} [value] @param {*} [handle]
+ * @returns {string}
+ */
+export function scrollbarStrip(rect, orientation, value, handle) {
+  const horiz = orientation === 'horizontal';
+  const track = rroundrect(rect.x, rect.y, rect.w, rect.h, Math.min(SCROLL_RADIUS, rect.w / 2, rect.h / 2), {
+    stroke: COLORS.muted,
+    strokeWidth: 1,
+  });
+  const t = scrollHandleGeometry(rect, horiz, value, handle);
+  const thumb = rroundrect(t.x, t.y, t.w, t.h, Math.min(SCROLL_RADIUS, t.w / 2, t.h / 2), {
+    fill: COLORS.muted,
+    fillStyle: 'solid',
+    stroke: COLORS.ink,
+    strokeWidth: 1.2,
+  });
+  return track + thumb;
 }

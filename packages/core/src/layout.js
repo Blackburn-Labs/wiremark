@@ -1,7 +1,7 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { diagnostic } from './errors.js';
-import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
+import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING, SCROLLBAR_THICKNESS } from './metrics.js';
 
 /**
  * Stage (4) -- LAYOUT.  Document -> box geometry.
@@ -33,6 +33,8 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {number} x @property {number} y @property {number} w @property {number} h
  * @property {ResolvedNode} node
  * @property {Box[]} children
+ * @property {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>} [scrollbars]  // reserved scrollbar gutter strips (universal `scrollbar` prop); painted by the render facade
+ * @property {Rect} [clip]  // content rect a scroll container clips its children to (overflow hidden); set with `scrollbars`
  *
  * @typedef {Object} LaidOutFrame
  * @property {string} [id]
@@ -46,7 +48,7 @@ import { FRAME_PAD, PRESET_SIZES, DEFAULT_FRAME, SPACING } from './metrics.js';
  * @property {number} [y]
  */
 
-/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}|((node:ResolvedNode)=>{w:number,h:number})}} */
+/** @param {string} name @returns {import('./elements/common.js').ComponentDef & {intrinsic?:Function, layoutSpec?:Function, render?:Function, aspect?:Function, block?:boolean|((node:ResolvedNode)=>boolean), flex?:boolean, minSize?:{w:number,h:number}|((node:ResolvedNode)=>{w:number,h:number}), overlay?:boolean|((node:ResolvedNode)=>boolean), overlayPlacement?:(node:ResolvedNode, parentContent:Rect, measured:{w:number,h:number})=>Rect}} */
 function strategyFor(name) {
   return REGISTRY[name] ?? /** @type {*} */ ({});
 }
@@ -63,10 +65,71 @@ function isContainer(node) {
   return s.container === true || typeof s.layoutSpec === 'function';
 }
 
-/** Resolve a container's layout spec, defaulting to a 0-gap column. @param {ResolvedNode} node @returns {{axis:string,pad?:number,gap?:number,cols?:number}} */
+/**
+ * Is this node an OVERLAY (out of flow)? An overlay contributes nothing to its
+ * parent's content size and gets no flex/grid slot (this module), and the FRAME
+ * paints it last, over the in-flow content (render.js). `overlay` may be a static
+ * boolean OR a per-node predicate, mirroring how `block`/`minSize` may be
+ * functions. EXPORTED so render.js's deferred paint pass keys off the exact same
+ * predicate as this module's flow partition -- one source of truth for "what is
+ * an overlay." (Dialog; Drawer overlay variant; Scrollbar.)
+ * @param {ResolvedNode} node @returns {boolean}
+ */
+export function isOverlay(node) {
+  const s = strategyFor(node.component);
+  return typeof s.overlay === 'function' ? !!s.overlay(node) : !!s.overlay;
+}
+
+/** Resolve a container's layout spec, defaulting to a 0-gap column. The universal
+ *  `padding` prop (MUI spacing units, like `gap`) overrides the element's hardcoded
+ *  pad when set; unset keeps the element default. layoutSpec returns a fresh object
+ *  each call, so mutating `pad` here is safe. @param {ResolvedNode} node @returns {{axis:string,pad?:number,gap?:number,cols?:number}} */
 function specFor(node) {
   const s = strategyFor(node.component);
-  return typeof s.layoutSpec === 'function' ? s.layoutSpec(node) : { axis: 'col', pad: 0, gap: 0 };
+  const spec = typeof s.layoutSpec === 'function' ? s.layoutSpec(node) : { axis: 'col', pad: 0, gap: 0 };
+  const p = node.props?.padding;
+  if (typeof p === 'number' && Number.isFinite(p)) spec.pad = p * SPACING;
+  return spec;
+}
+
+/**
+ * The scrollbar gutter an element reserves from the universal `scrollbar` prop:
+ * `gw` (right gutter, eats width) for vertical/both, `gh` (bottom gutter, eats
+ * height) for horizontal/both. Reserved in measure (the element grows to hold both
+ * its content AND the gutter) and in place (the content rect shrinks), so the strip
+ * the render facade draws into the gutter never overlaps content. No prop / `none`
+ * -> {0,0}, so an element without a scrollbar is byte-identical to before.
+ * @param {ResolvedNode} node @returns {{ gw: number, gh: number }}
+ */
+function scrollGutter(node) {
+  const sb = node.props?.scrollbar;
+  if (!sb || sb === 'none') return { gw: 0, gh: 0 };
+  return {
+    gw: sb === 'vertical' || sb === 'both' ? SCROLLBAR_THICKNESS : 0,
+    gh: sb === 'horizontal' || sb === 'both' ? SCROLLBAR_THICKNESS : 0,
+  };
+}
+
+/**
+ * The scrollbar strip rect(s) to draw, anchored FLUSH to the element's BOX edges
+ * (like a browser scrollbar: hard against the border, with the element's padding
+ * INSIDE it -- the content rect already cleared the gutter, so there is no overlap).
+ * A vertical strip hugs the right edge over the full box height; a horizontal one the
+ * bottom edge over the full width; for `both`, each stops short of the other so the
+ * bottom-right corner is left empty (the classic scrollbar corner). Each carries the
+ * node's value/handle for the render facade.
+ * @param {ResolvedNode} node @param {Rect} box  the element's full box region
+ * @param {{gw:number,gh:number}} g
+ * @returns {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>}
+ */
+function scrollStrips(node, box, g) {
+  /** @type {Array<{x:number,y:number,w:number,h:number,orientation:string,value:*,handle:*}>} */
+  const strips = [];
+  const value = node.props?.scrollbarValue;
+  const handle = node.props?.scrollbarHandle;
+  if (g.gw > 0) strips.push({ x: box.x + box.w - g.gw, y: box.y, w: g.gw, h: box.h - g.gh, orientation: 'vertical', value, handle });
+  if (g.gh > 0) strips.push({ x: box.x, y: box.y + box.h - g.gh, w: box.w - g.gw, h: g.gh, orientation: 'horizontal', value, handle });
+  return strips;
 }
 
 // --- pass 1: intrinsic measurement (bottom-up) --------------------------------
@@ -128,19 +191,27 @@ export function measure(node, avail) {
 function measureContainer(node, spec, avail) {
   const pad = spec.pad ?? 0;
   const gap = spec.gap ?? 0;
-  const kids = node.children ?? [];
+  // A scrollbar reserves a gutter on the scrolled edge: children get gw/gh LESS
+  // inner space, and the container grows by gw/gh to hold both content and the
+  // strip (no scrollbar -> {0,0}, so this is byte-identical to before).
+  const { gw, gh } = scrollGutter(node);
+  // Overlay children are OUT OF FLOW: they add nothing to the parent's content
+  // size and seed no gap. Measuring over the flow kids only is what makes a
+  // container's size identical whether or not a Dialog/Drawer overlays it (the
+  // regression guard: with no overlays this is `node.children` verbatim).
+  const kids = (node.children ?? []).filter((k) => !isOverlay(k));
   const totalGap = gap * Math.max(0, kids.length - 1);
 
   if (spec.axis === 'row') {
-    const innerH = avail && Number.isFinite(avail.h) ? /** @type {number} */ (avail.h) - 2 * pad : undefined;
+    const innerH = avail && Number.isFinite(avail.h) ? /** @type {number} */ (avail.h) - 2 * pad - gh : undefined;
     const sizes = kids.map((k) => measure(k, innerH != null ? { h: innerH } : undefined));
     const w = sizes.reduce((a, sz) => a + sz.w, 0) + totalGap;
     const h = innerH != null ? innerH : sizes.reduce((a, sz) => Math.max(a, sz.h), 0);
-    return { w: w + 2 * pad, h: h + 2 * pad };
+    return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
   }
   if (spec.axis === 'grid') {
     const cols = Math.max(1, Math.floor(spec.cols ?? 1));
-    const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad : undefined;
+    const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad - gw : undefined;
     const cellW = innerW != null ? (innerW - gap * (cols - 1)) / cols : undefined;
     const sizes = kids.map((k) => measure(k, cellW != null ? { w: cellW } : undefined));
     const cw = sizes.reduce((a, sz) => Math.max(a, sz.w), 0);
@@ -148,14 +219,14 @@ function measureContainer(node, spec, avail) {
     const rows = Math.ceil(kids.length / cols) || 0;
     const w = innerW != null ? innerW : cols * cw + gap * (cols - 1);
     const h = rows * ch + gap * Math.max(0, rows - 1);
-    return { w: w + 2 * pad, h: h + 2 * pad };
+    return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
   }
   // col
-  const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad : undefined;
+  const innerW = avail && Number.isFinite(avail.w) ? /** @type {number} */ (avail.w) - 2 * pad - gw : undefined;
   const sizes = kids.map((k) => measure(k, innerW != null ? { w: innerW } : undefined));
   const w = innerW != null ? innerW : sizes.reduce((a, sz) => Math.max(a, sz.w), 0);
   const h = sizes.reduce((a, sz) => a + sz.h, 0) + totalGap;
-  return { w: w + 2 * pad, h: h + 2 * pad };
+  return { w: w + 2 * pad + gw, h: h + 2 * pad + gh };
 }
 
 // --- pass 2: placement (top-down) --------------------------------------------
@@ -168,19 +239,75 @@ function measureContainer(node, spec, avail) {
 export function place(node, region) {
   /** @type {Box} */
   const box = { x: region.x, y: region.y, w: region.w, h: region.h, node, children: [] };
+  const g = scrollGutter(node);
   if (isContainer(node)) {
     const spec = specFor(node);
     const pad = spec.pad ?? 0;
-    const content = { x: region.x + pad, y: region.y + pad, w: region.w - 2 * pad, h: region.h - 2 * pad };
+    // The content rect excludes both the padding AND any scrollbar gutter (gw on the
+    // right, gh at the bottom), so children never lay out under the strip.
+    const content = { x: region.x + pad, y: region.y + pad, w: region.w - 2 * pad - g.gw, h: region.h - 2 * pad - g.gh };
     const kids = node.children ?? [];
-    box.children = spec.axis === 'grid' ? arrangeGrid(kids, content, spec) : arrangeLinear(kids, content, spec);
+    // OUT-OF-FLOW split: flow kids arrange exactly as before (so an overlay-free
+    // container is byte-identical -- `flowKids` then equals `kids`); overlay kids
+    // are placed parent-relative afterward and appended LAST in document order.
+    const flowKids = kids.filter((k) => !isOverlay(k));
+    const overlayKids = kids.filter((k) => isOverlay(k));
+    box.children = spec.axis === 'grid' ? arrangeGrid(flowKids, content, spec) : arrangeLinear(flowKids, content, spec);
+    for (const child of overlayKids) box.children.push(placeOverlay(child, content));
+    if (g.gw > 0 || g.gh > 0) {
+      box.scrollbars = scrollStrips(node, region, g);
+      // A scroll container CLIPS its content so overflow is hidden (the strip implies
+      // the rest scrolls). Clip at the BOX edge (outside the padding) minus only the
+      // scrollbar gutter -- NOT at the content rect: hand-drawn strokes wobble a few
+      // px past their box, so a content-rect clip would shave the edges of normal
+      // content. The padding (and that wobble) stays inside the clip; only content
+      // overflowing the box edge is hidden.
+      box.clip = { x: region.x, y: region.y, w: region.w - g.gw, h: region.h - g.gh };
+    }
+  } else if (g.gw > 0 || g.gh > 0) {
+    // A leaf carrying the universal `scrollbar` prop: no children to keep clear, so
+    // the strip just hugs the box's own scrolled edge.
+    box.scrollbars = scrollStrips(node, region, g);
   }
   return box;
 }
 
 /**
+ * Place one OUT-OF-FLOW child against its parent's `content` rect.
+ *
+ * The subtree is measured at its CONTENT size (bare `measure`, no avail), so a
+ * content-/breakpoint-sized overlay keeps its own width rather than stretching to
+ * the parent -- a `col`/`row` container handed an avail extent fills it (the
+ * in-flow `block` behaviour), which would defeat a Dialog's `size`. PARENT-RELATIVE
+ * sizing is the ELEMENT's job: `overlayPlacement(node, content, measured)` gets the
+ * parent content rect and returns the final box, so a fullScreen Dialog fills the
+ * parent, a Drawer docks 100% to an edge, a Scrollbar pins the right edge -- each
+ * computes its own extent from `content`. (Note `%`/`fill` sizing tokens are
+ * resolved in arrangeLinear, which overlays bypass; an overlay that wants a `%`
+ * extent derives it in its own `overlayPlacement` from `content`.) The engine stays
+ * vocabulary-free. The returned rect is used VERBATIM (place() does not re-measure),
+ * so the element's w/h are final.
+ *
+ * The parent content rect is annotated onto `node.overlayParent` so the element's
+ * render can paint a parent-spanning scrim behind itself (a Dialog's modal
+ * backdrop) without the render facade threading the parent through -- the same
+ * node-annotation pattern as `node.icons`. A malformed overlay with no placement
+ * hook degrades to its content size at the parent origin rather than throwing
+ * (CONVENTION s.11). @param {ResolvedNode} node @param {Rect} content @returns {Box}
+ */
+function placeOverlay(node, content) {
+  const s = strategyFor(node.component);
+  const measured = measure(node);
+  node.overlayParent = { ...content };
+  const rect = typeof s.overlayPlacement === 'function'
+    ? s.overlayPlacement(node, content, measured)
+    : { x: content.x, y: content.y, w: measured.w, h: measured.h };
+  return place(node, rect);
+}
+
+/**
  * @param {ResolvedNode[]} children @param {Rect} content
- * @param {{ axis:string, gap?:number, reverse?:boolean }} spec @returns {Box[]}
+ * @param {{ axis:string, gap?:number, reverse?:boolean, mainAlign?:'start'|'end'|'center' }} spec @returns {Box[]}
  */
 function arrangeLinear(children, content, spec) {
   const horiz = spec.axis === 'row';
@@ -200,10 +327,18 @@ function arrangeLinear(children, content, spec) {
     else if (tok?.unit === 'fill') flex = 1;
     else if (tok?.unit === 'flex') flex = /** @type {number} */ (tok.value);
     if (main == null && flex === 0 && s.flex === true) flex = 1; // a flexible filler (Spacer, ss.5.2)
+    // ABSOLUTE-AXIS fill on the MAIN dim: an element declaring `fill` for the
+    // dimension that happens to be this parent's main axis flexes like `*` (the
+    // cross dim is handled in crossExtent). Only with NO explicit main token above
+    // (a px/%/fill/flex token always wins). See common.js's `fill` contract.
+    if (main == null && flex === 0 && s.fill) {
+      const f = typeof s.fill === 'function' ? s.fill(child) : s.fill;
+      if (f && (horiz ? f.w : f.h)) flex = 1;
+    }
     if (main == null && flex === 0) {
       // Measure against the cross extent this child will actually get, so an
       // aspect-locked subtree (Img `ratio=`) reserves the right main extent.
-      const cross = crossExtent(child, horiz, crossAvail);
+      const cross = crossExtent(child, horiz, crossAvail, mainAvail);
       const m = measure(child, horiz ? { h: cross } : { w: cross });
       main = horiz ? m.w : m.h;
     }
@@ -220,10 +355,18 @@ function arrangeLinear(children, content, spec) {
   // weights, leftover and totalGap are all computed order-independently above, so
   // reversing here only mirrors visual order (Stack `-reverse` directions, ss.5.2).
   const order = spec.reverse ? [...items].reverse() : items;
-  let cursor = horiz ? content.x : content.y;
+  // mainAlign packs the children toward the start (default), end, or center of the
+  // main axis by offsetting the start cursor by the free space. Only meaningful
+  // with NO flex child -- a flex/`*`/Spacer already absorbs `leftover` into its own
+  // size, so the offset is then 0 (flex wins; otherwise the free space would be
+  // double-counted). `start` keeps cursor at the content origin, so every existing
+  // container is byte-identical. Used by DialogActions (`end`, MUI right-alignment).
+  const align = totalFlex === 0 ? spec.mainAlign : 'start';
+  const startOffset = align === 'end' ? leftover : align === 'center' ? leftover / 2 : 0;
+  let cursor = (horiz ? content.x : content.y) + startOffset;
   const end = content.x + content.w;
   for (const i of order) {
-    const cross = crossExtent(i.child, horiz, crossAvail);
+    const cross = crossExtent(i.child, horiz, crossAvail, mainAvail);
     // A row clamps each child to the space remaining inside the parent: an
     // overcrowded row squeezes its trailing children (whose labels then trim to
     // an ellipsis) instead of letting boxes spill past the right edge. Columns
@@ -245,21 +388,46 @@ function arrangeLinear(children, content, spec) {
 }
 
 /**
- * Cross-axis extent for a child: explicit token, else stretch (block / container)
- * or intrinsic (inline leaf).
+ * Cross-axis extent for a child: explicit token, else an aspect-derived extent
+ * (when the child pins only its main axis), else stretch (block / container) or
+ * intrinsic (inline leaf).
  * @param {ResolvedNode} child @param {boolean} horiz @param {number} crossAvail
+ * @param {number} [mainAvail]  main-axis space, so a `%` main extent can be
+ *   resolved here for the aspect-derive branch
  * @returns {number}
  */
-function crossExtent(child, horiz, crossAvail) {
+function crossExtent(child, horiz, crossAvail, mainAvail) {
   const s = strategyFor(child.component);
   const tok = horiz ? child.size?.h : child.size?.w;
   if (tok?.unit === 'px') return tok.value;
   if (tok?.unit === '%') return (/** @type {number} */ (tok.value) / 100) * crossAvail;
   if (tok) return crossAvail; // fill / flex on the cross axis
+  // An aspect leaf (Img `ratio=`) that pins ONLY its main axis derives its cross
+  // from the ratio instead of block-filling: in a row a `100px` width is the main
+  // extent, so the height is 100/ratio. Gated tightly -- aspect function, finite
+  // ratio, an explicit main token (no explicit cross token, handled above), and a
+  // px/% main whose extent is known here (a flex/* main isn't resolved until after
+  // distribution, so it falls through to block-fill). measure() owns the ratio
+  // math (avail.w -> h, avail.h -> w), so the formula lives in exactly one place.
+  const mainTok = horiz ? child.size?.w : child.size?.h;
+  const ratio = typeof s.aspect === 'function' ? s.aspect(child) : undefined;
+  if (ratio && Number.isFinite(ratio) && mainTok) {
+    let mainExtent = null;
+    if (mainTok.unit === 'px') mainExtent = /** @type {number} */ (mainTok.value);
+    else if (mainTok.unit === '%' && mainAvail != null)
+      mainExtent = (/** @type {number} */ (mainTok.value) / 100) * mainAvail;
+    if (mainExtent != null)
+      return measure(child, horiz ? { w: mainExtent } : { h: mainExtent })[horiz ? 'h' : 'w'];
+  }
   // `block` may be a static boolean OR a per-node predicate (e.g. Button stretches
-  // only when fullWidth). Containers stretch to fill by default.
+  // only when fullWidth). Containers stretch to fill by default. The `fill` hook
+  // (common.js) is the axis-absolute generalization: a fill request on the dim that
+  // is THIS parent's cross axis stretches to crossAvail, exactly like block. An
+  // element with no `fill` hook leaves this byte-identical to before.
+  const fo = typeof s.fill === 'function' ? s.fill(child) : s.fill;
+  const fillCross = fo && (horiz ? fo.h : fo.w);
   const block = typeof s.block === 'function' ? s.block(child) : (s.block ?? isContainer(child));
-  if (block) return crossAvail;
+  if (block || fillCross) return crossAvail;
   // An inline leaf keeps its intrinsic cross size, but never wider than the space
   // available -- a long label is clamped rather than overflowing the parent.
   return Math.min(measure(child)[horiz ? 'h' : 'w'], crossAvail);

@@ -7,8 +7,10 @@ import { layout } from '../../src/layout.js';
 
 // A Select is a col container drawing its own closed field; its children are
 // Options. We wrap it in a Wireframe frame and reach the Select node/box as the
-// frame's first child.
-const wrap = (body) => `Wireframe\n  ${body}`;
+// frame's first child. The frame opts into padding=2: the frame is flush by
+// default, and a Select hard against the top edge would float its label above the
+// frame (clipped). The inset gives the floated label its room, as in real use.
+const wrap = (body) => `Wireframe padding=2\n  ${body}`;
 
 /** The Select node (first child of the frame). */
 const selNode = (line) => parse(wrap(line)).frames[0].children[0];
@@ -82,9 +84,76 @@ test('Select draws the field label when no value is set', () => {
   assert.match(svg, /Country/);
 });
 
-test('value (when set) is shown in the field instead of the label', () => {
+test('value (when set) is shown in the field, and the label floats above it (MUI)', () => {
+  // Once a value is shown (outlined), the field shows the value AND the label
+  // lifts onto the top border in a smaller font -- the label is no longer hidden.
   const { svg } = render(wrap('Select "Country" value="Canada"'));
+  assert.match(svg, /Canada/, 'the value occupies the field');
+  assert.match(svg, /Country/, 'the label is still drawn (floating), not dropped');
+  // The floating label uses the small float font (11), distinct from the field
+  // text size (13), which proves it is the floating treatment, not field content.
+  assert.match(svg, /font-size="11"[^>]*>Country</, 'label floats in the small font');
+});
+
+/** Small (non-frame) paper knockout rects: the float helper draws one sized to
+ *  the label, with a paper fill; the full-frame background rect is excluded by
+ *  width (the frame here is 300 wide). */
+const floatKnockouts = (svg) =>
+  [...svg.matchAll(/<rect x="[\d.]+" y="[\d.]+" width="([\d.]+)" height="[\d.]+" fill="(#[0-9a-f]{6})"\/>/g)]
+    .filter((m) => Number(m[1]) < 200)
+    .map((m) => m[2]);
+
+test('the floating label paints an opaque paper knockout so the outline breaks', () => {
+  // A small paper rect sits behind the floated label so the field border does not
+  // strike through it. Paper-colored, so it works in both themes.
+  const light = render(wrap('Select "Country" value="Canada"')).svg;
+  assert.deepEqual(floatKnockouts(light), ['#ffffff'], 'one paper knockout behind the floated label (light)');
+  const dark = render(wrap('Select "Country" value="Canada"'), { theme: 'dark' }).svg;
+  assert.deepEqual(floatKnockouts(dark), ['#1e2127'], 'the knockout is the dark paper in dark theme');
+});
+
+test('with NO value the label stays inside the field and does not float', () => {
+  const { svg } = render(wrap('Select "Country"'));
+  assert.match(svg, /Country/, 'the label shows as the field content');
+  assert.doesNotMatch(svg, /font-size="11"/, 'no small floating label');
+  assert.deepEqual(floatKnockouts(svg), [], 'no knockout rect when nothing floats');
+});
+
+test('the filled variant ALSO floats its label when a value is set (matches TextField)', () => {
+  // MUI floats the label for outlined AND filled (TextField does the same). The
+  // paper knockout sits over the filled field's hatched top edge so neither the
+  // border nor the hatch strikes through the label.
+  const { svg } = render(wrap('Select "Country" filled value="Canada"'));
+  assert.match(svg, /Canada/, 'the value occupies the field');
+  assert.match(svg, /font-size="11"[^>]*>Country</, 'filled floats the label in the small font');
+  // Exactly one float knockout (a <rect>); the filled field's opaque BASE is a
+  // <path>, not a <rect>, so it does not show up here.
+  assert.deepEqual(floatKnockouts(svg), ['#ffffff'], 'one paper knockout behind the floated label');
+});
+
+test('the standard variant does NOT float: a small label over a bare underline reads oddly', () => {
+  // standard is the deliberate exception (same as TextField): with a value it
+  // keeps the value inside and drops the label, no float, no knockout.
+  const { svg } = render(wrap('Select "Country" standard value="Canada"'));
+  assert.match(svg, /Canada/, 'the value still shows');
+  assert.doesNotMatch(svg, /font-size="11"/, 'standard must not float the label');
+  assert.deepEqual(floatKnockouts(svg), [], 'standard draws no floating knockout');
+});
+
+test('a value with no label floats nothing (there is no label to lift)', () => {
+  const { svg } = render(wrap('Select value="Canada"'));
   assert.match(svg, /Canada/);
+  assert.doesNotMatch(svg, /font-size="11"/, 'nothing to float without a label');
+  assert.deepEqual(floatKnockouts(svg), []);
+});
+
+test('floating the label adds no layout cost: geometry matches the no-value field', () => {
+  // The float overlays the existing top border in the reserved field band, so the
+  // box dims are identical with or without a value (minSize/pad untouched).
+  const withVal = selBox(wrap('Select "Country" value="Canada"'));
+  const noVal = selBox(wrap('Select "Country"'));
+  assert.equal(withVal.w, noVal.w, 'width unchanged by floating');
+  assert.equal(withVal.h, noVal.h, 'height unchanged by floating');
 });
 
 test('Select draws a dropdown caret', () => {
@@ -108,6 +177,22 @@ test('filled variant adds a hatch tint the outlined one lacks', () => {
   // backgroundHatch fills with COLORS.hatch (#c4c4c4); outlined has no fill.
   assert.match(render(wrap('Select "C" filled')).svg, /#c4c4c4/);
   assert.doesNotMatch(render(wrap('Select "C" outlined')).svg, /#c4c4c4/);
+});
+
+test('the filled field is OPAQUE: its hatch lays down a paper base (task #1 opacity)', () => {
+  // A filled Select is its own surface, so backgroundHatch is called with
+  // base:true -- a solid COLORS.paper path under the hashes, so content behind a
+  // filled Select can't show through the gaps. The base is paper-colored, so it
+  // tracks the theme; the outlined variant (no fill) draws no such base.
+  const solidPaper = (svg, hex) => (svg.match(new RegExp(`<path[^>]*fill="${hex}"`, 'g')) ?? []).length;
+  const filled = render(wrap('Select "C" filled')).svg;
+  assert.ok(solidPaper(filled, '#ffffff') >= 1, 'filled field draws an opaque paper base path');
+  assert.doesNotMatch(render(wrap('Select "C" outlined')).svg, /<path[^>]*fill="#ffffff"/,
+    'outlined draws no paper base (it is not a filled surface)');
+  // The base is paper, so in the dark theme it is the dark paper, not white.
+  const dark = render(wrap('Select "C" filled'), { theme: 'dark' }).svg;
+  assert.ok(solidPaper(dark, '#1e2127') >= 1, 'the base is the dark paper in dark theme');
+  assert.equal(solidPaper(dark, '#ffffff'), 0, 'no light paper leaks into the dark base');
 });
 
 test('a bare Select with no label still renders a placeholder field', () => {

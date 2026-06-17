@@ -8,7 +8,7 @@ import {
   parse, render, toFlowGraph, toMermaid,
   REGISTRY, getComponent, isKnownComponent,
 } from '../src/index.js';
-import { FRAME_PAD, PRESET_SIZES } from '../src/metrics.js';
+import { PRESET_SIZES } from '../src/metrics.js';
 import { layout } from '../src/layout.js';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
@@ -87,7 +87,13 @@ test('library fixture demos every registered component and renders clean', () =>
   }
   const { svg, diagnostics } = render(src);
   assert.deepEqual(diagnostics, [], 'the reference sheet renders without diagnostics');
-  assert.match(svg, /width="1600" height="4800"/, 'manual w=/h= sizing reaches the SVG canvas');
+  // Derive the expected canvas from the fixture's OWN declared `w=`/`h=` so growing
+  // the sheet never needs this assertion touched -- it still genuinely checks the
+  // manual-sizing pipeline carries declared w=/h= through to the SVG canvas (a bug
+  // dropping h= fails), just not pinned to a literal.
+  const frame = /\bw=(\d+)\s+h=(\d+)/.exec(src);
+  assert.ok(frame, 'library.wiremark should declare an explicit w=/h= frame');
+  assert.match(svg, new RegExp(`width="${frame[1]}" height="${frame[2]}"`), 'manual w=/h= sizing reaches the SVG canvas');
 });
 
 // --- pipeline status: front-end + prototype render landed; later phases pending ---
@@ -112,7 +118,7 @@ test('Phase 1: parse the login fixture to a stable AST', () => {
 
   const email = stack.children.find((c) => c.props.label === 'Email');
   assert.equal(email.component, 'TextField');
-  assert.equal(email.props.type, 'email');
+  assert.equal(email.props.startIcon, 'Email'); // the `type` prop was removed; the login fixture now uses a startIcon adornment
 
   const button = stack.children.find((c) => c.component === 'Button');
   assert.equal(button.props.variant, 'contained'); // filled look now via variant=contained (no `primary`)
@@ -146,7 +152,7 @@ test('Phase 2: layout produces correct geometry for the dashboard', () => {
   // landscape preset sizes the frame.
   assert.deepEqual({ w: frame.w, h: frame.h }, PRESET_SIZES.landscape);
 
-  const contentW = PRESET_SIZES.landscape.w - 2 * FRAME_PAD; // 1280 - 32 = 1248
+  const contentW = PRESET_SIZES.landscape.w; // 1280: the frame is flush (padding defaults to 0)
   const [appbar, body] = frame.root.children;
 
   // The AppBar spans the full frame content width.

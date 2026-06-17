@@ -1,4 +1,4 @@
-Wireframe #library w=1600 h=4800
+Wireframe #library w=1600 h=6800
   Typography h3 "wiremark component reference"
   Typography body2 "Every implemented component with common variants, grouped by category."
   Divider
@@ -48,6 +48,12 @@ Wireframe #library w=1600 h=4800
         Typography body2 "A"
         Divider vertical
         Typography body2 "B"
+    Stack column spacing=1
+      Typography subtitle2 "scrollbar= prop (reserves an edge gutter; never covers content)"
+      Box 360px 160px outline=solid scrollbar=vertical scrollbarValue=35 scrollbarHandle=40
+        Typography body2 "vertical scrollbar hugs the right edge"
+      Box 360px 80px outline=solid scrollbar=both scrollbarValue=60 scrollbarHandle=30
+        Typography body2 "both: right + bottom, corner left clear"
   Typography h4 "Surfaces"
   Grid cols=2 gap=3
     Stack column spacing=1
@@ -119,9 +125,9 @@ Wireframe #library w=1600 h=4800
         Step "Payment"
   Grid cols=2
     Stack column spacing=1
-      Typography subtitle2 "Drawer (left permanent open)"
+      Typography subtitle2 "Drawer (permanent)"
       Stack row spacing=3
-        Drawer left permanent open
+        Drawer permanent
           List
             ListItem "Inbox"
             ListItem "Starred"
@@ -170,12 +176,12 @@ Wireframe #library w=1600 h=4800
         Button "Disabled" disabled
         Button "Link" outlined to=#library
     Stack column spacing=1
-      Typography subtitle2 "TextField (variants / value / password)"
+      Typography subtitle2 "TextField (variants / value / icons)"
       TextField "Outlined"
       TextField "Filled" filled
       TextField "Standard" standard
       TextField "With value" value="Jane Doe"
-      TextField "Password" type=password size=small
+      TextField "Search" startIcon=Search placeholder="Find anything" size=small
     Stack column spacing=1
       Typography subtitle2 "Chip / Avatar / Icon / Badge"
       Stack row spacing=2
@@ -202,6 +208,11 @@ Wireframe #library w=1600 h=4800
       Stack column 320px spacing=2
         Img ratio=16:9
         Img
+      Typography subtitle2 "Placeholder (label+description / label / bare)"
+      Stack column 320px spacing=2
+        Placeholder "Chart" description="Q3 revenue by region" 100% 90px
+        Placeholder "Hero image" 100% 60px
+        Placeholder 100% 60px
     Stack column spacing=1
       Typography subtitle2 "List + ListItem (default / dense)"
       List
@@ -210,6 +221,25 @@ Wireframe #library w=1600 h=4800
       List dense
         ListItem "Dense item one"
         ListItem "Dense item two"
+  Stack column spacing=1
+    Typography subtitle2 "Map (street / GPS / area pins / route)"
+    Stack row spacing=2
+      Map 240px 165px
+      Map DirectionsCar 240px 165px
+      Map area pins=4 240px 165px
+      Map area path 240px 165px
+  Stack column spacing=1
+    Typography subtitle2 "Chart (bar / column / line / area / histogram / pie / donut)"
+    Stack row spacing=2
+      Chart 240px 165px
+      Chart column 240px 165px
+      Chart line "Revenue" 240px 165px
+      Chart area "Traffic" 240px 165px
+    Stack row spacing=2
+      Chart histogram series=9 240px 165px
+      Chart pie 165px 165px
+      Chart donut series=6 legend 200px 165px
+      Chart column axes=false labels=false 240px 165px
   Stack column spacing=1
     Typography subtitle2 "Table + TableHead / TableBody / TableFooter / TableRow / TableCell"
     Table medium
@@ -281,6 +311,10 @@ Wireframe #library w=1600 h=4800
         Fab "Add"
         Fab "Edit" extended
         Fab "Add" small
+    Stack column spacing=1
+      Typography subtitle2 "Calendar (month / compact)"
+      Calendar "June 2026" value=16 today=12 events
+      Calendar compact value=14 weekStart=mon
   Typography h4 "Feedback"
   Grid cols=2
     Stack column spacing=1
@@ -321,3 +355,12 @@ Wireframe #library w=1600 h=4800
         Stack row spacing=2
           Button "Cancel"
           Button "Discard" contained
+    Stack column spacing=1
+      Typography subtitle2 "Dialog kit (DialogHeader / DialogContent / DialogActions)"
+      Dialog sm
+        DialogHeader "Delete file?"
+        DialogContent
+          Typography body2 "This permanently removes the file."
+        DialogActions
+          Button "Cancel"
+          Button "Delete" contained

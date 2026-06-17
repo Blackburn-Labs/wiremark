@@ -81,6 +81,17 @@ test('a selected MenuItem tints its box with a hand-drawn hatch; an unselected o
   assert.doesNotMatch(render(wrap('MenuItem "Off"')).svg, /stroke="#c4c4c4"/);
 });
 
+test('a selected MenuItem is a (B) highlight: it lays NO opaque paper base (stays see-through)', () => {
+  // Task 1 / CONVENTION s.8: a selected-row highlight is a (B) caller -- it does
+  // NOT opt into backgroundHatch's `base`, so it must add no solid paper fill of
+  // its own (the only #ffffff in the frame is the background rect). A paper base
+  // here would white out the row over a tinted parent. Regression guard for the
+  // opt-in default: this catches a base accidentally leaking onto a (B) caller.
+  const selected = render(wrap('MenuItem "On" selected')).svg;
+  assert.doesNotMatch(selected, /<path d="[^"]*" fill="#ffffff" stroke="none"/,
+    'a selected MenuItem must not draw an opaque paper base path');
+});
+
 test('a disabled MenuItem draws its label in muted ink', () => {
   // disabled -> the label fill is the muted color (COLORS.muted = #9aa7b2),
   // which an enabled item does not use for its label.

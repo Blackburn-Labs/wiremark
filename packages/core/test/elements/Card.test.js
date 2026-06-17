@@ -12,9 +12,13 @@ import { layout } from '../../src/layout.js';
  * implicit CardContent (the resolver's flatten rule), while a Card with explicit
  * CardContent/CardActions keeps them as written.
  *
- * Card carries two looks (SPEC props): the default `variant=elevation` lifts the
- * paper with an `elevation` drop shadow (default 1), and `variant=outlined` is a
- * bordered paper with no shadow. `variant` is keyless; `elevation` is keyed.
+ * Card has one look, governed by `elevation` (keyed numeric, default 1):
+ * `elevation=0` is a bordered paper with no shadow (the look the removed
+ * `variant=outlined` used to select), and any `elevation>=1` lifts the paper with
+ * a drop shadow (the old default). The redundant `variant` enum was removed -- it
+ * carried no information the number didn't already (`outlined` just forced
+ * elevation 0), so old `Card variant=...` / `Card outlined` sources now fail as a
+ * deliberate unknown-token error (asserted below).
  *
  * The Card box is the frame's first (and only) child: layout(doc)[0].root.children[0].
  */
@@ -105,21 +109,7 @@ test('explicit Card renders a hand-drawn card surface', () => {
   if (/Buy/.test(probe)) assert.match(svg, /Buy/);
 });
 
-// --- Props: variant (keyless enum) + elevation (keyed numeric) ----------------
-
-test('Card variant is keyless and accepts each enum value', () => {
-  for (const v of ['elevation', 'outlined']) {
-    const doc = parse(`Wireframe\n  Card ${v}`);
-    assert.deepEqual(doc.diagnostics, [], `variant=${v} should parse clean`);
-    assert.equal(doc.frames[0].children[0].props.variant, v);
-  }
-});
-
-test('Card variant also resolves in keyed form', () => {
-  const doc = parse('Wireframe\n  Card variant=outlined');
-  assert.deepEqual(doc.diagnostics, []);
-  assert.equal(doc.frames[0].children[0].props.variant, 'outlined');
-});
+// --- Props: elevation (keyed numeric) -- the sole look control -----------------
 
 test('Card elevation is a keyed number coerced from the token', () => {
   const doc = parse('Wireframe\n  Card elevation=4');
@@ -129,43 +119,71 @@ test('Card elevation is a keyed number coerced from the token', () => {
   assert.equal(typeof card.props.elevation, 'number');
 });
 
-test('Card defaults: variant/elevation unset in props, strategy supplies them', () => {
+test('Card default: elevation unset in props, strategy supplies it', () => {
   // The resolver does NOT inject defaults; an omitted prop stays undefined and the
-  // render applies elevation default 1 / variant default elevation itself (ss.6).
+  // render applies elevation default 1 itself (ss.6).
   const doc = parse('Wireframe\n  Card');
   assert.deepEqual(doc.diagnostics, []);
   const card = doc.frames[0].children[0];
-  assert.equal(card.props.variant, undefined);
   assert.equal(card.props.elevation, undefined);
 });
 
-test('Card elevation accepts a token alongside the keyless variant, in any order', () => {
-  const doc = parse('Wireframe\n  Card outlined elevation=2');
-  assert.deepEqual(doc.diagnostics, []);
-  const card = doc.frames[0].children[0];
-  assert.equal(card.props.variant, 'outlined');
-  assert.equal(card.props.elevation, 2);
+// --- Failure mode: the removed `variant` prop is a deliberate hard error -------
+// `variant` (enum [elevation, outlined]) was removed because it was redundant with
+// the numeric `elevation` (its only effect was `outlined` -> elevation 0). Old
+// sources naming it now hit the resolver's existing author-must-fix throws
+// (CONVENTION s.11 / errors.js): unknown keyed prop, and bare enum tokens that no
+// longer match any slot become "unexpected token". These assertions PIN that as
+// intended, not an accidental regression.
+
+test('removed: keyed `variant=` is a deliberate unknown-property error', () => {
+  assert.throws(
+    () => parse('Wireframe\n  Card variant=outlined'),
+    /unknown property "variant="/,
+  );
 });
 
-// --- Render: each variant lays out finite/positive and draws its chrome -------
+test('removed: bare `outlined` / `elevation` tokens are deliberate unexpected-token errors', () => {
+  // These were the keyless `variant` enum values; with the slot gone they match
+  // nothing (Card is sizing:true, so only px/%/*/number are geometry -- these bare
+  // words are neither sizing nor a boolean prop name nor an icon literal).
+  assert.throws(() => parse('Wireframe\n  Card outlined'), /unexpected token `outlined`/);
+  assert.throws(() => parse('Wireframe\n  Card elevation'), /unexpected token `elevation`/);
+});
 
-test('default (elevation) Card draws a drop shadow behind the paper', () => {
+// --- Render: elevation alone governs shadow vs. border-only -------------------
+
+test('default Card (elevation 1) draws a drop shadow behind the paper', () => {
   const { svg } = render('Wireframe\n  Card\n    Typography body2');
   // The elevation shadow is an extra opacity-bearing path painted behind the
-  // surface; the default variant (elevation 1) must emit it.
+  // surface; the default elevation (1) must emit it.
   assert.match(svg, /<path opacity=/);
   const box = layout(parse('Wireframe\n  Card'))[0].root.children[0];
   assert.ok(Number.isFinite(box.w) && box.w > 0 && Number.isFinite(box.h) && box.h > 0);
 });
 
-test('outlined Card draws a bordered paper with no shadow', () => {
-  const { svg } = render('Wireframe\n  Card outlined\n    Typography body2');
-  // outlined => no elevation shadow, so no opacity-bearing path...
+test('elevation=0 Card draws a bordered paper with no shadow (old `outlined` look)', () => {
+  const { svg } = render('Wireframe\n  Card elevation=0\n    Typography body2');
+  // elevation 0 => no shadow, so no opacity-bearing path...
   assert.doesNotMatch(svg, /<path opacity=/);
   // ...but the paper surface (border) is still drawn.
   assert.match(svg, /<path/);
-  const box = layout(parse('Wireframe\n  Card outlined'))[0].root.children[0];
+  const box = layout(parse('Wireframe\n  Card elevation=0'))[0].root.children[0];
   assert.ok(Number.isFinite(box.w) && box.w > 0 && Number.isFinite(box.h) && box.h > 0);
+});
+
+test('elevation=0 reproduces the removed `variant=outlined` look byte-for-byte', () => {
+  // The core proof that nothing was lost: the only thing `variant=outlined` ever
+  // did was force elevation to 0, so the same source with `elevation=0` must render
+  // identically. (We can't author `variant=outlined` anymore -- it throws -- so we
+  // assert the surviving form matches the elevated default's BORDER while omitting
+  // only the shadow path.)
+  const elevated = render('Wireframe\n  Card\n    Typography body2 "x"').svg;
+  const flat = render('Wireframe\n  Card elevation=0\n    Typography body2 "x"').svg;
+  // Same geometry/content; the elevated one has exactly one extra opacity path
+  // (the shadow) that the flat one lacks. Stripping shadow paths makes them equal.
+  const stripShadow = (s) => s.replace(/<path opacity="[^"]*"[^>]*\/>/g, '');
+  assert.equal(stripShadow(elevated), flat);
 });
 
 test('a larger elevation still renders a finite, positive Card', () => {

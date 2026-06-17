@@ -16,8 +16,8 @@ wireframe source, no markdown and no fence:
 Wireframe #login mobile
   Stack column gap=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
+    TextField "Email" startIcon=Email
+    TextField "Password" startIcon=Lock
     Button "Sign in" contained to=#dashboard
 ```
 

@@ -1,0 +1,54 @@
+// Multi-frame connector-routing stress fixture (a generic records-admin flow).
+//
+// The layout is driven entirely by the explicit frame sizes and the `to=#id`
+// navigation graph -- the screen text is just placeholder -- and is shaped to
+// exercise every connector-routing case the channel/track router handles:
+//   - a narrow dialog (#import-dialog, 460 wide) routing past a wide rank-mate
+//     (#wizard, 1200 wide) to #import-warning -> a through-frame run under a
+//     naive elbow router;
+//   - a six-way fan-out from the #manage hub (incl. two distinct-label edges to
+//     #create-dialog and two back edges) -> connector crossings;
+//   - wide edge labels ("Create Child Record Entry") -> label knockouts.
+// It also carries ONE SYNTHETIC SKIP EDGE (#import-warning -> #records, a rank
+// 3 -> 0 back-skip) to exercise the lane (skip-rank) routing path end-to-end.
+// Orientation (TD/LR) is supplied by the renderer, not a Flow directive, so this
+// leads with a Wireframe like every other fixture.
+
+// Screen 1 - record list (rank 0)
+Wireframe #records landscape
+  Typography h6 "Records"
+  Link "Manage Records" to=#manage
+
+// Screen 2 - record management (rank 1; the hub)
+Wireframe #manage w=1200 h=1000
+  Typography h6 "Record Management"
+  Stack row gap=1
+    Button "Back to Records" to=#records
+    Button "Create Record" to=#create-dialog
+    Button "Import File" to=#import-dialog
+    Button "Setup Wizard" to=#wizard
+  Button "Create Child Record Entry" to=#create-dialog
+  Link "Delete" to=#delete-confirm
+
+// Screen 3 - setup wizard (rank 2; the wide sibling)
+Wireframe #wizard w=1200 h=720
+  Typography h6 "Setup Wizard"
+  Button "Back to Management" to=#manage
+
+// Dialog - create record (rank 2)
+Wireframe #create-dialog w=460 h=640
+  Typography h6 "Create Record"
+
+// Dialog - import records (rank 2)
+Wireframe #import-dialog w=460 h=540
+  Typography h6 "Import Records"
+  Button "Save" to=#import-warning
+
+// Alert - import overwrite warning (rank 3)
+Wireframe #import-warning w=480 h=280
+  Typography h6 "Warning"
+  Link "Cancel" to=#records
+
+// Alert - delete confirmation (rank 2)
+Wireframe #delete-confirm w=460 h=260
+  Typography h6 "Delete Record"

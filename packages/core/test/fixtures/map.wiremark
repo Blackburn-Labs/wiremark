@@ -1,0 +1,39 @@
+// Map element -- a focused multi-level / multi-feature sheet for visual review.
+// smoke.test.js renders every fixture, so this is exercised for free.
+Wireframe #map-demo w=1180 h=960
+  Typography h4 "Map -- levels & features"
+  Grid cols=4 gap=2
+    Stack column spacing=1
+      Typography subtitle2 "street (default)"
+      Map 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "street + route"
+      Map street path 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "area + pins"
+      Map area pins=5 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "area + route"
+      Map area path 260px 180px
+  Grid cols=4 gap=2
+    Stack column spacing=1
+      Typography subtitle2 "GPS view (DirectionsCar)"
+      Map DirectionsCar 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "center marker (LocationOn)"
+      Map LocationOn pins=4 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "compass + zoom chrome"
+      Map compass 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "the works"
+      Map street path compass labels pins=4 260px 180px
+  Grid cols=2 gap=2
+    Stack column spacing=1
+      Typography subtitle2 "contours (default)"
+      Map area 260px 150px
+    Stack column spacing=1
+      Typography subtitle2 "contours=false (flat base)"
+      Map area contours=false 260px 150px
+  Typography subtitle2 "responsive: a full-width main-content map"
+  Map area pins=6 compass 100% 160px

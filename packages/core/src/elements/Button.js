@@ -17,7 +17,8 @@ import { textIntrinsic, textOf } from '../metrics.js';
  *
  * Render by variant: `contained` -> hand-drawn hatch tint + bold label;
  * `outlined` -> a bordered surface; `text` -> no chrome, just the label. The
- * `background` prop (`hatch`/`crosshatch`) picks the contained tint's pattern and
+ * `background` prop (`hatch`/`crosshatch`/`none`) picks the contained tint's pattern
+ * -- `none` is an opaque, untextured fill (solid base, no hashes) -- and
  * `denseBackground` packs its lines closer. `size` scales padding
  * (read from SIZES by both intrinsic and render, so the padding can't drift) plus
  * the label font; `intrinsic` passes that font to `textIntrinsic` so the measured
@@ -28,6 +29,14 @@ import { textIntrinsic, textOf } from '../metrics.js';
  * known name, the same bare bordered square (no diagonal) for an unknown one --
  * reserving its width (ICON + ICON_GAP) in `intrinsic` so the chrome never
  * clips. `to=` and children are the facade's job.
+ *
+ * The label is OPTIONAL: an icon with no label is how an icon button is drawn
+ * (SPEC ss.5.4). When the author gives at least one icon and NO label/filler the
+ * button is "icon-only" -- it draws the glyph(s) with no label text and compact,
+ * roughly square padding (`padY` on every side rather than the wide label
+ * `padX`), so a lone glyph reads as a square icon button, not a stretched pill.
+ * A bare `Button` with neither label nor icons keeps the minimal "Button"
+ * placeholder, the established empty-button affordance.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -45,6 +54,14 @@ const ICON_GAP = 6;
 
 /** @param {import('./common.js').ResolvedNode} node @returns {{padX:number,padY:number,fontSize:number}} */
 const sizeOf = (node) => SIZES[node.props.size] ?? SIZES.medium;
+
+/** Does this button carry its own text (an explicit label or filler)? When it
+ *  does NOT but has an icon, it is an icon-only button (no label drawn). */
+const hasOwnText = (node) => typeof node.props.label === 'string' || Boolean(node.filler);
+
+/** @param {import('./common.js').ResolvedNode} node @returns {boolean} */
+const isIconOnly = (node) =>
+  !hasOwnText(node) && Boolean(node.props.startIcon || node.props.endIcon);
 
 export default {
   name: 'Button',
@@ -68,7 +85,7 @@ export default {
     { kind: 'enum', to: 'size' },
     { kind: 'enum', to: 'background' },
   ],
-  notes: 'Filled look = variant=contained. Filler default label "Button".',
+  notes: 'Filled look = variant=contained. Label optional: an icon alone makes an icon button; a bare Button shows the "Button" placeholder.',
 
   // fullWidth stretches to the container cross axis like a block leaf; otherwise
   // inline. `block` may be a predicate the layout calls per-node (layout.js
@@ -76,6 +93,14 @@ export default {
   block: (node) => node.props.fullWidth === true,
   intrinsic: (node) => {
     const { padX, padY, fontSize } = sizeOf(node);
+    // Icon-only: a compact, roughly square box -- the glyph(s) with `padY` on
+    // every side (no wide label `padX`), so a lone icon reads as a square icon
+    // button rather than a stretched pill. No label width is reserved.
+    if (isIconOnly(node)) {
+      const slots = (node.props.startIcon ? 1 : 0) + (node.props.endIcon ? 1 : 0);
+      const w = slots * ICON + Math.max(0, slots - 1) * ICON_GAP + 2 * padY;
+      return { w, h: ICON + 2 * padY };
+    }
     const base = textIntrinsic(node, { padX, padY, fallback: 'Button', fontSize });
     const icons = (node.props.startIcon ? ICON + ICON_GAP : 0) + (node.props.endIcon ? ICON + ICON_GAP : 0);
     return { w: base.w + icons, h: base.h };
@@ -87,14 +112,31 @@ export default {
     const ink = node.props.disabled === true ? COLORS.muted : COLORS.ink;
 
     // Chrome: contained hatches a tint, outlined borders, text draws nothing.
-    // The hatch is borderless so the box border keeps its own normal roughness.
+    // A contained button's hatch IS its own filled surface (CONVENTION s.8), so it
+    // lays an opaque paper base under the hashes (`base: true`) -- content behind a
+    // background-frame chain must not bleed through the gaps. The hatch is
+    // borderless so the box border keeps its own normal roughness, drawn after.
     let out = '';
-    if (variant === 'contained') out = backgroundHatch(box, node.props.background, node.props.denseBackground === true) + surface(box, { fill: 'none', stroke: ink });
+    if (variant === 'contained') out = backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true }) + surface(box, { fill: 'none', stroke: ink });
     else if (variant === 'outlined') out = surface(box, { stroke: ink });
 
-    // Icons sit just inside the box on each side, vertically centered. The label
-    // stays centered in the box (the small glyphs read as adornments, MUI-style).
+    // Icon-only: center the glyph(s) in the box, no label. With two icons they
+    // sit at each inner edge; a single icon is centered in the square.
     const cy = box.y + (box.h - ICON) / 2;
+    if (isIconOnly(node)) {
+      if (node.props.startIcon && node.props.endIcon) {
+        out += drawIcon(node, 'startIcon', box.x + ICON_GAP, cy, ICON, { ink, diagonal: false });
+        out += drawIcon(node, 'endIcon', box.x + box.w - ICON_GAP - ICON, cy, ICON, { ink, diagonal: false });
+      } else {
+        const key = node.props.startIcon ? 'startIcon' : 'endIcon';
+        out += drawIcon(node, key, box.x + (box.w - ICON) / 2, cy, ICON, { ink, diagonal: false });
+      }
+      return out;
+    }
+
+    // Labeled: icons sit just inside the box on each side, vertically centered.
+    // The label stays centered in the box (the small glyphs read as adornments,
+    // MUI-style).
     if (node.props.startIcon) out += drawIcon(node, 'startIcon', box.x + ICON_GAP, cy, ICON, { ink, diagonal: false });
     if (node.props.endIcon) out += drawIcon(node, 'endIcon', box.x + box.w - ICON_GAP - ICON, cy, ICON, { ink, diagonal: false });
 

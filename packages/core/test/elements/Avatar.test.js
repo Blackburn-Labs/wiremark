@@ -88,6 +88,107 @@ test('to= / href= resolve to the universal nav prop', () => {
   assert.equal(firstChild('Wireframe\n  Avatar "RB" href=#profile').props.to, 'profile');
 });
 
+test('size is a second keyless enum accepting each value', () => {
+  for (const s of ['small', 'medium', 'large']) {
+    const doc = parse(`Wireframe\n  Avatar ${s}`);
+    assert.deepEqual(doc.diagnostics, [], `Avatar ${s} should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.size, s);
+  }
+});
+
+test('size defaults to undefined when omitted (strategy applies the medium default)', () => {
+  assert.equal(firstChild(SRC).props.size, undefined);
+});
+
+test('size scales the square diameter; medium matches the historical 40px default', () => {
+  // Bigger size -> bigger square; an unset size renders at the medium diameter so
+  // pre-size avatars are byte-stable (the smoke fixtures rely on this).
+  const small = firstBox('Wireframe\n  Avatar "RB" small');
+  const medium = firstBox('Wireframe\n  Avatar "RB" medium');
+  const large = firstBox('Wireframe\n  Avatar "RB" large');
+  assert.ok(small.w < medium.w && medium.w < large.w, `sizes should grow: ${small.w} < ${medium.w} < ${large.w}`);
+  for (const b of [small, medium, large]) assert.equal(b.w, b.h, 'every size stays square');
+  // Default (no size) == medium, and medium is the historical 40px footprint.
+  assert.equal(firstBox(SRC).w, medium.w, 'an unset size should render at the medium diameter');
+  assert.equal(medium.w, 40, 'medium should remain the historical 40px avatar');
+});
+
+test('variant, size and background are three disjoint keyless enums (any order)', () => {
+  // circular|rounded|square vs small|medium|large vs hatch|crosshatch -- pairwise
+  // disjoint (CONVENTION s.2.1), so all three plus the initials literal resolve
+  // regardless of token order.
+  const expected = { variant: 'square', size: 'large', background: 'crosshatch', label: 'RB' };
+  for (const src of [
+    'Wireframe\n  Avatar square large crosshatch "RB"',
+    'Wireframe\n  Avatar "RB" crosshatch square large',
+    'Wireframe\n  Avatar large "RB" square crosshatch',
+  ]) {
+    const doc = parse(src);
+    assert.deepEqual(doc.diagnostics, [], `${src} should parse cleanly`);
+    const a = doc.frames[0].children[0].props;
+    assert.deepEqual({ variant: a.variant, size: a.size, background: a.background, label: a.label }, expected, src);
+  }
+});
+
+test('background is a keyless enum; denseBackground is a keyless flag', () => {
+  for (const bg of ['hatch', 'crosshatch']) {
+    const doc = parse(`Wireframe\n  Avatar ${bg}`);
+    assert.deepEqual(doc.diagnostics, [], `Avatar ${bg} should parse cleanly`);
+    assert.equal(doc.frames[0].children[0].props.background, bg);
+  }
+  assert.equal(firstChild('Wireframe\n  Avatar denseBackground').props.denseBackground, true);
+  assert.equal(firstChild('Wireframe\n  Avatar denseBackground=false').props.denseBackground, false);
+  // Absent (no tint asked for): both unset, so a bare avatar stays transparent.
+  assert.equal(firstChild(SRC).props.background, undefined);
+  assert.equal(firstChild(SRC).props.denseBackground, undefined);
+});
+
+test('background tints the avatar with an opaque paper base under the hatch', () => {
+  // CONVENTION s.8: Avatar is an (A) surface, so a tint lays a borderless paper
+  // base (base:true) under the hand-drawn hashes -- content behind never bleeds
+  // through the gaps.
+  const tinted = render('Wireframe\n  Avatar circular hatch').svg;
+  assert.match(tinted, /<path[^>]*fill="#ffffff"[^>]*>/, 'tinted avatar draws an opaque paper base path');
+  assert.match(tinted, /stroke="#c4c4c4"/, 'tinted avatar draws the hatch hashes');
+});
+
+test('a bare avatar (no background) stays transparent -- no base, no hatch', () => {
+  // The byte-stability guard for the smoke fixtures: omitting background must
+  // leave the avatar exactly as it drew before this task (no paper base path).
+  const plain = render(SRC).svg;
+  assert.doesNotMatch(plain, /<path[^>]*fill="#ffffff"[^>]*>/, 'an untinted avatar draws no paper base');
+  assert.doesNotMatch(plain, /stroke="#c4c4c4"/, 'an untinted avatar draws no hatch');
+});
+
+test('the tint base + hatch shape-match the variant silhouette (Ruling 4)', () => {
+  // circular -> ellipse base (cubic-bezier curves), square -> plain rect base
+  // (no curves), rounded -> rounded-rect base (corner curves). The base must
+  // trace the variant outline so it never pokes past a curved edge.
+  const baseCurves = (svg) => {
+    const m = svg.match(/<path d="([^"]*)"[^>]*fill="#ffffff"/);
+    return m ? (m[1].match(/C/g) || []).length : -1;
+  };
+  const circ = baseCurves(render('Wireframe\n  Avatar circular hatch').svg);
+  const sq = baseCurves(render('Wireframe\n  Avatar square hatch').svg);
+  const rnd = baseCurves(render('Wireframe\n  Avatar rounded hatch').svg);
+  assert.ok(circ > 0, `circular base should be a curved ellipse (got ${circ} curves)`);
+  assert.equal(sq, 0, `square base should be a straight-edged rect (got ${sq} curves)`);
+  assert.ok(rnd > 0 && rnd < circ, `rounded base should curve only at corners (got ${rnd} vs circ ${circ})`);
+});
+
+test('denseBackground packs the hatch lines closer', () => {
+  const hatchSegs = (svg) => ((svg.match(/<path d="([^"]+)" fill="none" stroke="#c4c4c4"/) || [, ''])[1].match(/M/g) || []).length;
+  const standard = render('Wireframe\n  Avatar square hatch').svg;
+  const dense = render('Wireframe\n  Avatar square hatch denseBackground').svg;
+  assert.ok(hatchSegs(dense) > hatchSegs(standard), `denseBackground should add hash lines: ${hatchSegs(dense)} vs ${hatchSegs(standard)}`);
+});
+
+test('a tinted avatar still centers its initials over the base', () => {
+  const svg = render('Wireframe\n  Avatar "RB" circular hatch').svg;
+  assert.match(svg, />RB</, 'initials still render on a tinted avatar');
+  assert.match(svg, /<path[^>]*fill="#ffffff"[^>]*>/, 'and the opaque base is present');
+});
+
 test('Avatar lays out to a finite, positive square for every variant', () => {
   for (const variant of ['circular', 'rounded', 'square']) {
     const box = firstBox(`Wireframe\n  Avatar "RB" ${variant}`);

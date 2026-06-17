@@ -17,19 +17,20 @@ is no x/y positioning — you nest and size, and the renderer lays things out.
 | `Divider`   | A plain horizontal rule. No properties.                            |
 
 `Stack` is the workhorse. Reach for it whenever you want things in a row or a
-column:
+column. It defaults to `column` (children stacked vertically), so a bare `Stack`
+is a vertical stack — reach for `Stack row` when you want a horizontal toolbar:
 
 ```wireframe
 Stack row gap=2
   Button "Cancel"
-  Button "Save" primary
+  Button "Save" contained
 ```
 
 ```wireframe
 Stack column gap=2
   TextField "Email"
-  TextField "Password" type=password
-  Button "Sign in" primary
+  TextField "Password" startIcon=Lock
+  Button "Sign in" contained
 ```
 
 `Grid` handles repeating cells — a card gallery, a stat row:

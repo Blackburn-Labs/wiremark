@@ -1,7 +1,7 @@
 // @ts-check
 import { WiremarkError, diagnostic } from './errors.js';
 import { getComponent } from './registry.js';
-import { PRESETS } from './elements/common.js';
+import { DIRECTIONS, FLEX_DIRECTIONS, PRESETS } from './elements/common.js';
 import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
 
 /**
@@ -44,6 +44,10 @@ import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
  * @property {Record<string, import('./icons.js').ResolvedIcon|null>} [icons]
  *           // icon-typed props resolved at resolve time (ICONS.md ss.3): artwork
  *           // for draw.js's drawIcon, or null for an unknown name (-> placeholder)
+ * @property {import('./layout.js').Rect} [overlayParent]
+ *           // OVERLAY nodes only: the parent content rect annotated at layout time
+ *           // (layout.js placeOverlay) so the element's render can paint a
+ *           // parent-spanning scrim/backdrop behind itself (Dialog modal)
  * @property {ResolvedNode[]} children
  * @property {number} line
  *
@@ -57,6 +61,7 @@ import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
  * @typedef {Object} Document
  * @property {Frame[]} frames
  * @property {Diagnostic[]} diagnostics
+ * @property {'TD'|'LR'} [flow]   // document-wide flow-chart orientation (`Flow` directive, ss.7.4)
  */
 
 /**
@@ -324,7 +329,15 @@ function resolveFrame(raw) {
     const v = tok.value;
     if (v.startsWith('#')) { id = v.slice(1); continue; }
     if (PRESETS.includes(v)) { preset = v; continue; }
-    throw new WiremarkError(`Wireframe: unexpected token \`${v}\` (expected #id or a preset: ${PRESETS.join(', ')})`, loc);
+    // Keyless child axis -- `Wireframe row` reads like `Stack row` (ss.4.2). The
+    // direction domain is disjoint from the preset names, so order is unambiguous.
+    if (FLEX_DIRECTIONS.includes(v)) {
+      if (Object.hasOwn(props, 'direction'))
+        throw new WiremarkError('Wireframe: "direction" set more than once', loc);
+      props.direction = v;
+      continue;
+    }
+    throw new WiremarkError(`Wireframe: unexpected token \`${v}\` (expected #id, a preset: ${PRESETS.join(', ')}, or a direction: ${FLEX_DIRECTIONS.join(', ')})`, loc);
   }
 
   const children = raw.children.map(resolveNode);
@@ -462,6 +475,33 @@ function collectInlineIcons(raw, icons, diagnostics, options) {
 }
 
 /**
+ * Consume one top-level `Flow` directive (SPEC ss.7.4) into the document-wide
+ * flow-chart orientation: `Flow LR` / `Flow TD` -- one bare direction token, no
+ * children. A single diagram has a single orientation, so a second `Flow` is a
+ * soft warning and the first wins (the element-#id convention). Parsed like the
+ * `Icons` block: a document-level root the resolver intercepts by name.
+ * @param {RawNode} raw
+ * @param {'TD'|'LR'|undefined} current   // orientation set by an earlier `Flow`, if any
+ * @param {Diagnostic[]} diagnostics
+ * @returns {'TD'|'LR'}
+ */
+function collectFlow(raw, current, diagnostics) {
+  const loc = { line: raw.line };
+  if (raw.children.length)
+    throw new WiremarkError('Flow takes no children -- it is a one-line directive (`Flow LR`)', loc);
+  const bare = raw.tokens.length === 1 && raw.tokens[0].kind === 'bare' ? raw.tokens[0].value : undefined;
+  if (bare === undefined || !DIRECTIONS.includes(bare)) {
+    const shown = raw.tokens.map((t) => (t.kind === 'keyed' ? `${t.key}=${t.value}` : t.value)).join(' ');
+    throw new WiremarkError(`Flow expects exactly one direction (${DIRECTIONS.join(' or ')}), got \`${shown || '(none)'}\``, loc);
+  }
+  if (current !== undefined) {
+    diagnostics.push(diagnostic('warning', `duplicate Flow directive -- the first ("${current}") wins`, loc));
+    return current;
+  }
+  return /** @type {'TD'|'LR'} */ (bare);
+}
+
+/**
  * Post-pass over a resolved tree: resolve every icon-typed prop against the
  * lookup chain (inline -> injected -> built-in) and annotate the node for
  * draw.js's drawIcon (ICONS.md ss.3). An UNSET prop falls back to its
@@ -515,11 +555,14 @@ export function resolve(roots, options = {}) {
   const inline = new Map();
   /** @type {RawNode[]} */
   const frameRoots = [];
-  // An `Icons` root is a document-level declaration, not a frame (ICONS.md
-  // ss.4a): consume it into the inline icon map wherever it appears; its
-  // icons apply document-wide regardless of source order.
+  /** @type {'TD'|'LR'|undefined} */
+  let flow;
+  // `Icons` and `Flow` roots are document-level declarations, not frames (ICONS.md
+  // ss.4a / SPEC ss.7.4): consume them wherever they appear; they apply document-
+  // wide regardless of source order.
   for (const r of roots) {
     if (r.name === 'Icons') collectInlineIcons(r, inline, diagnostics, options);
+    else if (r.name === 'Flow') flow = collectFlow(r, flow, diagnostics);
     else frameRoots.push(r);
   }
   const scopes = { inline, injected: buildInjectedIcons(/** @type {*} */ (options).icons) };
@@ -528,5 +571,5 @@ export function resolve(roots, options = {}) {
     checkElementIds(frame, diagnostics);
     annotateIcons(frame.children, scopes, diagnostics);
   }
-  return { frames, diagnostics };
+  return { frames, diagnostics, flow };
 }

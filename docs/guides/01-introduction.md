@@ -9,13 +9,13 @@ a hand-drawn picture of the screen.
 Wireframe #login mobile
   Stack column gap=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
-    Button "Sign in" primary to=#dashboard
+    TextField "Email" startIcon=Email
+    TextField "Password" startIcon=Lock
+    Button "Sign in" contained to=#dashboard
 ```
 
 That block describes a phone-sized sign-in screen: a heading, two fields, and a
-primary button that navigates to a `#dashboard` frame. No coordinates, no
+contained button that navigates to a `#dashboard` frame. No coordinates, no
 styling, no boilerplate — just the structure.
 
 ## The mental model

@@ -63,7 +63,7 @@ test('variant and size (two keyless enums) resolve independent of token order', 
 });
 
 test('background is a third keyless enum accepting each value', () => {
-  for (const bg of ['hatch', 'crosshatch']) {
+  for (const bg of ['hatch', 'crosshatch', 'none']) {
     const doc = parse(`Wireframe\n  Button "Go" contained ${bg}`);
     assert.deepEqual(doc.diagnostics, [], `Button ${bg} should parse cleanly`);
     assert.equal(doc.frames[0].children[0].props.background, bg);
@@ -144,6 +144,69 @@ test('disabled mutes a resolved icon along with the label', () => {
   assert.match(svg, /<g transform="translate\([^)]+\) scale\([^)]+\)" fill="#9aa7b2"/);
 });
 
+test('an icon with no label draws an icon-only button: glyph, NO label text', () => {
+  // The label is optional -- an icon with no label/filler is how an icon button
+  // is drawn (SPEC ss.5.4). The icon renders, but no <text> (and so no "Button"
+  // fallback) appears: the whole button is just the glyph.
+  const { svg, diagnostics } = render('Wireframe\n  Button startIcon=Check');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /M9 16.17/, 'the resolved Check artwork should render');
+  assert.doesNotMatch(svg, /<text/, 'an icon-only button draws no label text at all');
+  assert.doesNotMatch(svg, /Button/, 'the "Button" placeholder must not appear when an icon is given');
+});
+
+test('an icon-only button with an UNKNOWN icon still draws no label text', () => {
+  // The placeholder square is a <path>, not a <text>; the suppression is driven
+  // by "has an icon slot", not by whether the icon resolved.
+  const { svg } = render('Wireframe\n  Button startIcon=NoSuchIconXyz');
+  assert.doesNotMatch(svg, /<text/, 'still no label text for an unresolved icon-only button');
+  assert.doesNotMatch(svg, /Button/);
+  assert.match(svg, /<path/, 'the placeholder square still draws');
+});
+
+test('an icon-only button is roughly square and far narrower than a labeled one', () => {
+  // Compact, square-ish padding (padY on every side, no wide label padX): a lone
+  // medium icon is ICON(10) + 2*padY(9) = 28 on each side.
+  const only = rowButtonBox('startIcon=Check');
+  assert.ok(Math.abs(only.w - only.h) < 1, `icon-only should be ~square, got ${only.w}x${only.h}`);
+  const labeled = rowButtonBox('"Check" startIcon=Check');
+  assert.ok(only.w < labeled.w, `icon-only (${only.w}) should be narrower than labeled (${labeled.w})`);
+  // It must NOT reserve room for the "Button" fallback string.
+  const fallback = rowButtonBox('');
+  assert.ok(only.w < fallback.w, `icon-only (${only.w}) must not reserve the "Button" label width (${fallback.w})`);
+});
+
+test('a start+end icon-only button seats both glyphs and still draws no label', () => {
+  const both = rowButtonBox('startIcon=Check endIcon=Check');
+  const one = rowButtonBox('startIcon=Check');
+  assert.ok(both.w > one.w, `two icons (${both.w}) should be wider than one (${one.w})`);
+  const { svg } = render('Wireframe\n  Button startIcon=Check endIcon=ArrowForward');
+  assert.doesNotMatch(svg, /<text/, 'two icons, no label, still no text');
+  // Both resolved glyphs render (Check + ArrowForward).
+  const groups = svg.match(/<g transform="translate\([^)]+\) scale\([^)]+\)" fill="/g) || [];
+  assert.ok(groups.length >= 2, `both icon glyphs should render, found ${groups.length}`);
+});
+
+test('startIcon/endIcon WITH a label keep the label AND draw both icons', () => {
+  // Regression guard for the labeled path: adding icons must not suppress the
+  // label when one is present.
+  const { svg } = render('Wireframe\n  Button "Send" startIcon=Check endIcon=ArrowForward');
+  assert.match(svg, /Send/, 'the label still renders alongside icons');
+  const groups = svg.match(/<g transform="translate\([^)]+\) scale\([^)]+\)" fill="/g) || [];
+  assert.ok(groups.length >= 2, `both icons should still render beside the label, found ${groups.length}`);
+});
+
+test('filler is rejected on Button, so an icon Button is always icon-only', () => {
+  // Button is not a text component, so the icon-only test ("no label AND no
+  // filler") collapses to "no label": filler can never put text on a Button.
+  // (hasOwnText still consults node.filler to stay aligned with textOf's
+  // contract, but the parser forbids filler here, so it can't fire.)
+  assert.throws(
+    () => parse('Wireframe\n  Button ~1 startIcon=Check'),
+    /filler .* is only valid on text components/,
+  );
+});
+
 test('to=#id and href=#id both populate the universal node.props.to', () => {
   // href is the spec alias for the universal nav prop (CONVENTION s.7); both
   // forms resolve to node.props.to so flow.js keeps working unchanged.
@@ -206,6 +269,31 @@ test('contained renders a hand-drawn hatch tint; text renders no surface chrome'
   // The hatch tint (gray hashes, drawn as a stroked path) only appears for contained.
   assert.match(contained, /stroke="#c4c4c4"/);
   assert.doesNotMatch(text, /stroke="#c4c4c4"/);
+});
+
+test('contained lays an opaque paper base under the hatch; outlined/text do not', () => {
+  // CONVENTION s.8 (Task 1): a contained button's hatch IS its own filled
+  // surface, so it paints a borderless COLORS.paper (#ffffff) base path under
+  // the hashes via backgroundHatch's `base:true` -- content behind a
+  // background-frame chain must not bleed through the hatch gaps. outlined/text
+  // draw no hatch, so no base path. (The frame's own paper is a <rect>, not a
+  // <path>, so counting #ffffff-filled <path>s isolates the button's base.)
+  const basePaths = (svg) => (svg.match(/<path[^>]*fill="#ffffff"[^>]*>/g) || []).length;
+  const contained = render('Wireframe\n  Button "A" contained').svg;
+  const outlined = render('Wireframe\n  Button "A" outlined').svg;
+  const text = render('Wireframe\n  Button "A" text').svg;
+  assert.equal(basePaths(contained), 1, 'contained should paint exactly one opaque paper base path');
+  assert.equal(basePaths(outlined), 0, 'outlined draws no hatch and so no paper base');
+  assert.equal(basePaths(text), 0, 'text draws no hatch and so no paper base');
+});
+
+test('contained background=none is opaque but untextured (paper base, no hashes)', () => {
+  // `none` keeps the knock-out base (so a background-frame chain can't bleed
+  // through) but draws no hatch -- a solid, plain contained surface.
+  const basePaths = (svg) => (svg.match(/<path[^>]*fill="#ffffff"[^>]*>/g) || []).length;
+  const none = render('Wireframe\n  Button "A" contained none').svg;
+  assert.equal(basePaths(none), 1, 'background=none still paints exactly one opaque paper base');
+  assert.doesNotMatch(none, /stroke="#c4c4c4"/, 'background=none draws no hatch marks');
 });
 
 test('the contained tint varies by background pattern + denseBackground', () => {

@@ -82,13 +82,12 @@ export function render(input, options = {}) {
 
 /**
  * Flow-chart direction for a multi-frame file: an explicit `options.direction`
- * wins, else the first frame that declares `direction=`, else `TD` (ss.7.4).
+ * wins, else the document's `Flow` directive, else `TD` (ss.7.4).
  * @param {import('./resolve.js').Document} doc
  * @param {{ direction?: string }} options
  * @returns {'TD'|'LR'}
  */
 function resolveDirection(doc, options) {
   if (options.direction === 'TD' || options.direction === 'LR') return options.direction;
-  const declared = doc.frames.find((f) => f.props.direction)?.props.direction;
-  return declared === 'LR' ? 'LR' : 'TD';
+  return doc.flow === 'LR' ? 'LR' : 'TD';
 }

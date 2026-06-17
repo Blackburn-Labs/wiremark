@@ -106,6 +106,80 @@ test('align is a keyed enum that drives the SVG text-anchor', () => {
   assert.equal(anchorFor(''), 'start');           // omitted => default start
 });
 
+test('align is ALSO keyless: a bare align value resolves to props.align', () => {
+  // The spec marks align keyless; a bare token like `center` lands on align,
+  // same as the keyed `align=center` (resolve.js keyless-enum slot).
+  for (const a of ['left', 'center', 'right', 'justify', 'inherit']) {
+    const n = parse(`Wireframe w=400 h=300\n  Typography "Hi" ${a}`).frames[0].children[0];
+    assert.equal(n.props.align, a, `bare \`${a}\` should set props.align`);
+  }
+});
+
+test('a bare align value drives the SVG text-anchor like the keyed form', () => {
+  // Bare and keyed are the same prop, so they produce the same anchor.
+  const anchorFor = (a) =>
+    (render(`Wireframe w=400 h=300\n  Typography "Hi" ${a}`).svg.match(/text-anchor="(start|middle|end)"/) ?? [])[1];
+  assert.equal(anchorFor('center'), 'middle');
+  assert.equal(anchorFor('right'), 'end');
+  assert.equal(anchorFor('left'), 'start');
+});
+
+test('keyless align composes with the variant enum in any order', () => {
+  // variant and align are disjoint keyless enums, so order is irrelevant.
+  const a = parse('Wireframe w=400 h=300\n  Typography "Hi" caption right').frames[0].children[0];
+  assert.deepEqual({ v: a.props.variant, al: a.props.align }, { v: 'caption', al: 'right' });
+  const b = parse('Wireframe w=400 h=300\n  Typography "Hi" right caption').frames[0].children[0];
+  assert.deepEqual({ v: b.props.variant, al: b.props.align }, { v: 'caption', al: 'right' });
+});
+
+test('keyless align composes with a literal and the noWrap flag in any order', () => {
+  const n = parse('Wireframe w=400 h=300\n  Typography "Hi" center noWrap').frames[0].children[0];
+  assert.deepEqual(
+    { l: n.props.label, al: n.props.align, nw: n.props.noWrap },
+    { l: 'Hi', al: 'center', nw: true },
+  );
+});
+
+test('setting align twice (bare + keyed) is an ambiguity error', () => {
+  assert.throws(
+    () => parse('Wireframe w=400 h=300\n  Typography "Hi" center align=right'),
+    /set more than once|more than once/,
+  );
+});
+
+test('the caption variant inks its label in the muted/disabled color', () => {
+  // caption is MUI's de-emphasized text -> COLORS.muted (#9aa7b2 light), the same
+  // faded ink Button/TextField use when disabled. Other variants stay ink.
+  const captionFill = (svg) => (svg.match(/<text[^>]*fill="(#[0-9a-f]{6})"/i) ?? [])[1];
+
+  const caption = render('Wireframe w=400 h=300\n  Typography caption "Note"').svg;
+  assert.equal(captionFill(caption), '#9aa7b2', 'caption draws in muted ink');
+
+  for (const v of ['body1', 'body2', 'h4', 'subtitle1', 'overline', 'button']) {
+    const svg = render(`Wireframe w=400 h=300\n  Typography ${v} "Note"`).svg;
+    assert.equal(captionFill(svg), '#22303f', `${v} must keep the normal ink, not muted`);
+  }
+});
+
+test('a wrapped caption keeps muted ink on every line', () => {
+  // The fill is per-variant, not per-line, so multi-line captions stay faded.
+  const long = 'An extremely long caption that cannot possibly fit on one line at all';
+  const svg = render(`Wireframe w=240 h=200\n  Typography caption "${long}"`).svg;
+  const fills = svg.match(/<text[^>]*fill="(#[0-9a-f]{6})"/gi) ?? [];
+  assert.ok(fills.length >= 2, `expected multiple wrapped lines, got ${fills.length}`);
+  for (const f of fills) assert.match(f, /#9aa7b2/, 'every caption line is muted');
+});
+
+test('caption is muted in the dark theme too (muted tracks the palette)', () => {
+  // The color comes from COLORS.muted, which the dark palette redefines, so a
+  // dark-theme caption uses dark muted (#6b7782) while body uses dark ink.
+  const fill = (svg) => (svg.match(/<text[^>]*fill="(#[0-9a-f]{6})"/i) ?? [])[1];
+  const caption = render('Wireframe w=400 h=300\n  Typography caption "Note"', { theme: 'dark' }).svg;
+  const body = render('Wireframe w=400 h=300\n  Typography body1 "Note"', { theme: 'dark' }).svg;
+  assert.equal(fill(caption), '#6b7782', 'dark caption uses dark muted');
+  assert.equal(fill(body), '#d4dde6', 'dark body uses dark ink');
+});
+
 test('noWrap parses both as a bare flag and keyed', () => {
   const bare = parse('Wireframe w=400 h=300\n  Typography "Hi" noWrap');
   assert.deepEqual(bare.diagnostics, []);
@@ -115,7 +189,9 @@ test('noWrap parses both as a bare flag and keyed', () => {
 
 test('a label wider than its box word-wraps onto multiple lines (the MUI default)', () => {
   const long = 'An extremely long heading that cannot possibly fit';
-  const src = `Wireframe w=320 h=200\n  Typography h4 "${long}"`;
+  // Flush frame (padding defaults to 0) narrower than the heading, so the h4 must
+  // wrap; the content width is the full frame width now.
+  const src = `Wireframe w=288 h=200\n  Typography h4 "${long}"`;
   const { svg } = render(src);
   const lines = (svg.match(/<text /g) ?? []).length;
   assert.ok(lines >= 2, `expected multiple wrapped lines, got ${lines}`);

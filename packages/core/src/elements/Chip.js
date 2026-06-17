@@ -16,8 +16,9 @@ import { textIntrinsic, textOf } from '../metrics.js';
  *  - `variant` filled (default) -> a hand-drawn hatch tint; outlined -> border only.
  *  - `size` medium (default) / small -> small tightens the padding + label font.
  *
- * `background` (`hatch`/`crosshatch`) picks the filled tint's pattern and
- * `denseBackground` packs its lines closer.
+ * `background` (`hatch`/`crosshatch`/`none`) picks the filled tint's pattern --
+ * `none` is opaque but untextured (solid base, no hashes) -- and `denseBackground`
+ * packs its lines closer.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -60,10 +61,11 @@ export default {
   },
   render: (node, box) => {
     const { fontSize } = sizeOf(node);
-    // filled -> hand-drawn hatch tint under the border; outlined (and default-read
+    // filled -> opaque (base:true) hand-drawn hatch tint under the border (the
+    // chip's own fill, so nothing shows through it); outlined (and default-read
     // safety) -> border only. The hatch is borderless so the pill border keeps its
     // own normal roughness.
-    const tint = node.props.variant === 'outlined' ? '' : backgroundHatch(box, node.props.background, node.props.denseBackground === true);
+    const tint = node.props.variant === 'outlined' ? '' : backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true });
     return tint + surface(box, {}) + centeredLabel(box, textOf(node, 'Chip'), { fontSize });
   },
 };

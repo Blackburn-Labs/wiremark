@@ -25,10 +25,30 @@ export { FILLER_STYLES, PRESETS } from './elements/common.js';
  *    `href=` is an alias (the spec's canonical name on Link/Button), so both
  *    spellings land on `props.to` -- what flow.js reads for nav edges. Elements
  *    must NOT redeclare `to`/`href` (CONVENTION s.7).
+ *  - `scrollbar` (vertical|horizontal|both|none) draws a scrollbar affordance on the
+ *    element's edge(s): the layout RESERVES a thin gutter on the scrolled edge (right
+ *    for vertical, bottom for horizontal) so the strip never paints over content, and
+ *    the render facade draws it there. `scrollbarValue` (0-100, scroll position, 0 =
+ *    start) and `scrollbarHandle` (handle length as a % of the track, default 30) tune
+ *    it; both are ignored when `scrollbar` is unset/none. All three are KEYED-only (no
+ *    keyless slot -- the enum would collide with element axes like vertical/horizontal).
+ *  - `padding` (alias `pad`) overrides an element's inner padding, in MUI spacing
+ *    units (`padding=2` -> 16px), exactly like `gap`/`spacing`. Unset keeps the
+ *    element's own default pad (Drawer 1, Card/Dialog content 2, most layout
+ *    primitives 0 incl. the Wireframe frame); `padding=0` removes it. Keyed-only.
+ *    (A few elements -- List
+ *    with a subheader, Select -- use their pad for a special inset, so overriding it
+ *    there is unusual.) The layout's `specFor` applies it.
  * Sizing (`w h`) is likewise broadly available, flagged per element via `sizing`.
  * @type {Record<string, PropDef>}
  */
-export const UNIVERSAL_PROPS = { to: { type: 'ref', aliases: ['href'] } };
+export const UNIVERSAL_PROPS = {
+  to: { type: 'ref', aliases: ['href'] },
+  scrollbar: { type: 'enum', values: ['vertical', 'horizontal', 'both', 'none'] },
+  scrollbarValue: { type: 'number' },
+  scrollbarHandle: { type: 'number' },
+  padding: { type: 'number', aliases: ['pad'] },
+};
 
 /** Component name -> definition. @type {Record<string, ComponentDef>} */
 export const REGISTRY = Object.fromEntries(ELEMENTS.map((el) => [el.name, el]));

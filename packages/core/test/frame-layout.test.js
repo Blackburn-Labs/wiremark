@@ -9,7 +9,7 @@ import { layout } from '../src/layout.js';
 import { layoutFrames } from '../src/frame-layout.js';
 import { connectorGeometry } from '../src/render.js';
 import { connectorArrow } from '../src/draw.js';
-import { PRESET_SIZES, FRAME_FLOW_GAP, CONNECTOR_SPREAD, CONNECTOR_WIDTH } from '../src/metrics.js';
+import { PRESET_SIZES, FRAME_FLOW_GAP, CONNECTOR_SPREAD, CONNECTOR_WIDTH, CHANNEL_TRACK_GAP, CHANNEL_PAD } from '../src/metrics.js';
 
 const FIXTURES = join(import.meta.dirname, 'fixtures');
 /** @param {string} name */
@@ -49,6 +49,17 @@ function pathsCross(a, b) {
 
 const { h: LH } = PRESET_SIZES.landscape; // #login is landscape; the anchored frames adopt #shell's landscape canvas
 
+/**
+ * Count placed frames by a marker that is genuinely 1:1 with a frame group:
+ * render.js wraps every visible frame in its own `<clipPath id="wm-clip-N">`
+ * (the per-frame overflow clip). A bare `<g transform>` count is NOT a valid
+ * proxy -- resolved icons (`iconBody` -> `<g transform="translate(...) scale(...)">`)
+ * and any other transformed group inflate it, so a frame holding an icon would
+ * over-count. The clip id is emitted once per placed frame and by nothing else.
+ * @param {string} svg @returns {number}
+ */
+const frameCount = (svg) => (svg.match(/<clipPath id="wm-clip-\d+"/g) ?? []).length;
+
 // The fixture: #login -> #home, then #home fans out to #details and #product, with
 // a #details -> #home back-link. (#login -> #reset and #product -> #detail are
 // dangling; #shell is the invisible background.)
@@ -70,8 +81,12 @@ test('multi-frame (TD): linked frames rank top-to-bottom; the back-link does not
   const home = byId('home');
   const details = byId('details');
   assert.ok(login.y < home.y && home.y < details.y, '#login -> #home -> #details run down the ranks');
+  // #login -> #home is a single straight run, so its channel stays the minimum.
   assert.equal(home.y, login.y + LH + FRAME_FLOW_GAP, '#home sits one rank below #login');
-  assert.equal(details.y, home.y + LH + FRAME_FLOW_GAP, '#details sits one rank below #home (back-link ignored)');
+  // The #home -> {#details, #product} + back channel carries 3 bending runs, so it
+  // widens past the minimum to seat their tracks (2*CHANNEL_PAD + (3-1)*TRACK_GAP).
+  assert.equal(details.y, home.y + LH + (2 * CHANNEL_PAD + 2 * CHANNEL_TRACK_GAP),
+    '#details sits one rank below #home; the channel widens for its tracks (back-link ignored)');
 });
 
 test('multi-frame (TD): a parent is centered over its fanned-out children', () => {
@@ -100,7 +115,7 @@ test('multi-frame: layout is deterministic across runs', () => {
 test('multi-frame render: frames placed in 2D with frame-to-frame connectors', () => {
   const { svg, diagnostics } = render(fixture('multi-frame.wiremark'));
   assert.deepEqual(diagnostics, [], 'the fixture resolves cleanly');
-  assert.equal((svg.match(/<g transform/g) ?? []).length, 4, 'four visible frames are placed (shell is hidden)');
+  assert.equal(frameCount(svg), 4, 'four visible frames are placed (shell is hidden)');
 
   // Connectors live in their own layer, on top of the frames.
   const layer = svg.match(/<g class="wm-connectors">([\s\S]*)<\/g><\/svg>$/);
@@ -183,12 +198,12 @@ test('multi-frame: a bidirectional pair also offsets its across-run, so no part 
   const geom = connectorGeometry(placedOf(frames), graph, 'TD');
   const fwd = geom.find((c) => c.from === 'home' && c.to === 'details');
   const back = geom.find((c) => c.from === 'details' && c.to === 'home');
-  // Both are elbows; their horizontal across-runs (points[1].y is the bend) sit at
-  // DIFFERENT y, so the lines don't overlap on the across segment either.
+  // Both are elbows; their horizontal across-runs (points[1].y is the track) sit on
+  // ADJACENT tracks, exactly CHANNEL_TRACK_GAP apart, so the lines never coincide.
   assert.equal(fwd.points.length, 4);
   assert.equal(back.points.length, 4);
   const sep = Math.abs(fwd.points[1].y - back.points[1].y);
-  assert.ok(sep > 0 && sep <= CONNECTOR_SPREAD + 0.5, 'across-runs separated, by at most CONNECTOR_SPREAD');
+  assert.equal(sep, CHANNEL_TRACK_GAP, 'the pair sits on adjacent tracks, CHANNEL_TRACK_GAP apart');
 });
 
 test('multi-frame: flow connectors are clean (not hand-drawn) and thicker', () => {
@@ -222,16 +237,24 @@ test('multi-frame: no two connectors cross in the rendered fixture (TD and LR)',
   }
 });
 
-test('multi-frame: an off-axis skip-rank connector routes its across-run clear of the intervening frame', () => {
-  // #a (rank 0) links past #b (rank 1, off to the side) to #c (rank 2, laterally offset).
+test('multi-frame: a skip-rank connector detours onto a lane outside the component', () => {
+  // #a (rank 0) -> #b (rank 1) makes #b a real rank-1 frame; #a -> #c then skips
+  // past it to #c (rank 2), so the edge must lane AROUND #b, not cut through it.
   const placed = rects([
     { id: 'a', x: 0, y: 0, w: 400, h: 200 },
     { id: 'b', x: 700, y: 280, w: 400, h: 200 },
     { id: 'c', x: 150, y: 560, w: 400, h: 200 },
   ]);
-  const ac = connectorGeometry(placed, { edges: [{ from: 'a', to: 'c' }] }, 'TD')[0].points;
-  assert.equal(ac.length, 4, 'a skip-rank off-axis connector is an elbow');
-  assert.ok(ac[1].y < 280, 'the across-run sits in the first gap, above the intervening #b (top at y=280)');
+  const geom = connectorGeometry(placed, { edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] }, 'TD');
+  const ac = geom.find((c) => c.from === 'a' && c.to === 'c').points;
+  assert.equal(ac.length, 6, 'a skip-rank edge routes tail-channel -> lane -> head-channel (6 points)');
+  // The lane run (points[2]-[3]) is a single vertical OUTSIDE every frame's x-span.
+  assert.equal(ac[2].x, ac[3].x, 'the lane run is one vertical line');
+  const xs = placed.flatMap((p) => [p.x, p.x + p.w]);
+  assert.ok(ac[2].x < Math.min(...xs) || ac[2].x > Math.max(...xs), 'the lane sits clear of all frames');
+  // Its two across-runs sit in the gaps above and below #b (y 280..480), not through it.
+  assert.ok(ac[1].y > 200 && ac[1].y < 280, 'the tail across-run sits in the gap above #b');
+  assert.ok(ac[4].y > 480 && ac[4].y < 560, 'the head across-run sits in the gap below #b');
 });
 
 test('multi-frame (LR): off-axis connectors route as across/down/across on the side faces', () => {
@@ -252,20 +275,45 @@ test('connectorArrow degrades gracefully on degenerate input (< 2 points)', () =
   assert.match(connectorArrow([{ x: 0, y: 0 }, { x: 10, y: 0 }]), /<path /, 'a valid 2-point arrow still draws');
 });
 
-test('direction is a keyed Wireframe prop and an option override', () => {
-  const doc = parse('Wireframe #a landscape direction=LR\n  Typography "x"');
-  assert.equal(doc.frames[0].props.direction, 'LR');
+test('the Flow directive sets the document orientation; the render option overrides it', () => {
+  const doc = parse('Flow LR\nWireframe #a landscape\n  Typography "x"');
+  assert.equal(doc.flow, 'LR');
+  assert.deepEqual(doc.diagnostics, []);
 
-  // The render-time option wins over any in-source value.
+  // The directive drives multi-frame orientation end-to-end.
   const src = fixture('multi-frame.wiremark');
-  const td = render(src, { direction: 'TD' }).svg;
-  const lr = render(src, { direction: 'LR' }).svg;
-  assert.notEqual(td, lr, 'TD and LR produce different layouts');
+  const flowTd = render(`Flow TD\n${src}`).svg;
+  const flowLr = render(`Flow LR\n${src}`).svg;
+  assert.notEqual(flowTd, flowLr, 'the Flow directive changes the layout');
+
+  // The render-time option still wins over the in-source directive.
+  assert.equal(render(`Flow LR\n${src}`, { direction: 'TD' }).svg, flowTd, 'option overrides the directive');
 });
 
 test('single-frame files render exactly as before (no flow chrome)', () => {
   const { svg } = render('Wireframe\n  Typography "Hello"');
   assert.match(svg, /viewBox="0 0 800 600"/, 'legacy origin + default canvas size preserved');
-  assert.equal((svg.match(/<g transform/g) ?? []).length, 1, 'one frame group');
+  assert.equal(frameCount(svg), 1, 'one frame group');
   assert.doesNotMatch(svg, /wm-connectors/, 'no connector layer for a lone frame');
+});
+
+test('frame count is robust to icons in the content (wm-clip marker, not <g transform>)', () => {
+  // Regression guard for the brittle proxy this test used to use: a resolved icon
+  // emits its own `<g transform="translate(...) scale(...)">`, so counting raw
+  // `<g transform>` over-counts any frame holding an icon. Two frames, one of which
+  // contains an Icon: the robust marker must report 2, while `<g transform>` is
+  // inflated past 2 -- proving why frameCount() does not use it.
+  const src = [
+    'Wireframe #one',
+    '  Icon Search',
+    'Wireframe #two',
+    '  Typography "plain"',
+  ].join('\n');
+  const { svg, diagnostics } = render(src);
+  assert.deepEqual(diagnostics, [], 'the icon resolves cleanly');
+
+  assert.equal(frameCount(svg), 2, 'two frames counted regardless of the icon group');
+  // The icon adds at least one extra `<g transform>`, so the old proxy would mis-count.
+  assert.ok((svg.match(/<g transform/g) ?? []).length > 2,
+    'raw <g transform> is inflated by the icon -- the reason this proxy was replaced');
 });

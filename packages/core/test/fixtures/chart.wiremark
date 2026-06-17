@@ -1,0 +1,36 @@
+// Chart element showcase: every variant, plus the chrome flags and a sidebar
+// fill. A focused fixture for visual review; the smoke corpus renders it too.
+Wireframe #chart w=1180 h=900
+  Typography h4 "Chart variants"
+  Grid cols=4 gap=3
+    Stack column spacing=1
+      Typography subtitle2 "bar (default)"
+      Chart "Revenue by region" 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "column"
+      Chart column 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "line"
+      Chart line "Sessions" 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "area"
+      Chart area "Traffic" 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "histogram"
+      Chart histogram series=9 260px 180px
+    Stack column spacing=1
+      Typography subtitle2 "pie"
+      Chart pie 180px 180px
+    Stack column spacing=1
+      Typography subtitle2 "donut + legend"
+      Chart donut series=6 legend 220px 180px
+    Stack column spacing=1
+      Typography subtitle2 "bare plot (axes=false labels=false)"
+      Chart column axes=false labels=false 260px 180px
+  Typography h4 "Responsive: a sidebar pie fills its column"
+  Stack row spacing=3
+    Stack column 200px spacing=1 outline=dashed
+      Typography subtitle2 "Sidebar"
+      Chart pie 100%
+    Box * 200px outline=dotted
+      Typography body2 "main content"

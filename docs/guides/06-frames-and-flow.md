@@ -25,7 +25,7 @@ The name is optional, but you need one on any frame you want to link to.
 whole region — a clickable zone that navigates to a frame:
 
 ```wireframe
-Button "Sign in" primary to=#dashboard
+Button "Sign in" contained to=#dashboard
 ListItem "Settings" to=#settings
 Box * * to=#detail            // an entire region is clickable
 Card to=#product              // the whole card navigates
@@ -190,8 +190,8 @@ Wireframe #shell visible=false
 A single ` ```wireframe ` block can declare **several `Wireframe` frames**. When
 more than one frame is visible, wiremark arranges them as a **flow chart**: each
 frame is a node, positioned automatically over the inferred `to=#id` graph, with
-hand-drawn connectors joining linked screens (the same structure `toMermaid`
-emits).
+clean orthogonal connectors joining linked screens (a crisp diagram layer, drawn
+over the hand-sketched frames — the same structure `toMermaid` emits).
 
 ```wireframe
 Wireframe #home landscape
@@ -204,10 +204,12 @@ Wireframe #details landscape
   Typography h1 "Item details"
 ```
 
-- **Direction.** The flow runs top-down by default. Put `direction=LR` on a frame
-  to lay it out left-to-right instead (`direction=TD` is the explicit default); a
-  host may also pass `{ direction }` to the renderer. The first frame that
-  declares `direction=` sets it for the whole document.
+- **Direction.** The flow runs top-down by default. Add a top-level `Flow LR`
+  directive — on its own line, like an `Icons` block, not inside a frame — to lay
+  the whole chart out left-to-right instead (`Flow TD` is the explicit default); a
+  host may also pass `{ direction }` to the renderer, which wins over the directive.
+  Orientation is a property of the whole diagram, so it lives in one place rather
+  than on any single frame.
 - **Background templates stay out of the flow.** A `visible=false` frame (e.g. a
   `#shell` pulled in via `background=#id`) is never a flow node, but still
   composes underneath the screens that reference it.
@@ -216,6 +218,12 @@ Wireframe #details landscape
   connector; it never hard-fails.
 - **Disconnected screens** (frames nothing links to) are packed alongside the
   linked group rather than dropped.
+- **Gaps widen to fit the wiring.** The gap between two ranks of frames is a
+  routing channel: it grows from its minimum to seat every connector that crosses
+  it on its own parallel track (so connectors never overlap each other or cut
+  through a frame) and to hold their edge labels. Captions render *inside* that
+  widened gap rather than on top of the screens, and an edge that skips a rank
+  detours around the side instead of slicing through the frames between.
 
 A lone frame is unaffected: a single-`Wireframe` document renders exactly as it
 always has, with no flow chrome.
@@ -230,7 +238,7 @@ always has, with no flow chrome.
   frame from drawing on its own.
 - `Anchor #id` names a region inside a background frame; `anchor=#id` (alias
   `at=`) composes a foreground frame's content into that region.
-- Several visible frames auto-arrange into a connected flow chart; `direction=TD`
-  (default) or `direction=LR` sets its orientation.
+- Several visible frames auto-arrange into a connected flow chart; a top-level
+  `Flow TD` (default) or `Flow LR` directive sets its orientation.
 
 Next: [Patterns & recipes](07-patterns.md).

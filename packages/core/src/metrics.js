@@ -13,6 +13,10 @@
 export const SPACING = 8;
 /** Inner padding between a frame edge and its content. */
 export const FRAME_PAD = 16;
+/** Thickness (px) of the scrollbar gutter reserved on an element's scrolled edge by
+ *  the universal `scrollbar` prop -- the strip sits IN this gutter so it never paints
+ *  over content (layout reserves it; the render facade draws into it). */
+export const SCROLLBAR_THICKNESS = 12;
 
 /** Preset -> pixel size (SPEC ss.5.1 names presets but leaves dimensions open). */
 export const PRESET_SIZES = {
@@ -27,7 +31,10 @@ export const DEFAULT_FRAME = { w: 800, h: 600 };
  * Multi-frame flow-chart layout (SPEC ss.7.4). When a file declares several
  * frames, they are positioned as a Mermaid-style flow chart over the `to=#id`
  * navigation graph rather than stacked. These are the inter-frame gaps:
- *  - FLOW_GAP: between consecutive ranks (along the flow axis).
+ *  - FLOW_GAP: the MINIMUM width of the routing channel between consecutive
+ *    ranks (along the flow axis). The channel widens past this minimum to fit
+ *    the connector tracks and edge labels routed through it (see routing.js);
+ *    a channel carrying only straight, label-less runs stays exactly this wide.
  *  - SIBLING_GAP: between frames sharing a rank (across the flow axis).
  *  - COMPONENT_GAP: between disconnected frame groups.
  */
@@ -35,14 +42,49 @@ export const FRAME_FLOW_GAP = 80;
 export const FRAME_SIBLING_GAP = 48;
 export const FRAME_COMPONENT_GAP = 96;
 
+/**
+ * Channel/track routing inside an inter-rank channel (routing.js). Each bending
+ * connector run across a channel sits on its own parallel TRACK; the channel
+ * sizes to hold them plus padding, then widens further for any edge labels.
+ *  - CHANNEL_TRACK_GAP: spacing between adjacent tracks (and so the across-run
+ *    separation of a bidirectional pair's two shafts).
+ *  - CHANNEL_PAD: clearance kept between the outermost track and each rank band.
+ */
+export const CHANNEL_TRACK_GAP = 28;
+export const CHANNEL_PAD = 20;
+
+/**
+ * Lanes carry skip-rank edges OUTSIDE a component's cross extent, so a connector
+ * spanning >1 rank never crosses an intervening frame. Nested skip edges stack
+ * on parallel lanes.
+ *  - FLOW_LANE_MARGIN: gap between the component's cross edge and the first lane.
+ *  - FLOW_LANE_GAP: spacing between successive nested lanes.
+ */
+export const FLOW_LANE_MARGIN = 48;
+export const FLOW_LANE_GAP = 32;
+
+/**
+ * Edge-label boxes routed inside a widened channel (routing.js).
+ *  - CONNECTOR_LABEL_PAD: paper-knockout padding around the caption text.
+ *  - CONNECTOR_LABEL_CLEAR: extra clearance a label claims past its own box when
+ *    sizing the channel, so it never abuts a rank band.
+ *  - CONNECTOR_LABEL_STAGGER: main-axis offset applied to de-overlap labels that
+ *    collide along the cross axis within one channel.
+ */
+export const CONNECTOR_LABEL_PAD = 3;
+export const CONNECTOR_LABEL_CLEAR = 6;
+export const CONNECTOR_LABEL_STAGGER = 8;
+
 /** Connector arrowhead: wing length (px) and half-spread (radians). */
 export const ARROW_HEAD = 10;
 export const ARROW_SPREAD = 0.45;
 
 /**
- * Perpendicular gap (px) between parallel connectors that share a frame pair, so
- * a bidirectional `#a ⇄ #b` (or two same-direction edges) fan out instead of
- * overlapping (ss.7.4).
+ * Tangential gap (px) clustering the connectors of ONE frame pair around their
+ * shared anchor slot, so a bidirectional `#a ⇄ #b` (or two same-direction edges)
+ * reads as two close parallel lines that still touch the face (ss.7.4). This is
+ * intra-pair ANCHOR clustering only -- the old elbow-bend role is retired now
+ * that channel/track routing (routing.js) lanes every run onto its own track.
  */
 export const CONNECTOR_SPREAD = 40;
 

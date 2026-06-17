@@ -33,7 +33,9 @@ const SHELL = [
 ].join('\n');
 
 const HOME = [
-  'Wireframe #home background=#shell anchor=#content',
+  // padding=2 insets the content within the #content region (the frame default is
+  // now flush), so the heading lands clearly right of the 240px rail.
+  'Wireframe #home background=#shell anchor=#content padding=2',
   '  Typography h1 "Dashboard"',
   '  Grid cols=3',
   '    Card to=#details',
@@ -111,7 +113,8 @@ test('an unsized Anchor fills the leftover main axis AND the full cross axis', (
 
 test('a sized Anchor pins its region instead of flexing', () => {
   // The bottom-console pattern: a fixed 200px strip; #main flexes above it.
-  const root = layout(parse('Wireframe w=400 h=600\n  Anchor #main\n  Anchor #console * 200px'))[0].root;
+  // Frame opts into the legacy inset+gap (padding=2/gap=1) so the math below holds.
+  const root = layout(parse('Wireframe w=400 h=600 padding=2 gap=1\n  Anchor #main\n  Anchor #console * 200px'))[0].root;
   const [main, consoleBox] = root.children;
   assert.equal(consoleBox.h, 200, 'the sized region honors its 200px token');
   const contentH = 600 - 2 * FRAME_PAD;

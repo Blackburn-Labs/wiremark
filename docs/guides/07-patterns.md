@@ -6,21 +6,21 @@ filler, anchors, and flow.
 
 ## Sign-in screen
 
-A heavily-defaulted login: a column of fields, a "remember me" row, a primary
+A heavily-defaulted login: a column of fields, a "remember me" row, a contained
 action that navigates, and some filler below.
 
 ```wireframe
 Wireframe #login mobile
   Stack column gap=2
     Typography h4 "Sign in"
-    TextField "Email" type=email
-    TextField "Password" type=password
+    TextField "Email" startIcon=Email
+    TextField "Password" startIcon=Lock
     Stack row
-      Checkbox
-      Typography body "Remember me"
+      Control checkbox
+      Typography body1 "Remember me"
       Spacer
       Link "Forgot?" to=#reset
-    Button "Sign in" primary to=#dashboard
+    Button "Sign in" contained to=#dashboard
     Divider
     Typography ~2
 ```
@@ -101,24 +101,23 @@ it in as a background and renders its own content on top. See
 
 ## Product card with explicit sub-parts
 
-When you want control over a card's regions, use explicit `CardMedia`,
-`CardContent`, and `CardActions` children instead of relying on flattening.
+When you want control over a card's regions, use explicit `CardContent` and
+`CardActions` children, with the media image as a direct child of the `Card`.
 
 ```wireframe
 Wireframe #product
   Card
-    CardMedia
-      Img ratio=16:9
+    Img ratio=16:9
     CardContent
       Typography h5 "Product name"
       Typography ~2
     CardActions
-      Button "Buy" primary
+      Button "Buy" contained
       Button "Details" variant=outlined to=#detail
 ```
 
 Techniques: `Img ratio=16:9` sets the media aspect ratio; `~2` fills the body
-with two sentences; the actions row mixes a primary and an outlined button, the
+with two sentences; the actions row mixes a contained and an outlined button, the
 latter linking onward.
 
 ## A form
@@ -131,13 +130,13 @@ Wireframe #new-account mobile
   Stack column gap=2
     Typography h4 "Create account"
     TextField "Full name" required
-    TextField "Email" type=email required value="you@example.com"
-    TextField "Password" type=password required
+    TextField "Email" startIcon=Email required value="you@example.com"
+    TextField "Password" startIcon=Lock required
     TextField "Bio" multiline filler=blocks
     Stack row
-      Checkbox checked
-      Typography body "I agree to the terms"
-    Button "Create account" primary to=#welcome
+      Control checkbox checked
+      Typography body1 "I agree to the terms"
+    Button "Create account" contained to=#welcome
 ```
 
 ## A settings list

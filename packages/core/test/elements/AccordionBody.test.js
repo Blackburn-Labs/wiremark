@@ -47,9 +47,9 @@ test('AccordionBody stacks its children in a padded column', () => {
 });
 
 test('AccordionBody stretches to the full frame width (reads as a bar with the header)', () => {
-  // 800px default frame, 16px frame pad each side => 768px panel.
+  // 800px default frame, flush (frame padding defaults to 0) => the panel spans it.
   const body = firstBox(WITH_CHILD);
-  assert.equal(body.w, 768, 'panel spans the full content width');
+  assert.equal(body.w, 800, 'panel spans the full frame width');
 });
 
 test('AccordionBody draws a bordered panel surface', () => {
