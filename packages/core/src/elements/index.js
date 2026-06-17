@@ -24,6 +24,8 @@ import Typography from './Typography.js';
 import Button from './Button.js';
 import TextField from './TextField.js';
 import Img from './Img.js';
+import Chart from './Chart.js';
+import MapEl from './Map.js';
 import Placeholder from './Placeholder.js';
 import Chip from './Chip.js';
 import Icon from './Icon.js';
@@ -78,7 +80,7 @@ export const ELEMENTS = [
   AccordionHeader, AccordionBody,
   Drawer, Link, MenuItem, Menubar, Tabs, Tab, Breadcrumbs,
   Stepper, Step, Pagination, BottomNavigation, BottomNavigationAction,
-  Typography, Button, TextField, Img, Placeholder, Avatar, Chip, Icon, List, ListItem,
+  Typography, Button, TextField, Img, Chart, MapEl, Placeholder, Avatar, Chip, Icon, List, ListItem,
   Table, TableHead, TableBody, TableFooter, TableRow, TableCell, Badge,
   Control, Select, Option, Slider, Rating, Calendar,
   ToggleButtonGroup, ToggleButton, ButtonGroup, Fab,

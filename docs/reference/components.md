@@ -1500,6 +1500,149 @@ Stack row
 
 *Two half-width thumbnails side by side, each height derived from 16:9.*
 
+### Chart
+
+A low-fidelity chart graphic -- a drop-in stand-in for "a chart goes here" in the wiremark house style. A bare Chart is a clean horizontal bar chart; a keyless variant name switches the family (bar, column, line, area, histogram, pie, donut) and a few flags tailor axes/gridlines, legend, and labels. By design a Chart carries NO DATA: bar heights, slice counts, and point positions are a pure function of an integer index, and every axis label and legend entry is a squiggle (a wavy line, never real glyphs) -- the one exception is `title`, the only place real text is drawn, which keeps a wireframe from implying specific values. It is a sizing leaf (px | % | * | flex `w h` tokens): width drives a proportional height that holds the variant's aspect (landscape for cartesian, square for pie/donut), and the whole plot scales to fill the final box. A later version may expand this into advanced, data-bearing charting; this version is intentionally data-free.
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Description |
+| --- | --- | --- | --- | --- | --- | --- |
+| variant | enum | bar, column, line, area, histogram, pie, donut | bar | yes | type, kind | The chart family, a keyless enum (bare `pie`) or keyed (`variant=`/`type=`/`kind=`): bar (horizontal bars, the default), column (vertical bars), line (trend polyline), area (line with the region below filled), histogram (touching distribution bars), pie, or donut. |
+| title | string |  |  | yes | label | Optional heading drawn above the plot -- the ONE place real user text is allowed (every other label is a squiggle). Keyless (a quoted string literal, e.g. `Chart line "Revenue"`) or keyed `title=`/`label=`. Omitted -> no heading. |
+| series | numeric |  |  | no | bars, slices, points, n | How many bars/columns/slices/points to draw. Keyed only (`series=`/`bars=`/`slices=`/`points=`/`n=`); a bare number is a sizing token here, not series. Rounded and clamped to [2, 12], defaulting to 5 (pie/donut 4). |
+| legend | boolean |  | false | yes |  | Show a legend block of squiggle swatches and labels (off by default). A keyless boolean flag (`legend`) or keyed `legend=true`. |
+| axes | boolean |  | true | yes | grid | Draw axis lines and light gridlines (on by default for the cartesian variants; ignored by pie/donut). Set `axes=false` for a bare plot. Keyless flag `axes` or keyed `axes=`/`grid=`. |
+| labels | boolean |  | true | yes |  | Show squiggle tick/category labels along the axes (on by default; ignored by pie/donut). Set `labels=false` for a bare plot. Keyless flag `labels` or keyed `labels=`. |
+| width | size |  |  | yes | w | Footprint width (px \| % \| * \| flex), the first positional sizing token (e.g. `Chart 420px`, `Chart 100%`); the keyed forms `width=`/`w=` throw "unknown property". The plot scales to fill it; width drives a proportional height unless height is also pinned. |
+| height | size |  |  | yes | h | Footprint height (px \| % \| * \| flex), the second positional sizing token (e.g. `Chart 100% 380px`); the keyed forms `height=`/`h=` throw "unknown property". Overrides the width-derived height and stretches the plot to fill the exact box. |
+
+**Examples**
+
+```wireframe
+Chart
+```
+
+*A clean horizontal bar chart, five bars (the drop-in default).*
+
+```wireframe
+Chart column
+```
+
+*Vertical bars growing up from a bottom baseline.*
+
+```wireframe
+Chart line "Revenue"
+```
+
+*A trend polyline with a title (the one real glyph).*
+
+```wireframe
+Chart area "Traffic"
+```
+
+*A filled trend: the line with the region below it shaded.*
+
+```wireframe
+Chart histogram series=9
+```
+
+*Touching bars tracing a nine-bin distribution hump.*
+
+```wireframe
+Chart pie
+```
+
+*A four-slice pie -- a spoke-divided disc.*
+
+```wireframe
+Chart donut series=6 legend
+```
+
+*A six-slice donut with a squiggle legend.*
+
+```wireframe
+Stack column
+  Chart pie 100%
+```
+
+*In a sidebar: fill the column width; the height follows (square).*
+
+### Map
+
+A hand-drawn, embeddable map GRAPHIC -- like Chart and Placeholder it exposes no real data (no coordinates, no place names, no geocoding), only a generic low-fidelity map placeholder with a few illustrative knobs. The level enum drives how much geography is drawn (a dense street grid, a neighborhood with a park/water blob, a region with highways and a dashed boundary, or broad national borders with city dots); a keyless icon name draws a center marker (e.g. Map DirectionsCar for a GPS view); pins sprinkles deterministic POI markers; path draws a deterministic GPS route; compass adds a compass rose plus zoom controls; labels adds squiggle place-name stand-ins. It carries the full box sizing vocabulary and scales its content to whatever box it lands in, with a natural ~7:5 landscape footprint whose width drives a proportional height.
+
+*Accepts children: no*
+
+| Name | Type | Values | Default | Keyless | Aliases | Description |
+| --- | --- | --- | --- | --- | --- | --- |
+| level | enum | street, area, region, national | street | yes | zoom | Abstraction/zoom level driving how much detail the generated map shows: street (dense block + street grid), area (neighborhood: sparser roads + a park/water blob), region (highways + a dashed region boundary), or national (broad borders + a few city dots). Keyless (bare) or keyed via level=/zoom=. |
+| icon | icon |  |  | yes | marker, center | An icon NAME drawn inside a marker at the map center (e.g. Map DirectionsCar for a GPS view). The single keyless literal slot, bare or quoted; an unknown name falls back to the placeholder glyph. Omitted -> no center marker. There is deliberately no free-text map title, so a specific place can never be encoded (the Chart/Placeholder restraint). |
+| pins | numeric |  |  | no | poi, markers | Number of POI pins sprinkled at deterministic positions. Keyed only (pins=/poi=/markers=) -- a bare number is a sizing token here. Visually clamped so a huge value can never blow up the render. |
+| path | boolean |  | false | yes | route | Draw a deterministic GPS-style route (an origin marker, a few waypoints, and a destination arrowhead) as a clean directional connector. Off by default; keyless flag path or keyed path=/route=. |
+| compass | boolean |  | false | yes | controls | Show map chrome -- a small compass rose and zoom +/- controls in a corner. Off by default; keyless flag compass or keyed compass=/controls=. |
+| labels | boolean |  | false | yes |  | Add squiggle street/place-name stand-ins (short deterministic wavy lines, no real glyphs). Off by default so the drop-in stays clean. |
+| contours | boolean |  | true | yes |  | Draw a faint topographic contour-line texture behind the roads -- real iso-elevation lines (nested, organic loops of a synthetic terrain) that give even a bare Map a recognizable map feel. On by default; set contours=false for a flat (texture-free) base. Keyless flag contours or keyed contours=. |
+| width | size |  | content | yes | w | Footprint width (px \| % \| * \| flex), the first positional sizing token (e.g. Map 480px, Map 100%). The map scales to fill it; width drives a proportional ~7:5 height unless height is also pinned. The keyed forms width=/w= are not accepted. |
+| height | size |  | content | yes | h | Footprint height (px \| % \| * \| flex), the second positional sizing token (e.g. Map 480px 300px). Overrides the width-derived height and stretches the map to fill the exact box. The keyed forms height=/h= are not accepted. |
+
+**Examples**
+
+```wireframe
+Map
+```
+
+*A clean street map at the natural ~360x260 size, no markers.*
+
+```wireframe
+Map DirectionsCar
+```
+
+*A GPS-style view: a car icon in a center marker.*
+
+```wireframe
+Map area pins=4
+```
+
+*Neighborhood level (sparser roads + a park/water blob) with 4 POI pins.*
+
+```wireframe
+Map region path
+```
+
+*A highway region with a deterministic GPS route drawn.*
+
+```wireframe
+Map national pins=3
+```
+
+*Broad national borders plus a few city/POI dots.*
+
+```wireframe
+Map LocationOn pins=5 compass
+```
+
+*A center pin marker, 5 POI pins, and compass + zoom chrome.*
+
+```wireframe
+Map street path compass labels
+```
+
+*The works: a route, controls, and squiggle labels over the street grid.*
+
+```wireframe
+Map region contours=false
+```
+
+*Drop the faint contour texture for a flat base (just roads and the dashed boundary).*
+
+```wireframe
+Stack column
+  Map area 100%
+```
+
+*In a sidebar: fill the column width (a bare positional sizing token); the height follows the ~7:5 aspect.*
+
 ### Placeholder
 
 A stand-in box for something undecided. It draws exactly Img's no-image look (a bordered box with two crossing diagonals) and overlays an optional centered label with a finer, muted description beneath it. With no label and no description it is a pure crossed box, identical to a bare Img. It carries box-style sizing tokens, so an author reserves space directly; an unconstrained Placeholder defaults to a comfortable 160x120 and is floored so it never collapses, while each text line is trimmed to the box width so a small placeholder ellipsizes instead of spilling past the outline.

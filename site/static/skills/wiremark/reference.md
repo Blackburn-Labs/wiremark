@@ -67,6 +67,8 @@ TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value|v
 
 CONTENT
 Img [w h] -- ratio:A, alt:T, src:T
+Chart [w h] -- variant|type|kind:(bar|column|line|area|histogram|pie|donut)=bar*, title|label:T*, series|bars|slices|points|n:N, legend:B*, axes|grid:B=true*, labels:B=true*
+Map [w h] -- level|zoom:(street|area|region|national)=street*, icon|marker|center:I*, pins|poi|markers:N, path|route:B*, compass|controls:B*, labels:B*, contours:B=true*
 Placeholder [w h] -- label:T*, description:T
 Avatar -- variant:(circular|rounded|square)=circular*, size:(small|medium|large)=medium*, src:T, label:T*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
 Chip [~] -- label:T*, variant:(filled|outlined)=filled*, size:(small|medium)=medium*, background:(hatch|crosshatch|none)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)

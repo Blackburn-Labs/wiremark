@@ -1294,6 +1294,170 @@
       ]
     },
     {
+      "name": "Chart",
+      "category": "Content",
+      "children": false,
+      "description": "A low-fidelity chart graphic -- a drop-in stand-in for \"a chart goes here\" in the wiremark house style. A bare Chart is a clean horizontal bar chart; a keyless variant name switches the family (bar, column, line, area, histogram, pie, donut) and a few flags tailor axes/gridlines, legend, and labels. By design a Chart carries NO DATA: bar heights, slice counts, and point positions are a pure function of an integer index, and every axis label and legend entry is a squiggle (a wavy line, never real glyphs) -- the one exception is `title`, the only place real text is drawn, which keeps a wireframe from implying specific values. It is a sizing leaf (px | % | * | flex `w h` tokens): width drives a proportional height that holds the variant's aspect (landscape for cartesian, square for pie/donut), and the whole plot scales to fill the final box. A later version may expand this into advanced, data-bearing charting; this version is intentionally data-free.",
+      "examples": [
+        { "code": "Chart", "description": "A clean horizontal bar chart, five bars (the drop-in default)." },
+        { "code": "Chart column", "description": "Vertical bars growing up from a bottom baseline." },
+        { "code": "Chart line \"Revenue\"", "description": "A trend polyline with a title (the one real glyph)." },
+        { "code": "Chart area \"Traffic\"", "description": "A filled trend: the line with the region below it shaded." },
+        { "code": "Chart histogram series=9", "description": "Touching bars tracing a nine-bin distribution hump." },
+        { "code": "Chart pie", "description": "A four-slice pie -- a spoke-divided disc." },
+        { "code": "Chart donut series=6 legend", "description": "A six-slice donut with a squiggle legend." },
+        { "code": "Stack column\n  Chart pie 100%", "description": "In a sidebar: fill the column width; the height follows (square)." }
+      ],
+      "properties": [
+        {
+          "name": "variant",
+          "type": "enum",
+          "values": ["bar", "column", "line", "area", "histogram", "pie", "donut"],
+          "default": "bar",
+          "keyless": true,
+          "aliases": ["type", "kind"],
+          "description": "The chart family, a keyless enum (bare `pie`) or keyed (`variant=`/`type=`/`kind=`): bar (horizontal bars, the default), column (vertical bars), line (trend polyline), area (line with the region below filled), histogram (touching distribution bars), pie, or donut."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "aliases": ["label"],
+          "keyless": true,
+          "description": "Optional heading drawn above the plot -- the ONE place real user text is allowed (every other label is a squiggle). Keyless (a quoted string literal, e.g. `Chart line \"Revenue\"`) or keyed `title=`/`label=`. Omitted -> no heading."
+        },
+        {
+          "name": "series",
+          "type": "numeric",
+          "aliases": ["bars", "slices", "points", "n"],
+          "keyless": false,
+          "description": "How many bars/columns/slices/points to draw. Keyed only (`series=`/`bars=`/`slices=`/`points=`/`n=`); a bare number is a sizing token here, not series. Rounded and clamped to [2, 12], defaulting to 5 (pie/donut 4)."
+        },
+        {
+          "name": "legend",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "description": "Show a legend block of squiggle swatches and labels (off by default). A keyless boolean flag (`legend`) or keyed `legend=true`."
+        },
+        {
+          "name": "axes",
+          "type": "boolean",
+          "default": true,
+          "aliases": ["grid"],
+          "keyless": true,
+          "description": "Draw axis lines and light gridlines (on by default for the cartesian variants; ignored by pie/donut). Set `axes=false` for a bare plot. Keyless flag `axes` or keyed `axes=`/`grid=`."
+        },
+        {
+          "name": "labels",
+          "type": "boolean",
+          "default": true,
+          "keyless": true,
+          "description": "Show squiggle tick/category labels along the axes (on by default; ignored by pie/donut). Set `labels=false` for a bare plot. Keyless flag `labels` or keyed `labels=`."
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "aliases": ["w"],
+          "keyless": true,
+          "description": "Footprint width (px | % | * | flex), the first positional sizing token (e.g. `Chart 420px`, `Chart 100%`); the keyed forms `width=`/`w=` throw \"unknown property\". The plot scales to fill it; width drives a proportional height unless height is also pinned."
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "aliases": ["h"],
+          "keyless": true,
+          "description": "Footprint height (px | % | * | flex), the second positional sizing token (e.g. `Chart 100% 380px`); the keyed forms `height=`/`h=` throw \"unknown property\". Overrides the width-derived height and stretches the plot to fill the exact box."
+        }
+      ]
+    },
+    {
+      "name": "Map",
+      "category": "Content",
+      "children": false,
+      "description": "A hand-drawn, embeddable map GRAPHIC -- like Chart and Placeholder it exposes no real data (no coordinates, no place names, no geocoding), only a generic low-fidelity map placeholder with a few illustrative knobs. The level enum drives how much geography is drawn (a dense street grid, a neighborhood with a park/water blob, a region with highways and a dashed boundary, or broad national borders with city dots); a keyless icon name draws a center marker (e.g. Map DirectionsCar for a GPS view); pins sprinkles deterministic POI markers; path draws a deterministic GPS route; compass adds a compass rose plus zoom controls; labels adds squiggle place-name stand-ins. It carries the full box sizing vocabulary and scales its content to whatever box it lands in, with a natural ~7:5 landscape footprint whose width drives a proportional height.",
+      "examples": [
+        { "code": "Map", "description": "A clean street map at the natural ~360x260 size, no markers." },
+        { "code": "Map DirectionsCar", "description": "A GPS-style view: a car icon in a center marker." },
+        { "code": "Map area pins=4", "description": "Neighborhood level (sparser roads + a park/water blob) with 4 POI pins." },
+        { "code": "Map area path", "description": "A neighborhood map with a deterministic GPS route drawn." },
+        { "code": "Map LocationOn pins=5 compass", "description": "A center pin marker, 5 POI pins, and compass + zoom chrome." },
+        { "code": "Map street path compass labels", "description": "The works: a route, controls, and squiggle labels over the street grid." },
+        { "code": "Map area contours=false", "description": "Drop the faint contour texture for a flat base (just roads and the blob)." },
+        { "code": "Stack column\n  Map area 100%", "description": "In a sidebar: fill the column width (a bare positional sizing token); the height follows the ~7:5 aspect." }
+      ],
+      "properties": [
+        {
+          "name": "level",
+          "type": "enum",
+          "values": ["street", "area"],
+          "default": "street",
+          "aliases": ["zoom"],
+          "keyless": true,
+          "description": "Abstraction/zoom level driving how much detail the generated map shows: street (a dense block + street grid) or area (a neighborhood: sparser roads + a hatch-filled park/water blob). Keyless (bare) or keyed via level=/zoom=."
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "aliases": ["marker", "center"],
+          "keyless": true,
+          "description": "An icon NAME drawn inside a marker at the map center (e.g. Map DirectionsCar for a GPS view). The single keyless literal slot, bare or quoted; an unknown name falls back to the placeholder glyph. Omitted -> no center marker. There is deliberately no free-text map title, so a specific place can never be encoded (the Chart/Placeholder restraint)."
+        },
+        {
+          "name": "pins",
+          "type": "numeric",
+          "aliases": ["poi", "markers"],
+          "keyless": false,
+          "description": "Number of POI pins sprinkled at deterministic positions. Keyed only (pins=/poi=/markers=) -- a bare number is a sizing token here. Visually clamped so a huge value can never blow up the render."
+        },
+        {
+          "name": "path",
+          "type": "boolean",
+          "default": false,
+          "aliases": ["route"],
+          "keyless": true,
+          "description": "Draw a deterministic GPS-style route (an origin marker, a few waypoints, and a destination arrowhead) as a clean directional connector. Off by default; keyless flag path or keyed path=/route=."
+        },
+        {
+          "name": "compass",
+          "type": "boolean",
+          "default": false,
+          "aliases": ["controls"],
+          "keyless": true,
+          "description": "Show map chrome -- a small compass rose and zoom +/- controls in a corner. Off by default; keyless flag compass or keyed compass=/controls=."
+        },
+        {
+          "name": "labels",
+          "type": "boolean",
+          "default": false,
+          "keyless": true,
+          "description": "Add squiggle street/place-name stand-ins (short deterministic wavy lines, no real glyphs). Off by default so the drop-in stays clean."
+        },
+        {
+          "name": "contours",
+          "type": "boolean",
+          "default": true,
+          "keyless": true,
+          "description": "Draw a faint topographic contour-line texture behind the roads -- real iso-elevation lines (nested, organic loops of a synthetic terrain) that give even a bare Map a recognizable map feel. On by default; set contours=false for a flat (texture-free) base. Keyless flag contours or keyed contours=."
+        },
+        {
+          "name": "width",
+          "type": "size",
+          "default": "content",
+          "aliases": ["w"],
+          "keyless": true,
+          "description": "Footprint width (px | % | * | flex), the first positional sizing token (e.g. Map 480px, Map 100%). The map scales to fill it; width drives a proportional ~7:5 height unless height is also pinned. The keyed forms width=/w= are not accepted."
+        },
+        {
+          "name": "height",
+          "type": "size",
+          "default": "content",
+          "aliases": ["h"],
+          "keyless": true,
+          "description": "Footprint height (px | % | * | flex), the second positional sizing token (e.g. Map 480px 300px). Overrides the width-derived height and stretches the map to fill the exact box. The keyed forms height=/h= are not accepted."
+        }
+      ]
+    },
+    {
       "name": "Placeholder",
       "category": "Content",
       "children": false,

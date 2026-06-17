@@ -1,4 +1,4 @@
-Wireframe #library w=1600 h=6380
+Wireframe #library w=1600 h=6800
   Typography h3 "wiremark component reference"
   Typography body2 "Every implemented component with common variants, grouped by category."
   Divider
@@ -221,6 +221,25 @@ Wireframe #library w=1600 h=6380
       List dense
         ListItem "Dense item one"
         ListItem "Dense item two"
+  Stack column spacing=1
+    Typography subtitle2 "Map (street / GPS / area pins / route)"
+    Stack row spacing=2
+      Map 240px 165px
+      Map DirectionsCar 240px 165px
+      Map area pins=4 240px 165px
+      Map area path 240px 165px
+  Stack column spacing=1
+    Typography subtitle2 "Chart (bar / column / line / area / histogram / pie / donut)"
+    Stack row spacing=2
+      Chart 240px 165px
+      Chart column 240px 165px
+      Chart line "Revenue" 240px 165px
+      Chart area "Traffic" 240px 165px
+    Stack row spacing=2
+      Chart histogram series=9 240px 165px
+      Chart pie 165px 165px
+      Chart donut series=6 legend 200px 165px
+      Chart column axes=false labels=false 240px 165px
   Stack column spacing=1
     Typography subtitle2 "Table + TableHead / TableBody / TableFooter / TableRow / TableCell"
     Table medium
