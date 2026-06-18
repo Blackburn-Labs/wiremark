@@ -57,6 +57,12 @@ export function parse(source, options = {}) {
  *   unknown value falls back to light, never throws)
  * @param {*} [options.icons]               injected icons (see `parse`)
  * @param {(src: string) => *} [options.loadIcon]  host icon-file loader (see `parse`)
+ * @param {boolean} [options.interactive]   when true, wrap each element and frame in
+ *   a <g> carrying data-wm-line / data-wm-id / data-wm-component (and data-wm-to in
+ *   place of the live <a> link), so an editor host can map a click back to the
+ *   wiremark source. Default false leaves output byte-for-byte unchanged. Core emits
+ *   no script and runs nothing -- the host attaches its own click listener. A
+ *   render-stage concern: a Document can be parsed once and toggled per render.
  * @returns {{ svg: string, diagnostics: import('./errors.js').Diagnostic[] }}
  */
 export function render(input, options = {}) {
