@@ -72,6 +72,13 @@ const config = {
         items: [
           { href: 'https://www.wiremark.dev', html: 'Home', position: 'right', target: '_self' },
           { href: 'https://github.com/Blackburn-Labs/wiremark', label: 'GitHub', position: 'right' },
+          {
+            href: 'https://editor.wiremark.dev',
+            html: 'File Editor',
+            position: 'right',
+            target: '_self',
+            className: 'navbar-cta',
+          },
         ],
       },
       footer: {

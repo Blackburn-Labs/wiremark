@@ -28,3 +28,28 @@
   --ifm-color-primary-lightest: #dbeafe;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/**
+ * "File Editor" call-to-action button in the navbar. Mirrors the .navbar-cta
+ * button on the marketing site (www.wiremark.dev): a fixed brand-blue pill with
+ * white, bold text in both color modes -- not the theme-varying primary, so the
+ * button reads identically across the two sites. The doubled class selectors
+ * (desktop .navbar__link, mobile .menu__link) outrank Infima's base link rules.
+ */
+.navbar__link.navbar-cta,
+.menu__link.navbar-cta {
+  background-color: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0.4rem;
+  padding: 0.4rem 1rem;
+  margin-left: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.navbar__link.navbar-cta:hover,
+.menu__link.navbar-cta:hover {
+  background-color: #1d4ed8;
+  color: #fff;
+  text-decoration: none;
+}
