@@ -1,9 +1,18 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { isOverlay } from './layout.js';
-import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip } from './draw.js';
+import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip, backgroundHatch, BACKGROUNDS } from './draw.js';
 import { measureText, ARROW_HEAD, CONNECTOR_LABEL_PAD } from './metrics.js';
 import { inferComponents, planFlow, realizeRoutes } from './routing.js';
+
+// Render-context flag, set per `renderSVG` call (mirrors the `setTheme` palette
+// swap in draw.js): when true, `renderBox` wraps each element -- and `renderSVG`
+// each frame -- in a <g> carrying source metadata (data-wm-line/id/component/to)
+// so an editor host can map a click back to the wiremark source. Default false
+// keeps output byte-for-byte identical. It is re-set on every `renderSVG` entry
+// and read synchronously within that (synchronous) call tree, so it can never
+// leak between renders.
+let interactiveMeta = false;
 
 /**
  * Stage (5) -- RENDER.  laid-out boxes -> hand-drawn SVG string.
@@ -46,6 +55,26 @@ const FRAME_GAP = 40;  // legacy vertical gap (fallback when frames carry no {x,
 const FLOW_PAD = 24;   // padding around a multi-frame flow chart's content box
 
 /**
+ * Default universal-background descriptor for any element that doesn't define its
+ * own `background(node)` strategy (SPEC s.8): an OPT-IN backdrop drawn only when the
+ * author sets a `background=` pattern, `denseBackground`, or the `opaque` toggle. The
+ * opaque paper base defaults OFF here, so a bare element draws nothing and every
+ * element that never had a background stays byte-identical; containers wanting an
+ * opaque default (Box/Stack) supply their own `background`. The `BACKGROUNDS` guard
+ * skips Wireframe's `background=#id` frame ref (a node id, not a hatch enum value).
+ * @param {import('./resolve.js').ResolvedNode} node
+ * @returns {{ pattern: string, dense: boolean, base: boolean } | null}
+ */
+function defaultBackground(node) {
+  const p = node.props;
+  const hasPattern = BACKGROUNDS.includes(p.background);
+  const dense = p.denseBackground === true;
+  const opaque = p.opaque === true;
+  if (!hasPattern && !dense && !opaque) return null;
+  return { pattern: hasPattern ? p.background : (dense ? 'hatch' : 'none'), dense, base: opaque };
+}
+
+/**
  * @param {Box} box @param {string[]} out
  * @param {boolean} [skipOverlays]  phase 1 of the overlay split: when true, an
  *   OUT-OF-FLOW subtree draws NOTHING here (it is deferred to the frame's phase-2
@@ -60,6 +89,12 @@ function renderBox(box, out, skipOverlays = false) {
   const s = /** @type {*} */ (REGISTRY[node.component]) ?? {};
   /** @type {string[]} */
   const inner = [];
+  // Universal background (SPEC s.8): the facade paints any element's hatch/opaque
+  // backdrop BEHIND its own chrome and children, from the element's `background(node)`
+  // strategy (or the default opt-in for elements that don't define one). Elements
+  // never draw their own backdrop -- like the to= link and scrollbar affordances.
+  const bg = (typeof s.background === 'function' ? s.background : defaultBackground)(node);
+  if (bg) inner.push(backgroundHatch(box, bg.pattern, bg.dense, { base: bg.base, shape: bg.shape, fill: bg.fill }));
   if (typeof s.render === 'function') inner.push(s.render(node, box));
   // Children. A scroll container (box.clip set alongside box.scrollbars) CLIPS them
   // to its content rect so overflow is hidden -- the element's own chrome above and
@@ -81,9 +116,21 @@ function renderBox(box, out, skipOverlays = false) {
   if (box.scrollbars) for (const sb of box.scrollbars) inner.push(scrollbarStrip(sb, sb.orientation, sb.value, sb.handle));
   // Any node carrying to=#id is a clickable region (SPEC ss.7.2); the facade
   // wraps it here so elements never draw their own link.
-  out.push(node.props.to
-    ? `<a class="wm-link" href="#${escape(node.props.to)}">${inner.join('')}</a>`
-    : inner.join(''));
+  if (interactiveMeta) {
+    // Editor mode: wrap every element in a metadata <g> so a host can map a click
+    // back to its source line/id/type. The to= target is exposed as data-wm-to
+    // (no live <a>), so the host's own click handling isn't fighting fragment
+    // navigation; innermost wins via event.target.closest('[data-wm-line]').
+    const attrs = ` data-wm-line="${node.line}"`
+      + (node.id !== undefined ? ` data-wm-id="${escape(node.id)}"` : '')
+      + ` data-wm-component="${escape(node.component)}"`
+      + (node.props.to ? ` data-wm-to="${escape(node.props.to)}"` : '');
+    out.push(`<g class="wm-node"${attrs}>${inner.join('')}</g>`);
+  } else {
+    out.push(node.props.to
+      ? `<a class="wm-link" href="#${escape(node.props.to)}">${inner.join('')}</a>`
+      : inner.join(''));
+  }
 }
 
 /** @param {LaidOutFrame} frame @param {string[]} out */
@@ -150,6 +197,7 @@ function frameBorder(frame) {
  * @returns {string}  SVG markup
  */
 export function renderSVG(frames, options = {}) {
+  interactiveMeta = options.interactive === true;
   const standalone = frames.filter((f) => f.visible);
   const positioned = standalone.length > 0
     && standalone.every((f) => typeof f.x === 'number' && typeof f.y === 'number');
@@ -181,8 +229,16 @@ export function renderSVG(frames, options = {}) {
     // overflow would spill across the document. The border is then painted on top,
     // outside the clip, so overflowing content can't cover it (ss.5.1.1).
     const clip = `wm-clip-${i}`;
+    // Editor mode: tag the frame's outer group so a click on blank frame chrome
+    // (or its border, painted below outside the content clip) maps to the frame.
+    // `p.frame.frame` is the resolved Frame (its source line); `p.frame.id` its #id.
+    const frameMeta = interactiveMeta
+      ? ` class="wm-frame" data-wm-line="${p.frame.frame.line}"`
+        + (p.frame.id !== undefined ? ` data-wm-id="${escape(p.frame.id)}"` : '')
+        + ' data-wm-component="Frame"'
+      : '';
     return (
-      `<g transform="translate(${p.x} ${p.y})">`
+      `<g transform="translate(${p.x} ${p.y})"${frameMeta}>`
       + `<clipPath id="${clip}"><rect x="0" y="0" width="${p.w}" height="${p.h}"/></clipPath>`
       + `<g clip-path="url(#${clip})">${content.join('')}</g>`
       + frameBorder(p.frame)

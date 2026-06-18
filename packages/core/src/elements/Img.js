@@ -1,9 +1,16 @@
 // @ts-check
-import { rcrossbox } from '../draw.js';
+import { rcrossbox, centeredLabel } from '../draw.js';
 import { parseRatio } from '../metrics.js';
 
 const FALLBACK = { w: 160, h: 120 };
 const FLOOR = { w: 80, h: 60 };
+
+/** Caption type size (px) for an `alt` drawn over a sourceless box -- matches
+ *  Placeholder's label so the two read identically. */
+const LABEL_FONT = 14;
+/** Inset (px) kept on each side so the caption ellipsizes before it reaches the
+ *  crossed-box outline instead of riding the border. */
+const TEXT_INSET = 8;
 
 /**
  * Img -- placeholder image box. It carries the same sizing vocabulary as a box
@@ -11,8 +18,10 @@ const FLOOR = { w: 80, h: 60 };
  * sets aspect; `alt=` is descriptive text; `src=` is the real source. (SPEC
  * ss.5.4, ss.8.3)
  *
- * `src` is metadata only: a wireframe always draws the crossed-box placeholder
- * regardless of source, so it does not affect the render.
+ * A wireframe always draws the crossed-box placeholder regardless of source.
+ * `src` (the real picture) is otherwise metadata, BUT when no `src` is given an
+ * `alt` doubles as a caption: it is drawn centered over the box (like
+ * Placeholder's label) so the box says what image belongs there.
  *
  * Strategy (leaf): the classic crossed-box image placeholder. An image is a
  * block leaf -- absent an explicit cross-axis size it fills its container's
@@ -49,7 +58,7 @@ export default {
     alt: { type: 'string' },
     src: { type: 'string' },
   },
-  notes: 'Placeholder box; box-style w/h sizing, plus ratio like 16:9 when only one dimension is given.',
+  notes: 'Placeholder box; box-style w/h sizing, plus ratio like 16:9 when only one dimension is given. With no src, an alt is drawn as a centered caption over the box.',
 
   block: true,
   // `ratio` only governs when at most one dimension is pinned: with both given the
@@ -74,5 +83,16 @@ export default {
     };
   },
   intrinsic: () => ({ ...FALLBACK }),
-  render: (node, box) => rcrossbox(box.x, box.y, box.w, box.h),
+  render: (node, box) => {
+    let out = rcrossbox(box.x, box.y, box.w, box.h);
+    // With no real source, `alt` doubles as a caption: draw it centered over the
+    // crossed box (like Placeholder's label) so the box says what image belongs
+    // there. A real `src` IS the picture, so alt stays metadata.
+    const alt = typeof node.props.alt === 'string' ? node.props.alt : '';
+    if (alt && !node.props.src) {
+      out += centeredLabel(box, alt,
+        { fontSize: LABEL_FONT, maxW: Math.max(0, box.w - 2 * TEXT_INSET) });
+    }
+    return out;
+  },
 };

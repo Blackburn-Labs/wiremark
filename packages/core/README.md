@@ -88,6 +88,30 @@ out of the box. To add your own, pass `icons` (a flat name-to-SVG map or
 Iconify icon packs) or a `loadIcon` callback in the options to `render`/`parse`
 — see the [icons guide](https://docs.wiremark.dev/guides/icons).
 
+For editor and tooling hosts, pass `interactive: true`. It wraps each rendered
+element (and frame) in a `<g>` tagged with `data-wm-line` — the element's line in
+the wiremark source — plus `data-wm-id` and `data-wm-component` where they apply.
+Nothing is injected into the SVG and nothing runs; it stays inert markup. Your host
+attaches its own click listener and reads the attributes back:
+
+```js
+const { svg } = render(source, { interactive: true });
+container.innerHTML = svg;
+container.querySelector('svg').addEventListener('click', (e) => {
+  const g = e.target.closest('[data-wm-line]'); // innermost element under the cursor
+  if (!g) return;
+  onPick({
+    line: Number(g.dataset.wmLine),
+    id: g.dataset.wmId ?? null,
+    component: g.dataset.wmComponent ?? null,
+  });
+});
+```
+
+The default is off, so output is byte-for-byte identical when you don't pass it. In
+interactive mode a `to=` link is exposed as `data-wm-to` instead of a live `<a>`, so
+your click handling isn't competing with in-page fragment navigation.
+
 ## Browser bundle
 
 The package also ships a self-contained, dependency-free IIFE build for

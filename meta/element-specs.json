@@ -34,6 +34,26 @@
       "default": 30,
       "keyless": false,
       "notes": "Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set."
+    },
+    {
+      "name": "background",
+      "type": "enum",
+      "values": ["hatch", "crosshatch", "none"],
+      "keyless": false,
+      "notes": "Universal hand-drawn backdrop pattern painted behind any element (SPEC s.8): hatch (single diagonal), crosshatch (both), or none (an untextured base). Keyed everywhere (background=hatch); Button/Avatar/ToggleButton/Drawer also accept it as a bare keyless token. The effective default varies per element -- AppBar always hatches, Box/Stack are opaque, most elements stay transparent until set -- and lives in each element's background() strategy."
+    },
+    {
+      "name": "denseBackground",
+      "type": "boolean",
+      "default": false,
+      "keyless": true,
+      "notes": "Packs the background hatch lines closer together for a denser tint. Resolves bare (denseBackground) or keyed (denseBackground=true)."
+    },
+    {
+      "name": "opaque",
+      "type": "boolean",
+      "keyless": true,
+      "notes": "Toggles the solid paper knockout under the background: on lays an opaque base so the element occludes any background=#id frame chain behind it; off keeps a see-through tint. The default varies per element (Box/Stack and filled surfaces are opaque; a plain element's tint is see-through). Resolves bare (opaque) or keyed (opaque=false)."
     }
   ],
   "components": [
@@ -670,7 +690,8 @@
         { "code": "Stack row\n  MenuItem \"File\" selected\n  MenuItem \"Edit\"", "description": "The highlighted item, drawn with a hand-drawn hatch tint." },
         { "code": "Stack row\n  MenuItem \"Edit\"\n  MenuItem \"Format\" disabled", "description": "A disabled item, its label in muted ink." },
         { "code": "Stack row\n  MenuItem \"Home\" to=#next", "description": "A navigating item: to= links the label to another frame." },
-        { "code": "Stack row\n  MenuItem label=\"Help\"", "description": "The label given keyed instead of as a bare quoted string." }
+        { "code": "Stack row\n  MenuItem label=\"Help\"", "description": "The label given keyed instead of as a bare quoted string." },
+        { "code": "Stack row\n  MenuItem \"File\" icon=Save\n  MenuItem \"Edit\"", "description": "A leading icon: the label sits to the right and the item widens to fit it." }
       ],
       "properties": [
         {
@@ -692,6 +713,13 @@
           "default": false,
           "keyless": true,
           "description": "Keyless boolean flag for the inactive state; renders the label in muted ink. Defaults to false (absent when omitted)."
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "default": null,
+          "keyless": false,
+          "description": "Optional leading icon NAME drawn at the left edge, with the label to its right (keyed only: icon=Save; the value may be bare or quoted, PascalCase). A known name draws real artwork, an unknown one a placeholder glyph plus a warning; a disabled item mutes the icon too. The item widens to reserve the icon's slot. Defaults to null (no leading icon)."
         }
       ]
     },
@@ -999,7 +1027,7 @@
           "type": "enum",
           "values": ["squiggle", "lorem", "blocks"],
           "keyless": false,
-          "description": "Greeking style for placeholder body text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem; blocks currently renders like squiggle). The universal ~N sigil is the usual shorthand."
+          "description": "Greeking style for placeholder body text: squiggle (wavy faux-handwritten lines, the default), lorem (real-ish lorem words), or blocks (solid grey bars) -- keyed, e.g. filler=lorem. The universal ~N sigil is the usual shorthand."
         }
       ]
     },

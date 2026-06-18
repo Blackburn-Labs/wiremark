@@ -13,6 +13,7 @@
  * one enum, sizing as its own ordered category -- so they can never collide.
  */
 import { ELEMENTS } from './elements/index.js';
+import { BACKGROUNDS } from './draw.js';
 
 export { FILLER_STYLES, PRESETS } from './elements/common.js';
 
@@ -39,6 +40,18 @@ export { FILLER_STYLES, PRESETS } from './elements/common.js';
  *    (A few elements -- List
  *    with a subheader, Select -- use their pad for a special inset, so overriding it
  *    there is unusual.) The layout's `specFor` applies it.
+ *  - `background` (`hatch`/`crosshatch`/`none`), `denseBackground` (boolean), and
+ *    `opaque` (boolean) drive the universal hand-drawn backdrop (SPEC s.8): the render
+ *    facade paints `backgroundHatch` behind ANY element from its `background(node)`
+ *    strategy (or the default opt-in). `background` is the hash pattern, `denseBackground`
+ *    packs the lines tighter, and `opaque` toggles the solid paper knockout under the
+ *    hashes (so a backdrop can occlude a `background=#id` frame chain or stay see-through).
+ *    The EFFECTIVE default of each varies per element (AppBar always hatches; Box/Stack are
+ *    opaque; a plain element is transparent until asked) and lives in the element's
+ *    `background(node)`, not here. `background` is KEYED-only universally (a few elements --
+ *    Button/Avatar/ToggleButton/Drawer -- additionally expose it as a keyless enum via their
+ *    own `keyless` slot); `denseBackground`/`opaque` also resolve as bare flags. Elements
+ *    must NOT redeclare these (the strategy + `tint` helper read them).
  * Sizing (`w h`) is likewise broadly available, flagged per element via `sizing`.
  * @type {Record<string, PropDef>}
  */
@@ -48,6 +61,9 @@ export const UNIVERSAL_PROPS = {
   scrollbarValue: { type: 'number' },
   scrollbarHandle: { type: 'number' },
   padding: { type: 'number', aliases: ['pad'] },
+  background: { type: 'enum', values: BACKGROUNDS },
+  denseBackground: { type: 'boolean' },
+  opaque: { type: 'boolean' },
 };
 
 /** Component name -> definition. @type {Record<string, ComponentDef>} */

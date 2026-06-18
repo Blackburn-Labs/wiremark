@@ -1,5 +1,6 @@
 // @ts-check
-import { rrect, rroundrect, rellipse, rline, centeredLabel, backgroundHatch, BACKGROUNDS } from '../draw.js';
+import { rrect, rroundrect, rellipse, rline, centeredLabel } from '../draw.js';
+import { tint } from './common.js';
 import { textOf } from '../metrics.js';
 
 /**
@@ -102,8 +103,6 @@ export default {
     size: { type: 'enum', values: ['small', 'medium', 'large'], default: 'medium' },
     src: { type: 'string' },
     label: { type: 'string' },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
   },
   keyless: [
     { kind: 'enum', to: 'variant' },
@@ -118,19 +117,22 @@ export default {
     const { diameter } = sizeOf(node);
     return { w: diameter, h: diameter };
   },
+  // A `background` tint fills the shape with a hatch over an opaque paper base
+  // (base:true), shape-matched to the variant so it never pokes past a curved
+  // outline. Only when background is set -- a bare avatar stays transparent.
+  background: (node) => {
+    if (typeof node.props.background !== 'string') return null;
+    const variant = typeof node.props.variant === 'string' ? node.props.variant : 'circular';
+    return tint(node, { pattern: node.props.background, base: true, shape: hatchShapeFor(variant, sizeOf(node).radius) });
+  },
+
   render: (node, box) => {
     const variant = typeof node.props.variant === 'string' ? node.props.variant : 'circular';
     const { font, radius } = sizeOf(node);
 
-    // A `background` tint fills the shape with a hatch over an opaque paper base
-    // (base:true), shape-matched to the variant so it never pokes past a curved
-    // outline. Only when background is set -- a bare avatar stays transparent.
-    let out = '';
-    if (typeof node.props.background === 'string') {
-      out += backgroundHatch(box, node.props.background, node.props.denseBackground === true,
-        { base: true, shape: hatchShapeFor(variant, radius) });
-    }
-    out += shape(variant, box, radius);
+    // The shape outline; a background tint, when set, is painted behind it by the
+    // facade (shape-matched via the `background` strategy above).
+    let out = shape(variant, box, radius);
 
     // A real image source -> the crossed-box placeholder INSTEAD of initials,
     // mirroring Img (a wireframe never renders the actual image).

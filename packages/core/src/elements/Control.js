@@ -1,5 +1,6 @@
 // @ts-check
-import { rrect, rpill, rline, rellipse, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { rrect, rpill, rline, rellipse, COLORS } from '../draw.js';
+import { tint } from './common.js';
 
 /**
  * Control -- a single selection input that subsumes the old Checkbox and Switch
@@ -48,8 +49,6 @@ export default {
     checked: { type: 'boolean', default: false },
     disabled: { type: 'boolean', default: false },
     size: { type: 'enum', values: ['small', 'medium', 'large'], default: 'medium' },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
   },
   keyless: [
     { kind: 'enum', to: 'variant' },
@@ -63,6 +62,15 @@ export default {
     const k = SCALE[node.props.size] ?? 1;
     return { w: Math.round(base.w * k), h: Math.round(base.h * k) };
   },
+  // The switch track hatches with the "on" tint when checked (muted when disabled):
+  // an opaque (base:true) pill fill painted behind the pill outline by the facade, so
+  // the "on" track is its own solid surface and the outline keeps its roughness.
+  // Radio/checkbox carry no tint.
+  background: (node) => {
+    if (variantOf(node) !== 'switch' || node.props.checked !== true) return null;
+    return tint(node, { pattern: node.props.background ?? 'hatch', base: true, shape: 'pill', fill: node.props.disabled === true ? COLORS.muted : undefined });
+  },
+
   render: (node, box) => {
     const checked = node.props.checked === true;
     const disabled = node.props.disabled === true;
@@ -70,15 +78,9 @@ export default {
     const variant = variantOf(node);
 
     if (variant === 'switch') {
-      // Pill track hatches with the "on" tint when checked (muted when disabled);
-      // opaque (base:true) pill fill so the "on" track is its own solid surface,
-      // borderless hatch + its own border, so the pill outline keeps its roughness.
-      // Knob slides L->R.
-      const tint = checked
-        ? backgroundHatch(box, node.props.background, node.props.denseBackground === true,
-            disabled ? { shape: 'pill', fill: COLORS.muted, base: true } : { shape: 'pill', base: true })
-        : '';
-      const track = tint + rpill(box.x, box.y, box.w, box.h, { stroke: ink });
+      // Opaque pill track (its "on" hatch tint is painted behind by the facade when
+      // checked); knob slides L->R.
+      const track = rpill(box.x, box.y, box.w, box.h, { stroke: ink });
       const d = box.h - 4;                 // knob diameter, 2px inset top & bottom
       const r = d / 2;
       const cy = box.y + box.h / 2;

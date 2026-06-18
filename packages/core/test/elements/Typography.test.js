@@ -60,6 +60,26 @@ test('filler=lorem honors an exact ~Nw word count on a single line', () => {
   assert.equal((svg.match(/<text/g) ?? []).length, 1);
 });
 
+test('filler=blocks draws solid grey bars, distinct from squiggle strokes', () => {
+  const { svg } = render('Wireframe w=400 h=300\n  Typography ~3 filler=blocks');
+  assert.match(svg, /fill="#c4c4c4"/, 'blocks fills solid grey bars (hatch gray)');
+  assert.doesNotMatch(svg, /<text/, 'blocks is greeking, never real glyphs');
+});
+
+test('filler=squiggle and filler=blocks no longer render identically', () => {
+  const sq = render('Wireframe w=400 h=300\n  Typography ~3 filler=squiggle').svg;
+  const bl = render('Wireframe w=400 h=300\n  Typography ~3 filler=blocks').svg;
+  assert.notEqual(sq, bl, 'the two greeking styles must be visually different');
+  assert.doesNotMatch(sq, /fill="#c4c4c4"/, 'squiggle draws no solid bar fill');
+  assert.match(bl, /fill="#c4c4c4"/, 'blocks does');
+});
+
+test('a bare ~N with no filler= defaults to the squiggle style', () => {
+  const bare = render('Wireframe w=400 h=300\n  Typography ~3').svg;
+  const sq = render('Wireframe w=400 h=300\n  Typography ~3 filler=squiggle').svg;
+  assert.equal(bare, sq, 'the default greeking style is squiggle');
+});
+
 test('a frame-level filler= is inherited by text descendants (ss.6, two levels)', () => {
   const src = 'Wireframe w=400 h=300 filler=lorem\n  Stack column\n    Typography ~2';
   const t = parse(src).frames[0].children[0].children[0];

@@ -1,5 +1,6 @@
 // @ts-check
-import { surface, drawIcon, text, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { surface, drawIcon, text, COLORS } from '../draw.js';
+import { tint } from './common.js';
 import { SPACING } from '../metrics.js';
 
 /**
@@ -72,29 +73,28 @@ export default {
     icon: { type: 'icon' },
     expandedIcon: { type: 'icon', default: 'ExpandLess' },
     collapsedIcon: { type: 'icon', default: 'ExpandMore' },
-    background: { type: 'enum', values: BACKGROUNDS },
-    denseBackground: { type: 'boolean', default: false },
   },
   keyless: [{ kind: 'literal', to: 'title' }],
   notes: 'Sibling of AccordionBody; no Accordion parent. Default chevron is ExpandMore (collapsed) / ExpandLess (expanded); icon= overrides both states. Optional background/denseBackground tint (opaque base:true surface).',
 
   block: true,
   intrinsic: () => ({ w: 160, h: HEADER_H }),
+  // Optional hand-drawn tint across the bar surface, painted UNDER the border by the
+  // facade. A tinted header is its own opaque surface (base:true) so content behind
+  // can't show through the hatch gaps. Drawn only when the author opts in
+  // (background=/denseBackground/opaque); a plain header stays paper.
+  background: (node) => {
+    if (typeof node.props.background !== 'string' && node.props.denseBackground !== true && node.props.opaque !== true) return null;
+    return tint(node, { pattern: node.props.background ?? (node.props.denseBackground === true ? 'hatch' : 'none'), base: true });
+  },
+
   render: (node, box) => {
     const disabled = node.props.disabled === true;
     const ink = disabled ? COLORS.muted : COLORS.ink;
 
-    // Optional hand-drawn tint across the bar surface, drawn UNDER the border.
-    // A filled header is its own opaque surface (base:true), so content behind it
-    // can't show through the hatch gaps. Only when the author opts in.
-    let out = '';
-    if (typeof node.props.background === 'string' || node.props.denseBackground === true) {
-      out += backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true });
-    }
-
     // The bordered bar. Default solid stroke (so it abuts AccordionBody's panel
     // as one outline), recoloured to the muted ink when disabled.
-    out += surface(box, { stroke: ink });
+    let out = surface(box, { stroke: ink });
 
     // Title, left-padded and vertically centered.
     const fs = 16;

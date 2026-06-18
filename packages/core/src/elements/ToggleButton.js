@@ -1,5 +1,6 @@
 // @ts-check
-import { surface, backgroundHatch, drawIcon, BACKGROUNDS } from '../draw.js';
+import { surface, drawIcon } from '../draw.js';
+import { tint } from './common.js';
 
 /**
  * ToggleButton -- a single icon button in a ToggleButtonGroup segmented control
@@ -58,10 +59,6 @@ export default {
     icon: { type: 'icon' },
     selected: { type: 'boolean', default: false },
     size: { type: 'enum', values: ['small', 'medium', 'large'], default: 'medium' },
-    // No static default: the effective pattern is selected-dependent (hatch when
-    // off, crosshatch when on), computed in render -- an explicit value pins it.
-    background: { type: 'enum', values: BACKGROUNDS },
-    denseBackground: { type: 'boolean', default: false },
   },
   // literal (icon) + booleans (selected/denseBackground) + enums (size/background)
   // are distinct keyless KINDS with DISJOINT enum domains, so a bare/quoted token
@@ -81,18 +78,16 @@ export default {
     const { box } = sizeOf(node);
     return { w: box, h: box };
   },
+  // The face is always its own OPAQUE surface (base:true) so a background= frame
+  // chain can't bleed through the hatch gaps. The pattern DEFAULTS by state (selected
+  // reads "pressed" via the denser crosshatch; unselected uses hatch); an explicit
+  // background=/denseBackground=/opaque= overrides that default regardless of selected.
+  // The facade paints it behind the crisp surface() outline.
+  background: (node) =>
+    tint(node, { pattern: node.props.background ?? (node.props.selected === true ? 'crosshatch' : 'hatch'), base: true }),
+
   render: (node, box) => {
     const { glyph } = sizeOf(node);
-    // The face is always its own OPAQUE surface (base:true), so a background= frame
-    // chain can't bleed through the hatch gaps -- like every other tinted element.
-    // The pattern DEFAULTS by state (selected reads "pressed" via the denser
-    // crosshatch; unselected uses hatch), but an explicit background=/denseBackground=
-    // overrides that default regardless of selected. Borderless tint -> surface()
-    // draws the crisp outline at its own roughness on top.
-    const selected = node.props.selected === true;
-    const pattern = node.props.background ?? (selected ? 'crosshatch' : 'hatch');
-    const tint = backgroundHatch(box, pattern, node.props.denseBackground === true, { base: true });
-
     // The icon slot, centered in the button at the size-specific extent: resolved
     // artwork as clean vectors, or the shared placeholder glyph when the name is
     // unknown or no icon was given (drawIcon decides -- the element never
@@ -100,6 +95,6 @@ export default {
     const gx = box.x + (box.w - glyph) / 2;
     const gy = box.y + (box.h - glyph) / 2;
 
-    return tint + surface(box) + drawIcon(node, 'icon', gx, gy, glyph);
+    return surface(box) + drawIcon(node, 'icon', gx, gy, glyph);
   },
 };

@@ -1,5 +1,5 @@
 // @ts-check
-import { FLEX_DIRECTIONS } from './common.js';
+import { FLEX_DIRECTIONS, tint } from './common.js';
 import { SPACING } from '../metrics.js';
 import { surfaceWith, rline, COLORS } from '../draw.js';
 
@@ -11,10 +11,11 @@ import { surfaceWith, rline, COLORS } from '../draw.js';
  * distribution (ss.4.2).
  *
  * Reference strategy (dynamic container): the axis, gap and child order come from
- * props. Like MUI's Stack it is invisible by default, but per spec it gains
- * optional chrome -- an `outline` border (none/solid/dashed/dotted, keyless) and a
- * numeric `elevation` shadow (mirrors Box) -- plus `divider`, a keyless flag that
- * draws a rule in each gap between children.
+ * props. Like Box it is OPAQUE by default (the universal `background` strategy paints
+ * a solid paper base behind its children; `opaque=false` for a see-through stack),
+ * and per spec it gains optional chrome -- an `outline` border (none/solid/dashed/
+ * dotted, keyless) and a numeric `elevation` shadow (mirrors Box) -- plus `divider`,
+ * a keyless flag that draws a rule in each gap between children.
  *
  * `direction` maps column->axis 'col' and row->axis 'row'; the `-reverse` variants
  * keep that axis and additionally emit `reverse:true` in the layoutSpec, which the
@@ -49,7 +50,7 @@ export default {
     { kind: 'enum', to: 'direction' },
     { kind: 'enum', to: 'outline' },
   ],
-  notes: 'Flex container; spacing*SPACING gap, optional divider/outline/elevation. Invisible unless those are set.',
+  notes: 'Flex container; spacing*SPACING gap, optional divider/outline/elevation. Opaque paper base by default (opaque=false for a transparent stack).',
 
   layoutSpec: (node) => {
     const dir = node.props.direction ?? 'column';
@@ -61,11 +62,22 @@ export default {
     };
   },
 
+  // Opaque by default (like Box): the facade paints a solid paper base behind the
+  // children unless `opaque=false` is set with no pattern; `background=`/
+  // `denseBackground` add the hatch over the base.
+  background: (node) => {
+    const opaque = node.props.opaque ?? true;
+    const has = typeof node.props.background === 'string' || node.props.denseBackground === true;
+    if (!opaque && !has) return null;
+    return tint(node, { pattern: node.props.background ?? 'none', base: true });
+  },
+
   render: (node, box) => {
     const outline = node.props.outline ?? 'none';
     const elevation = Number(node.props.elevation ?? 0);
     const wantsDivider = node.props.divider === true && box.children && box.children.length > 1;
-    // Defaults => invisible: omit every draw so a bare Stack stays free.
+    // No own border/shadow/divider chrome unless set (the opaque paper base is
+    // painted by the universal background facade, not here).
     if (outline === 'none' && !(elevation > 0) && !wantsDivider) return '';
 
     let out = '';

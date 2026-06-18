@@ -10,9 +10,10 @@ import { SPACING } from '../../src/metrics.js';
  * Stack -- the flex container (SPEC ss.4.2, ss.5.2). `Stack row`/`Stack column`
  * (default column) sets the main axis; the `-reverse` variants flip child order
  * along it. `spacing=N` (alias `gap=N`) resolves to N * SPACING px between
- * children. Optional `divider`/`outline`/`elevation` add chrome; with none of
- * them it draws nothing -- an invisible layout primitive whose only visible
- * effect is where it places its children.
+ * children. Optional `divider`/`outline`/`elevation` add chrome. It is OPAQUE by
+ * default (the universal background facade paints a solid paper base behind its
+ * children; `opaque=false` for a transparent primitive that draws nothing of its
+ * own beyond placing its children).
  */
 
 const ROW_SRC = 'Wireframe w=400 h=200\n  Stack row spacing=2\n    Typography "A"\n    Typography "B"';
@@ -168,17 +169,18 @@ test('column-reverse reverses the top-to-bottom order of children (column stays 
   assert.equal(visualOrder(laidStack(SRC('column-reverse')).children, 'y'), 'C,B,A', 'column-reverse lays children bottom-to-top');
 });
 
-test('Stack draws nothing of its own by default but flows its children to the SVG', () => {
+test('a bare Stack flows its children to the SVG (and paints its opaque base behind them)', () => {
   const { svg } = render('Wireframe\n  Stack row\n    Typography "A"\n    Typography "B"');
-  // Both children reach the output, proving the row layoutSpec ran.
+  // Both children reach the output, proving the row layoutSpec ran (the Stack itself
+  // also lays an opaque paper base by default -- opaque=false suppresses it).
   assert.match(svg, /A/);
   assert.match(svg, /B/);
 });
 
 test('divider draws a separator rule between children (best-effort visual)', () => {
-  // With divider off, a bare Stack emits no chrome path of its own; with it on,
-  // a separator line appears in the inter-child gap. Compare path counts to prove
-  // the divider added strokes without asserting exact geometry.
+  // Both stacks paint their opaque base; with divider on, a separator line also
+  // appears in the inter-child gap. Compare path counts to prove the divider added
+  // strokes without asserting exact geometry.
   const plain = render('Wireframe w=400 h=200\n  Stack column\n    Typography "A"\n    Typography "B"').svg;
   const withDiv = render('Wireframe w=400 h=200\n  Stack column divider\n    Typography "A"\n    Typography "B"').svg;
   const count = (s) => (s.match(/<path /g) || []).length;

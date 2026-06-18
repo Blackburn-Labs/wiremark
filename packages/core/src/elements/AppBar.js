@@ -1,5 +1,6 @@
 // @ts-check
-import { surface, backgroundHatch, BACKGROUNDS } from '../draw.js';
+import { surface } from '../draw.js';
+import { tint } from './common.js';
 import { SPACING } from '../metrics.js';
 
 /** Inner padding per `variant`; dense packs the bar tighter (SPEC ss.5.3). */
@@ -36,18 +37,16 @@ export default {
   container: true,
   props: {
     variant: { type: 'enum', values: ['regular', 'dense'], default: 'regular' },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
   },
   keyless: [{ kind: 'enum', to: 'variant' }],
   notes: 'Top app bar; usually wraps a Toolbar.',
 
   layoutSpec: (node) => ({ axis: 'row', pad: VARIANT_PAD[variantOf(node)], gap: SPACING }),
-  // Two layers so each keeps its own character: an opaque (base:true) low-roughness
-  // hatch fill that barely overflows the box -- the bar is its own surface, so
-  // content behind it must not bleed through -- then the normal-roughness border
-  // that stays as wobbly as every other surface.
-  render: (node, box) =>
-    backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true })
-    + surface(box, { fill: 'none' }),
+
+  // The bar is its own surface: an opaque (base:true) low-roughness hatch fill
+  // (default `hatch`, always drawn) painted by the facade behind the border, so
+  // content behind the bar can't bleed through -- then the normal-roughness border.
+  background: (node) => tint(node, { pattern: node.props.background ?? 'hatch', base: true }),
+
+  render: (node, box) => surface(box, { fill: 'none' }),
 };

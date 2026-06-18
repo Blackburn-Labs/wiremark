@@ -1,18 +1,22 @@
 // @ts-check
 import { surfaceWith } from '../draw.js';
+import { tint } from './common.js';
 
 /**
  * Box -- generic sized container. Sizing tokens `w h` are order-significant
  * (ss.4) and resolved by the engine; fills naturally when none are given. (SPEC ss.5.2)
  *
- * Reference strategy (sized container): stacks children in a column and is
- * invisible by default -- a region whose only job is to carry a size and group
- * content (like MUI's Box). Its `w h` tokens are interpreted by the parent's
- * distribution, so there is no per-element sizing code here.
+ * Reference strategy (sized container): stacks children in a column -- a region
+ * whose job is to carry a size and group content (like MUI's Box). Its `w h` tokens
+ * are interpreted by the parent's distribution, so there is no per-element sizing
+ * code here.
  *
- * Per spec it gains optional chrome: an `outline` border (none/solid/dashed/
- * dotted, keyless) and a numeric `elevation` shadow. With neither it still draws
- * nothing, so the bare-Box case stays a zero-overhead invisible region.
+ * Background: a Box is OPAQUE by default -- the universal `background` strategy
+ * paints a solid paper base behind its children, so a Box layered over a
+ * `background=#id` chain occludes it. `opaque=false` makes it a see-through grouping
+ * region (the former default); `background=hatch`/`crosshatch` + `denseBackground`
+ * tint it. Its own chrome stays optional: an `outline` border (none/solid/dashed/
+ * dotted, keyless) and a numeric `elevation` shadow, drawn over the base.
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -30,14 +34,25 @@ export default {
   keyless: [
     { kind: 'enum', to: 'outline' },
   ],
-  notes: 'Generic sized container; sizing is order-significant (ss.4). Invisible unless outline/elevation set.',
+  notes: 'Generic sized container; sizing is order-significant (ss.4). Opaque paper base by default (opaque=false for a transparent region); optional outline/elevation chrome over it.',
 
   layoutSpec: () => ({ axis: 'col', gap: 0, pad: 0 }),
+
+  // Opaque by default: the facade paints a solid paper base behind the children
+  // unless `opaque=false` is set with no pattern (then this stays a transparent
+  // grouping region); `background=`/`denseBackground` add the hatch over the base.
+  background: (node) => {
+    const opaque = node.props.opaque ?? true;
+    const has = typeof node.props.background === 'string' || node.props.denseBackground === true;
+    if (!opaque && !has) return null;
+    return tint(node, { pattern: node.props.background ?? 'none', base: true });
+  },
 
   render: (node, box) => {
     const outline = node.props.outline ?? 'none';
     const elevation = Number(node.props.elevation ?? 0);
-    // Defaults => invisible: omit the draw entirely so a bare Box stays free.
+    // No own border/shadow chrome unless outline/elevation set (the opaque paper
+    // base is painted by the universal background facade, not here).
     if (outline === 'none' && !(elevation > 0)) return '';
     return surfaceWith(box, { outline, elevation });
   },

@@ -1,6 +1,6 @@
 // @ts-check
-import { FILLER_STYLES } from './common.js';
-import { surface, centeredLabel, backgroundHatch, BACKGROUNDS } from '../draw.js';
+import { FILLER_STYLES, tint } from './common.js';
+import { surface, centeredLabel } from '../draw.js';
 import { textIntrinsic, textOf } from '../metrics.js';
 
 /**
@@ -41,8 +41,6 @@ export default {
     label: { type: 'string' },
     variant: { type: 'enum', values: ['filled', 'outlined'], default: 'filled' },
     size: { type: 'enum', values: ['small', 'medium'], default: 'medium' },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
     filler: { type: 'enum', values: FILLER_STYLES },
   },
   keyless: [
@@ -59,13 +57,14 @@ export default {
     const { padX, padY, fontSize } = sizeOf(node);
     return textIntrinsic(node, { padX, padY, fallback: 'Chip', fontSize });
   },
+  // filled -> opaque (base:true) hand-drawn hatch tint painted behind the border by
+  // the facade (the chip's own fill, so nothing shows through it); outlined -> border
+  // only. The hatch is borderless so the pill border keeps its own normal roughness.
+  background: (node) =>
+    node.props.variant === 'outlined' ? null : tint(node, { pattern: node.props.background ?? 'hatch', base: true }),
+
   render: (node, box) => {
     const { fontSize } = sizeOf(node);
-    // filled -> opaque (base:true) hand-drawn hatch tint under the border (the
-    // chip's own fill, so nothing shows through it); outlined (and default-read
-    // safety) -> border only. The hatch is borderless so the pill border keeps its
-    // own normal roughness.
-    const tint = node.props.variant === 'outlined' ? '' : backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true });
-    return tint + surface(box, {}) + centeredLabel(box, textOf(node, 'Chip'), { fontSize });
+    return surface(box, {}) + centeredLabel(box, textOf(node, 'Chip'), { fontSize });
   },
 };

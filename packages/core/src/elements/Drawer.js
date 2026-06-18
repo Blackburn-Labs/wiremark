@@ -1,5 +1,5 @@
 // @ts-check
-import { surface, rline, elevationShadow, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { surface, rline, elevationShadow, backgroundHatch, COLORS } from '../draw.js';
 import { anchorRect } from './common.js';
 import { SPACING } from '../metrics.js';
 
@@ -141,8 +141,6 @@ export default {
     variant: { type: 'enum', values: ['permanent', 'overlay', 'rail'], default: 'permanent' },
     pin: { type: 'enum', values: ['left', 'right', 'top', 'bottom'], default: 'left' },
     divider: { type: 'boolean', default: true },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
   },
   keyless: [
     { kind: 'enum', to: 'variant' },
@@ -150,6 +148,11 @@ export default {
     { kind: 'enum', to: 'background' },
   ],
   notes: 'Nav panel. permanent/rail are in-flow (no pinning); overlay is out-of-flow and pins to a side (pinned at 100% perpendicular). pin (left|right|top|bottom, default left) is the single placement knob -- it implies the axis (left/right vertical, top/bottom horizontal), sets the docked side, the content-facing divider seam, and the 100% fill axis. divider = content-facing seam; background/denseBackground opaque-tint. In-flow drawers draw the seam only (no full box); the floating overlay variant is a bordered, shadowed sheet.',
+
+  // The drawer's fill is an either/or (opaque paper OR hatch tint) tangled with its
+  // overlay border, so it self-draws in render(); opt out of the facade backdrop.
+  // background=/denseBackground/opaque are read there.
+  background: () => null,
 
   // The panel lays its OWN children along its main axis: a vertical panel is a
   // column, a horizontal panel a row. (Overlay only changes how the PARENT treats
@@ -189,7 +192,7 @@ export default {
     // fill with no full box, so the only edge that reads is the seam (`pin` picks it).
     // The floating overlay sheet keeps a full border so it reads as a bounded surface.
     const fill = tinted
-      ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true })
+      ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: node.props.opaque ?? true })
       : surface(box, { fill: COLORS.paper, stroke: overlay ? COLORS.ink : 'none' });
     // The full box border is the OVERLAY's only -- a tinted overlay needs it added on
     // top of the borderless hatch base; a plain overlay already got its stroke above.

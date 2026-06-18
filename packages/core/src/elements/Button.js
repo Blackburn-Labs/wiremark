@@ -1,5 +1,6 @@
 // @ts-check
-import { surface, centeredLabel, drawIcon, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { surface, centeredLabel, drawIcon, COLORS } from '../draw.js';
+import { tint } from './common.js';
 import { textIntrinsic, textOf } from '../metrics.js';
 
 /**
@@ -75,9 +76,8 @@ export default {
     startIcon: { type: 'icon' },
     endIcon: { type: 'icon' },
     fullWidth: { type: 'boolean', default: false },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
-    // href/to are the universal nav prop (CONVENTION s.7) -- not redeclared here.
+    // background/denseBackground/opaque are universal (CONVENTION s.8); the contained
+    // variant tints via the background() strategy below. href/to are also universal.
   },
   keyless: [
     { kind: 'literal', to: 'label' },
@@ -105,19 +105,25 @@ export default {
     const icons = (node.props.startIcon ? ICON + ICON_GAP : 0) + (node.props.endIcon ? ICON + ICON_GAP : 0);
     return { w: base.w + icons, h: base.h };
   },
+  // A contained button's hatch IS its own filled surface (CONVENTION s.8): the facade
+  // lays an opaque paper base under the hashes (base:true) so content behind a
+  // background-frame chain can't bleed through, with the borderless tint below the box
+  // border (drawn after at its own roughness). Only the contained variant tints.
+  background: (node) =>
+    (node.props.variant ?? 'text') === 'contained'
+      ? tint(node, { pattern: node.props.background ?? 'hatch', base: true })
+      : null,
+
   render: (node, box) => {
     const { fontSize } = sizeOf(node);
     const variant = node.props.variant ?? 'text';
     // One color for chrome, icons, and label: muted when disabled, ink otherwise.
     const ink = node.props.disabled === true ? COLORS.muted : COLORS.ink;
 
-    // Chrome: contained hatches a tint, outlined borders, text draws nothing.
-    // A contained button's hatch IS its own filled surface (CONVENTION s.8), so it
-    // lays an opaque paper base under the hashes (`base: true`) -- content behind a
-    // background-frame chain must not bleed through the gaps. The hatch is
-    // borderless so the box border keeps its own normal roughness, drawn after.
+    // Chrome: contained draws a borderless box (its hatch tint is painted behind by
+    // the facade), outlined borders, text draws nothing.
     let out = '';
-    if (variant === 'contained') out = backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true }) + surface(box, { fill: 'none', stroke: ink });
+    if (variant === 'contained') out = surface(box, { fill: 'none', stroke: ink });
     else if (variant === 'outlined') out = surface(box, { stroke: ink });
 
     // Icon-only: center the glyph(s) in the box, no label. With two icons they

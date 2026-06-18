@@ -19,6 +19,9 @@ These apply to *every* element (the registry injects them onto each component), 
 | scrollbar | enum | vertical, horizontal, both, none |  | no |  | Draws a scrollbar affordance: reserves a thin gutter on the scrolled edge (right for vertical, bottom for horizontal) so the strip never covers content, clips overflow, and hugs the box edge. |
 | scrollbarValue | numeric |  | 0 | no |  | Scroll position 0-100 (0 = start/top-left). Ignored unless scrollbar is set. |
 | scrollbarHandle | numeric |  | 30 | no |  | Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set. |
+| background | enum | hatch, crosshatch, none |  | no |  | Universal hand-drawn backdrop pattern painted behind any element (SPEC s.8): hatch (single diagonal), crosshatch (both), or none (an untextured base). Keyed everywhere (background=hatch); Button/Avatar/ToggleButton/Drawer also accept it as a bare keyless token. The effective default varies per element -- AppBar always hatches, Box/Stack are opaque, most elements stay transparent until set -- and lives in each element's background() strategy. |
+| denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer together for a denser tint. Resolves bare (denseBackground) or keyed (denseBackground=true). |
+| opaque | boolean |  |  | yes |  | Toggles the solid paper knockout under the background: on lays an opaque base so the element occludes any background=#id frame chain behind it; off keeps a see-through tint. The default varies per element (Box/Stack and filled surfaces are opaque; a plain element's tint is see-through). Resolves bare (opaque) or keyed (opaque=false). |
 
 ## Components
 
@@ -872,6 +875,7 @@ A single label in a horizontal menu bar (File / Edit / View). MenuItem is an inl
 | label | string |  |  | yes |  | The menu label text, set keyless as a bare quoted string (the single literal slot) or keyed as label=. Unset, it falls back to the placeholder "Menu"; a second quoted string is an error. |
 | selected | boolean |  | false | yes |  | Keyless boolean flag marking the highlighted item; draws a borderless hand-drawn hatch tint across the box. Defaults to false (absent when omitted). |
 | disabled | boolean |  | false | yes |  | Keyless boolean flag for the inactive state; renders the label in muted ink. Defaults to false (absent when omitted). |
+| icon | icon |  |  | no |  | Optional leading icon NAME drawn at the left edge, with the label to its right (keyed only: icon=Save; the value may be bare or quoted, PascalCase). A known name draws real artwork, an unknown one a placeholder glyph plus a warning; a disabled item mutes the icon too. The item widens to reserve the icon's slot. Defaults to null (no leading icon). |
 
 **Examples**
 
@@ -913,6 +917,14 @@ Stack row
 ```
 
 *The label given keyed instead of as a bare quoted string.*
+
+```wireframe
+Stack row
+  MenuItem "File" icon=Save
+  MenuItem "Edit"
+```
+
+*A leading icon: the label sits to the right and the item widens to fit it.*
 
 ### Menubar
 
@@ -1350,7 +1362,7 @@ Text -- the wireframe's type leaf, covering everything from page headings to mut
 | variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | body1 | yes |  | Type role, keyless: one of h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button. Drives the font size (h1-h6 also draw bold); defaults to body1, and caption inks in the muted/disabled color. |
 | align | enum | inherit, left, center, right, justify | inherit | yes |  | Horizontal placement within the box, keyless or keyed (a bare `center` or `align=center` both work): inherit, left, center, right, or justify. center anchors at the midpoint, right at the trailing edge, and left/justify/inherit at the left edge (justify degrades to left at sketch fidelity). Defaults to inherit (left). |
 | noWrap | boolean |  | false | yes |  | Keyless boolean flag (bare noWrap or noWrap=true): pins the single-line form -- one line trimmed to the box with a trailing ellipsis. Defaults to false, which lets a too-wide label word-wrap to the container's known width. |
-| filler | enum | squiggle, lorem, blocks |  | no |  | Greeking style for placeholder body text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem; blocks currently renders like squiggle). The universal ~N sigil is the usual shorthand. |
+| filler | enum | squiggle, lorem, blocks |  | no |  | Greeking style for placeholder body text: squiggle (wavy faux-handwritten lines, the default), lorem (real-ish lorem words), or blocks (solid grey bars) -- keyed, e.g. filler=lorem. The universal ~N sigil is the usual shorthand. |
 
 **Examples**
 
@@ -1576,7 +1588,7 @@ A hand-drawn, embeddable map GRAPHIC -- like Chart and Placeholder it exposes no
 
 | Name | Type | Values | Default | Keyless | Aliases | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| level | enum | street, area, region, national | street | yes | zoom | Abstraction/zoom level driving how much detail the generated map shows: street (dense block + street grid), area (neighborhood: sparser roads + a park/water blob), region (highways + a dashed region boundary), or national (broad borders + a few city dots). Keyless (bare) or keyed via level=/zoom=. |
+| level | enum | street, area | street | yes | zoom | Abstraction/zoom level driving how much detail the generated map shows: street (a dense block + street grid) or area (a neighborhood: sparser roads + a hatch-filled park/water blob). Keyless (bare) or keyed via level=/zoom=. |
 | icon | icon |  |  | yes | marker, center | An icon NAME drawn inside a marker at the map center (e.g. Map DirectionsCar for a GPS view). The single keyless literal slot, bare or quoted; an unknown name falls back to the placeholder glyph. Omitted -> no center marker. There is deliberately no free-text map title, so a specific place can never be encoded (the Chart/Placeholder restraint). |
 | pins | numeric |  |  | no | poi, markers | Number of POI pins sprinkled at deterministic positions. Keyed only (pins=/poi=/markers=) -- a bare number is a sizing token here. Visually clamped so a huge value can never blow up the render. |
 | path | boolean |  | false | yes | route | Draw a deterministic GPS-style route (an origin marker, a few waypoints, and a destination arrowhead) as a clean directional connector. Off by default; keyless flag path or keyed path=/route=. |
@@ -1607,16 +1619,10 @@ Map area pins=4
 *Neighborhood level (sparser roads + a park/water blob) with 4 POI pins.*
 
 ```wireframe
-Map region path
+Map area path
 ```
 
-*A highway region with a deterministic GPS route drawn.*
-
-```wireframe
-Map national pins=3
-```
-
-*Broad national borders plus a few city/POI dots.*
+*A neighborhood map with a deterministic GPS route drawn.*
 
 ```wireframe
 Map LocationOn pins=5 compass
@@ -1631,10 +1637,10 @@ Map street path compass labels
 *The works: a route, controls, and squiggle labels over the street grid.*
 
 ```wireframe
-Map region contours=false
+Map area contours=false
 ```
 
-*Drop the faint contour texture for a flat base (just roads and the dashed boundary).*
+*Drop the faint contour texture for a flat base (just roads and the blob).*
 
 ```wireframe
 Stack column
