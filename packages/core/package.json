@@ -1,6 +1,6 @@
 {
   "name": "@wiremark/core",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Core parser, layout engine, and hand-drawn SVG renderer for the wiremark wireframe DSL. Pure JS, no host dependencies.",
   "homepage": "https://wiremark.dev",
   "bugs": "https://github.com/Blackburn-Labs/wiremark/issues",
