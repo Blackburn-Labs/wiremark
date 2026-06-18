@@ -328,10 +328,15 @@ test('anchor id: setting two ids on one element is an error', () => {
 
 test('INVARIANT: each component\'s keyless-enum value domains are pairwise disjoint', () => {
   for (const [name, def] of Object.entries(REGISTRY)) {
+    // Read MERGED props (getComponent folds in the universal props) so a keyless slot
+    // pointing at a UNIVERSAL prop -- e.g. the universal `background` enum, exposed
+    // keyless by Button/Avatar/ToggleButton/Drawer -- is still validated against the
+    // element's own keyless enums.
+    const props = getComponent(name)?.props ?? def.props;
     const enumSlots = (def.keyless ?? []).filter((s) => s.kind === 'enum');
     const seen = new Map(); // value -> the slot that claimed it
     for (const slot of enumSlots) {
-      const values = def.props[slot.to]?.values ?? [];
+      const values = props[slot.to]?.values ?? [];
       for (const v of values) {
         assert.ok(
           !seen.has(v),

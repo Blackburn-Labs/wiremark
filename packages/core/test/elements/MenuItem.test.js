@@ -8,8 +8,10 @@ import { layout } from '../../src/layout.js';
 // MenuItem is a label leaf for a horizontal menu bar; it renders meaningfully
 // only inside a row container. `Stack row` stands in for the Menubar so MenuItem
 // can be exercised in isolation (the composed Menubar test is sequenced with the
-// sibling dev once Menubar lands).
-const wrap = (line) => `Wireframe\n  Stack row\n    ${line}`;
+// sibling dev once Menubar lands). `opaque=false` keeps the stand-in transparent so
+// it adds no paper base of its own (Stack is opaque by default) -- these tests probe
+// MenuItem's own paint, not the wrapper's.
+const wrap = (line) => `Wireframe\n  Stack row opaque=false\n    ${line}`;
 
 /** The MenuItem node (first child of the Stack, the frame's first child). */
 const itemNode = (line) => parse(wrap(line)).frames[0].children[0].children[0];

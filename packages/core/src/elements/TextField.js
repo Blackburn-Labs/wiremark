@@ -1,6 +1,6 @@
 // @ts-check
 import { FILLER_STYLES } from './common.js';
-import { surface, text, rline, drawIcon, floatingLabel, backgroundHatch, BACKGROUNDS, COLORS } from '../draw.js';
+import { surface, text, rline, drawIcon, floatingLabel, backgroundHatch, COLORS } from '../draw.js';
 import { measureText, LINE_HEIGHT } from '../metrics.js';
 
 /** Text size for the label/value/helper/caret, its derived line height, the
@@ -103,7 +103,7 @@ function fieldBox(node, x, y, w, h) {
   // Ruling 1 (CONVENTIONS.md: "TextField filled = base:true"): pass base:true so a
   // solid paper ground is laid under the hatch and content behind can't show
   // through the gaps. The standard/outlined variants have no fill, so no base.
-  const tint = fill !== 'none' ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: true }) : '';
+  const tint = fill !== 'none' ? backgroundHatch(box, node.props.background, node.props.denseBackground === true, { base: node.props.opaque ?? true }) : '';
   return tint + surface(box, { stroke });
 }
 
@@ -150,8 +150,6 @@ export default {
     endIcon: { type: 'icon' },
     fullWidth: { type: 'boolean', default: false },
     select: { type: 'boolean', default: false },
-    background: { type: 'enum', values: BACKGROUNDS, default: 'hatch' },
-    denseBackground: { type: 'boolean', default: false },
     // Spec types `filler` as a string (style/seed control); we keep the shared
     // FILLER_STYLES enum to match every other text element (CONVENTION ss.5). The
     // filler *amount* still comes from the bare `~N` token via `text: true`.
@@ -165,6 +163,11 @@ export default {
     { kind: 'enum', to: 'size' },
   ],
   notes: 'Optional label; floats onto the outline (MUI) once a value/placeholder shows. helperText below. startIcon/endIcon adornments.',
+
+  // The tint sits on the INNER field rect (not the element box), so the universal
+  // background facade can't place it -- TextField self-draws it in fieldBox(). Opt out
+  // of the facade backdrop; background=/denseBackground/opaque are read there.
+  background: () => null,
 
   block: true,
   intrinsic: (node) => {

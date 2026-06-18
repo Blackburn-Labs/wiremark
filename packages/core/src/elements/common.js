@@ -43,7 +43,9 @@
  * @property {boolean | ((node: ResolvedNode) => boolean)} [overlay]  // OUT-OF-FLOW: the PARENT excludes this node from flow (it adds nothing to the parent's content size and takes no flex share / grid cell), and the FRAME paints it LAST, over all in-flow content. Static or per-node predicate, like `block`/`minSize`. Orthogonal to layoutSpec/intrinsic -- an overlay still measures its own insides normally; only its placement and paint timing change. The first element-level out-of-flow capability (Dialog; Drawer's overlay variant).
  * @property {(node: ResolvedNode, parentContent: Rect, measured: Size2D) => Rect} [overlayPlacement]  // OVERLAY only: the element OWNS its placement and any parent-relative SIZING. The engine measures the subtree BARE (its content size -- handing a container an avail extent would make it FILL that extent, defeating its own sizing; `%`/fill resolve later in arrangeLinear, which overlays bypass), then hands back `parentContent` (the parent's padded inner rect this node would have flowed into) and `measured` (its content size); the element returns its absolute box, deriving any fill/stretch from `parentContent` itself. Keeps the engine vocabulary-free: Dialog maps its 9-way `position` here; Drawer's overlay variant docks to an edge (anchorRect's stretch). The returned w/h are FINAL -- place() uses the rect verbatim, it does not re-measure.
  * @property {(node: ResolvedNode, box: Box) => string} [render] // draw THIS element's chrome (children drawn by the facade)
+ * @property {(node: ResolvedNode) => (BgDescriptor|null)} [background]  // optional: the universal hatch/opaque backdrop the facade paints BEHIND this element (see `tint`). Omit it to get the default opt-in (drawn only when the author sets background=/denseBackground/opaque); return null to suppress the facade backdrop and draw your own.
  *
+ * @typedef {{ pattern: string, dense: boolean, base: boolean, shape?: string|number, fill?: string }} BgDescriptor
  * @typedef {import('../resolve.js').ResolvedNode} ResolvedNode
  * @typedef {import('../layout.js').Box} Box
  * @typedef {import('../layout.js').Rect} Rect
@@ -90,6 +92,14 @@
  *       (frame-last) change. An overlay still declares layoutSpec/intrinsic for its
  *       own insides. (Dialog; Drawer's overlay variant -- the engine's first
  *       out-of-flow layer.)
+ *   - background: (node) => BgDescriptor | null   The universal hatch/opaque
+ *       backdrop (SPEC s.8). The facade paints it BEHIND your chrome, so you never
+ *       call backgroundHatch yourself -- return a descriptor from the shared `tint`
+ *       helper (pattern + base, plus optional shape/fill), or null for none. OMIT
+ *       this entirely and you get the default opt-in: a backdrop only when the
+ *       author sets `background=`/`denseBackground`/`opaque`, base off (translucent).
+ *       Containers wanting an opaque default (Box/Stack) supply their own; elements
+ *       whose backdrop sits on an inner rect (TextField) return null and self-draw.
  * NOT drawn by elements: clickable `to=` regions (the render facade wraps any
  * node carrying `to=`) and child boxes (the facade recurses into them).
  *
@@ -169,4 +179,25 @@ export function anchorRect(parent, size, anchor) {
   const [x, w] = seatAxis(anchor.h, parent.x, parent.w, size.w);
   const [y, h] = seatAxis(anchor.v, parent.y, parent.h, size.h);
   return { x, y, w, h };
+}
+
+/**
+ * Assemble a universal-background descriptor for an element's `background(node)`
+ * strategy (CONVENTION s.8). The element supplies its resolved hatch `pattern` and
+ * its `base` default; this folds in the two universal props -- `denseBackground`
+ * (tighter hashes) and the `opaque` base toggle (the opaque paper knockout, which
+ * overrides the element default when the author sets it). The render facade then
+ * paints `backgroundHatch(box, pattern, dense, { base, shape, fill })` behind the
+ * element. @param {ResolvedNode} node
+ * @param {{ pattern: string, base: boolean, shape?: string|number, fill?: string }} opts
+ * @returns {BgDescriptor}
+ */
+export function tint(node, { pattern, base, shape, fill }) {
+  return {
+    pattern,
+    dense: node.props.denseBackground === true,
+    base: node.props.opaque ?? base,
+    shape,
+    fill,
+  };
 }

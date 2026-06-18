@@ -1,7 +1,7 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { isOverlay } from './layout.js';
-import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip } from './draw.js';
+import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip, backgroundHatch, BACKGROUNDS } from './draw.js';
 import { measureText, ARROW_HEAD, CONNECTOR_LABEL_PAD } from './metrics.js';
 import { inferComponents, planFlow, realizeRoutes } from './routing.js';
 
@@ -46,6 +46,26 @@ const FRAME_GAP = 40;  // legacy vertical gap (fallback when frames carry no {x,
 const FLOW_PAD = 24;   // padding around a multi-frame flow chart's content box
 
 /**
+ * Default universal-background descriptor for any element that doesn't define its
+ * own `background(node)` strategy (SPEC s.8): an OPT-IN backdrop drawn only when the
+ * author sets a `background=` pattern, `denseBackground`, or the `opaque` toggle. The
+ * opaque paper base defaults OFF here, so a bare element draws nothing and every
+ * element that never had a background stays byte-identical; containers wanting an
+ * opaque default (Box/Stack) supply their own `background`. The `BACKGROUNDS` guard
+ * skips Wireframe's `background=#id` frame ref (a node id, not a hatch enum value).
+ * @param {import('./resolve.js').ResolvedNode} node
+ * @returns {{ pattern: string, dense: boolean, base: boolean } | null}
+ */
+function defaultBackground(node) {
+  const p = node.props;
+  const hasPattern = BACKGROUNDS.includes(p.background);
+  const dense = p.denseBackground === true;
+  const opaque = p.opaque === true;
+  if (!hasPattern && !dense && !opaque) return null;
+  return { pattern: hasPattern ? p.background : (dense ? 'hatch' : 'none'), dense, base: opaque };
+}
+
+/**
  * @param {Box} box @param {string[]} out
  * @param {boolean} [skipOverlays]  phase 1 of the overlay split: when true, an
  *   OUT-OF-FLOW subtree draws NOTHING here (it is deferred to the frame's phase-2
@@ -60,6 +80,12 @@ function renderBox(box, out, skipOverlays = false) {
   const s = /** @type {*} */ (REGISTRY[node.component]) ?? {};
   /** @type {string[]} */
   const inner = [];
+  // Universal background (SPEC s.8): the facade paints any element's hatch/opaque
+  // backdrop BEHIND its own chrome and children, from the element's `background(node)`
+  // strategy (or the default opt-in for elements that don't define one). Elements
+  // never draw their own backdrop -- like the to= link and scrollbar affordances.
+  const bg = (typeof s.background === 'function' ? s.background : defaultBackground)(node);
+  if (bg) inner.push(backgroundHatch(box, bg.pattern, bg.dense, { base: bg.base, shape: bg.shape, fill: bg.fill }));
   if (typeof s.render === 'function') inner.push(s.render(node, box));
   // Children. A scroll container (box.clip set alongside box.scrollbars) CLIPS them
   // to its content rect so overflow is hidden -- the element's own chrome above and

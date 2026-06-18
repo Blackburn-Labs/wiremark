@@ -8,9 +8,10 @@ import { layout } from '../../src/layout.js';
 /**
  * Box -- the generic sized container (SPEC ss.4, ss.5.2). Sizing tokens `w h`
  * are order-significant and interpreted by the parent's distribution; with none
- * given it stacks its children in a column and fills naturally. By default it is
- * invisible, but per spec it accepts an `outline` border (none/solid/dashed/
- * dotted, keyless) and a numeric `elevation` shadow.
+ * given it stacks its children in a column and fills naturally. It is OPAQUE by
+ * default (the universal background facade paints a solid paper base behind its
+ * children; `opaque=false` for a transparent region), plus per spec an `outline`
+ * border (none/solid/dashed/dotted, keyless) and a numeric `elevation` shadow.
  */
 
 const SIZED_SRC = 'Wireframe w=400 h=200\n  Box 120px 40px\n    Typography "X"';
@@ -71,11 +72,15 @@ test('outline and elevation coexist on one Box and stay clean', () => {
   assert.equal(box.props.elevation, 2);
 });
 
-test('a bare Box (defaults) draws no chrome of its own', () => {
-  // Only the Typography child paints; the Box itself is invisible by default.
+test('a bare Box paints an opaque paper base by default; opaque=false restores a transparent region', () => {
+  // Box is opaque by default: the universal background facade lays a solid paper base
+  // behind its children (so a Box over a background=#id chain occludes it). The former
+  // invisible-grouping behavior is now opaque=false.
   const child = render('Wireframe w=400 h=200\n  Typography "X"');
   const boxed = render('Wireframe w=400 h=200\n  Box\n    Typography "X"');
-  assert.equal(paths(boxed.svg), paths(child.svg), 'Box with defaults should add zero paths');
+  const transparent = render('Wireframe w=400 h=200\n  Box opaque=false\n    Typography "X"');
+  assert.equal(paths(boxed.svg), paths(child.svg) + 1, 'a bare Box adds exactly one path: the opaque paper base');
+  assert.equal(paths(transparent.svg), paths(child.svg), 'opaque=false draws no chrome (a transparent grouping region, the former default)');
 });
 
 test('outline=solid draws a border the bare Box does not', () => {

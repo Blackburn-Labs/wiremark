@@ -34,6 +34,26 @@
       "default": 30,
       "keyless": false,
       "notes": "Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set."
+    },
+    {
+      "name": "background",
+      "type": "enum",
+      "values": ["hatch", "crosshatch", "none"],
+      "keyless": false,
+      "notes": "Universal hand-drawn backdrop pattern painted behind any element (SPEC s.8): hatch (single diagonal), crosshatch (both), or none (an untextured base). Keyed everywhere (background=hatch); Button/Avatar/ToggleButton/Drawer also accept it as a bare keyless token. The effective default varies per element -- AppBar always hatches, Box/Stack are opaque, most elements stay transparent until set -- and lives in each element's background() strategy."
+    },
+    {
+      "name": "denseBackground",
+      "type": "boolean",
+      "default": false,
+      "keyless": true,
+      "notes": "Packs the background hatch lines closer together for a denser tint. Resolves bare (denseBackground) or keyed (denseBackground=true)."
+    },
+    {
+      "name": "opaque",
+      "type": "boolean",
+      "keyless": true,
+      "notes": "Toggles the solid paper knockout under the background: on lays an opaque base so the element occludes any background=#id frame chain behind it; off keeps a see-through tint. The default varies per element (Box/Stack and filled surfaces are opaque; a plain element's tint is see-through). Resolves bare (opaque) or keyed (opaque=false)."
     }
   ],
   "components": [

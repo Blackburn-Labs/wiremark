@@ -19,6 +19,9 @@ These apply to *every* element (the registry injects them onto each component), 
 | scrollbar | enum | vertical, horizontal, both, none |  | no |  | Draws a scrollbar affordance: reserves a thin gutter on the scrolled edge (right for vertical, bottom for horizontal) so the strip never covers content, clips overflow, and hugs the box edge. |
 | scrollbarValue | numeric |  | 0 | no |  | Scroll position 0-100 (0 = start/top-left). Ignored unless scrollbar is set. |
 | scrollbarHandle | numeric |  | 30 | no |  | Scrollbar handle length as a percent of the track. Ignored unless scrollbar is set. |
+| background | enum | hatch, crosshatch, none |  | no |  | Universal hand-drawn backdrop pattern painted behind any element (SPEC s.8): hatch (single diagonal), crosshatch (both), or none (an untextured base). Keyed everywhere (background=hatch); Button/Avatar/ToggleButton/Drawer also accept it as a bare keyless token. The effective default varies per element -- AppBar always hatches, Box/Stack are opaque, most elements stay transparent until set -- and lives in each element's background() strategy. |
+| denseBackground | boolean |  | false | yes |  | Packs the background hatch lines closer together for a denser tint. Resolves bare (denseBackground) or keyed (denseBackground=true). |
+| opaque | boolean |  |  | yes |  | Toggles the solid paper knockout under the background: on lays an opaque base so the element occludes any background=#id frame chain behind it; off keeps a see-through tint. The default varies per element (Box/Stack and filled surfaces are opaque; a plain element's tint is see-through). Resolves bare (opaque) or keyed (opaque=false). |
 
 ## Components
 
