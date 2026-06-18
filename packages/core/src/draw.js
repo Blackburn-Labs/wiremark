@@ -464,8 +464,10 @@ export function floatingLabel(x, topY, str, opts = {}) {
 }
 
 /**
- * Draw `lines` rows of squiggle filler within a width (a sketch stand-in for
- * body text -- SPEC ss.6). Baselines step by the line height of `fontSize`.
+ * Draw `lines` rows of STRAIGHT muted filler lines within a width (the ghosted
+ * "copy in flight" look used by Skeleton's text variant -- SPEC ss.6). For the
+ * `filler=squiggle`/`filler=blocks` greeking styles see `squiggleRows` /
+ * `blockRows`. Baselines step by the line height of `fontSize`.
  * @param {number} x @param {number} y  top of the first line
  * @param {number} w @param {number} lines @param {number} fontSize
  * @returns {string}
@@ -477,6 +479,67 @@ export function fillerRows(x, y, w, lines, fontSize) {
     const ly = y + step * (i + 0.6);
     const lw = i === lines - 1 ? w * 0.6 : w; // ragged last line
     out += rline(x, ly, x + lw, ly, { stroke: COLORS.muted, strokeWidth: 1, roughness: 1.4 });
+  }
+  return out;
+}
+
+/** Round a path coordinate to 1 decimal so the `d` strings stay compact. */
+const r1 = (n) => Math.round(n * 10) / 10;
+
+/**
+ * Draw `lines` rows of `filler=squiggle` greeking: a faux-handwritten WAVY line
+ * per row (the Balsamiq scribble look, SPEC ss.6) -- a continuous run of small
+ * sine-like bumps so it reads as cursive copy rather than the straight ghosted
+ * lines `fillerRows` draws. Amplitude/wavelength scale with `fontSize`; the last
+ * line is ragged to ~60% width. Drawn through rough.js (low roughness) so each
+ * wave keeps the hand-drawn wobble of every other mark.
+ * @param {number} x @param {number} y  top of the first line
+ * @param {number} w @param {number} lines @param {number} fontSize
+ * @returns {string}
+ */
+export function squiggleRows(x, y, w, lines, fontSize) {
+  const step = fontSize * LINE_HEIGHT;
+  const amp = Math.max(1.5, fontSize * 0.18);   // peak height of a bump
+  const seg = Math.max(7, fontSize * 0.75);     // half-wavelength
+  let out = '';
+  for (let i = 0; i < lines; i++) {
+    const ly = y + step * (i + 0.6);
+    const lw = i === lines - 1 ? w * 0.6 : w;   // ragged last line
+    let d = `M${r1(x)} ${r1(ly)}`;
+    let dir = -1;                               // first bump rises above the baseline
+    for (let cx = x; cx < x + lw - 0.5; cx += seg) {
+      const ex = Math.min(cx + seg, x + lw);
+      const mx = (cx + ex) / 2;
+      // quadratic peaks at half the control offset, so 2*amp control -> amp peak
+      d += ` Q${r1(mx)} ${r1(ly + dir * amp * 2)} ${r1(ex)} ${r1(ly)}`;
+      dir = -dir;
+    }
+    out += emit(generator.path(d,
+      { seed: seedOf(x, ly, lw), stroke: COLORS.muted, strokeWidth: 1.2, roughness: 0.8, bowing: 0 }));
+  }
+  return out;
+}
+
+/**
+ * Draw `lines` rows of `filler=blocks` greeking: a solid grey BAR per row (a
+ * greeked block of text, SPEC ss.6) -- clearly distinct from the squiggle and
+ * lorem styles. Each bar is a hand-drawn rounded rect filled in the neutral
+ * hatch gray, vertically centered in its line slot; the last line is ragged to
+ * ~60% width.
+ * @param {number} x @param {number} y  top of the first line
+ * @param {number} w @param {number} lines @param {number} fontSize
+ * @returns {string}
+ */
+export function blockRows(x, y, w, lines, fontSize) {
+  const step = fontSize * LINE_HEIGHT;
+  const barH = Math.max(4, fontSize * 0.62);
+  const r = Math.min(3, barH / 2);
+  let out = '';
+  for (let i = 0; i < lines; i++) {
+    const top = y + step * i + (step - barH) / 2; // center the bar in its row
+    const lw = i === lines - 1 ? w * 0.6 : w;      // ragged last line
+    out += rroundrect(x, top, lw, barH, r,
+      { fill: COLORS.hatch, fillStyle: 'solid', stroke: 'none', roughness: 0.6 });
   }
   return out;
 }

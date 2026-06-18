@@ -1027,7 +1027,7 @@
           "type": "enum",
           "values": ["squiggle", "lorem", "blocks"],
           "keyless": false,
-          "description": "Greeking style for placeholder body text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem; blocks currently renders like squiggle). The universal ~N sigil is the usual shorthand."
+          "description": "Greeking style for placeholder body text: squiggle (wavy faux-handwritten lines, the default), lorem (real-ish lorem words), or blocks (solid grey bars) -- keyed, e.g. filler=lorem. The universal ~N sigil is the usual shorthand."
         }
       ]
     },

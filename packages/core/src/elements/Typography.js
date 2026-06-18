@@ -1,6 +1,6 @@
 // @ts-check
 import { FILLER_STYLES } from './common.js';
-import { text, fillerRows, COLORS } from '../draw.js';
+import { text, squiggleRows, blockRows, COLORS } from '../draw.js';
 import { fontSizeOf, textOf, measureText, wrapText, fillerLines, LINE_HEIGHT, LOREM } from '../metrics.js';
 
 /**
@@ -21,8 +21,9 @@ import { fontSizeOf, textOf, measureText, wrapText, fillerLines, LINE_HEIGHT, LO
  *
  * Reference strategy (text leaf): `block` so it spans the container's cross axis
  * (like a real Typography); intrinsic height grows with filler line count; draws
- * a real string, or filler rows when only an amount is given -- squiggle strokes
- * by default, lorem words under `filler=lorem` (own prop or the frame default).
+ * a real string, or filler rows when only an amount is given -- wavy squiggle
+ * strokes by default, lorem words under `filler=lorem`, or grey bars under
+ * `filler=blocks` (own prop or the frame default).
  *
  * @type {import('./common.js').ComponentDef}
  */
@@ -32,7 +33,7 @@ import { fontSizeOf, textOf, measureText, wrapText, fillerLines, LINE_HEIGHT, LO
  * instead of squiggle strokes. A words filler (`~Nw`) keeps its exact word
  * count on one line (matching `textOf`); line-count fillers wrap the LOREM
  * bank greedily to the box width, with the last line ragged to ~60% so the
- * silhouette matches `fillerRows`.
+ * silhouette matches `squiggleRows`.
  * @param {import('../resolve.js').ResolvedNode} node
  * @param {{x:number,y:number,w:number,h:number}} box
  * @param {number} fs
@@ -139,8 +140,10 @@ export default {
   render: (node, box) => {
     const fs = fontSizeOf(node);
     if (node.props.label == null && node.filler) {
+      const lines = fillerLines(node);
       if (node.props.filler === 'lorem') return loremRows(node, box, fs);
-      return fillerRows(box.x, box.y, box.w, fillerLines(node), fs);
+      if (node.props.filler === 'blocks') return blockRows(box.x, box.y, box.w, lines, fs);
+      return squiggleRows(box.x, box.y, box.w, lines, fs); // squiggle (default)
     }
     const weight = weightOf(node);
     const fill = inkOf(node);

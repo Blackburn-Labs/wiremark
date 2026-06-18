@@ -1362,7 +1362,7 @@ Text -- the wireframe's type leaf, covering everything from page headings to mut
 | variant | enum | h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button | body1 | yes |  | Type role, keyless: one of h1, h2, h3, h4, h5, h6, subtitle1, subtitle2, body1, body2, caption, overline, button. Drives the font size (h1-h6 also draw bold); defaults to body1, and caption inks in the muted/disabled color. |
 | align | enum | inherit, left, center, right, justify | inherit | yes |  | Horizontal placement within the box, keyless or keyed (a bare `center` or `align=center` both work): inherit, left, center, right, or justify. center anchors at the midpoint, right at the trailing edge, and left/justify/inherit at the left edge (justify degrades to left at sketch fidelity). Defaults to inherit (left). |
 | noWrap | boolean |  | false | yes |  | Keyless boolean flag (bare noWrap or noWrap=true): pins the single-line form -- one line trimmed to the box with a trailing ellipsis. Defaults to false, which lets a too-wide label word-wrap to the container's known width. |
-| filler | enum | squiggle, lorem, blocks |  | no |  | Greeking style for placeholder body text: squiggle, lorem, or blocks (keyed, e.g. filler=lorem; blocks currently renders like squiggle). The universal ~N sigil is the usual shorthand. |
+| filler | enum | squiggle, lorem, blocks |  | no |  | Greeking style for placeholder body text: squiggle (wavy faux-handwritten lines, the default), lorem (real-ish lorem words), or blocks (solid grey bars) -- keyed, e.g. filler=lorem. The universal ~N sigil is the usual shorthand. |
 
 **Examples**
 
