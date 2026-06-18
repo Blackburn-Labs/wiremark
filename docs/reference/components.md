@@ -872,6 +872,7 @@ A single label in a horizontal menu bar (File / Edit / View). MenuItem is an inl
 | label | string |  |  | yes |  | The menu label text, set keyless as a bare quoted string (the single literal slot) or keyed as label=. Unset, it falls back to the placeholder "Menu"; a second quoted string is an error. |
 | selected | boolean |  | false | yes |  | Keyless boolean flag marking the highlighted item; draws a borderless hand-drawn hatch tint across the box. Defaults to false (absent when omitted). |
 | disabled | boolean |  | false | yes |  | Keyless boolean flag for the inactive state; renders the label in muted ink. Defaults to false (absent when omitted). |
+| icon | icon |  |  | no |  | Optional leading icon NAME drawn at the left edge, with the label to its right (keyed only: icon=Save; the value may be bare or quoted, PascalCase). A known name draws real artwork, an unknown one a placeholder glyph plus a warning; a disabled item mutes the icon too. The item widens to reserve the icon's slot. Defaults to null (no leading icon). |
 
 **Examples**
 
@@ -913,6 +914,14 @@ Stack row
 ```
 
 *The label given keyed instead of as a bare quoted string.*
+
+```wireframe
+Stack row
+  MenuItem "File" icon=Save
+  MenuItem "Edit"
+```
+
+*A leading icon: the label sits to the right and the item widens to fit it.*
 
 ### Menubar
 
@@ -1576,7 +1585,7 @@ A hand-drawn, embeddable map GRAPHIC -- like Chart and Placeholder it exposes no
 
 | Name | Type | Values | Default | Keyless | Aliases | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| level | enum | street, area, region, national | street | yes | zoom | Abstraction/zoom level driving how much detail the generated map shows: street (dense block + street grid), area (neighborhood: sparser roads + a park/water blob), region (highways + a dashed region boundary), or national (broad borders + a few city dots). Keyless (bare) or keyed via level=/zoom=. |
+| level | enum | street, area | street | yes | zoom | Abstraction/zoom level driving how much detail the generated map shows: street (a dense block + street grid) or area (a neighborhood: sparser roads + a hatch-filled park/water blob). Keyless (bare) or keyed via level=/zoom=. |
 | icon | icon |  |  | yes | marker, center | An icon NAME drawn inside a marker at the map center (e.g. Map DirectionsCar for a GPS view). The single keyless literal slot, bare or quoted; an unknown name falls back to the placeholder glyph. Omitted -> no center marker. There is deliberately no free-text map title, so a specific place can never be encoded (the Chart/Placeholder restraint). |
 | pins | numeric |  |  | no | poi, markers | Number of POI pins sprinkled at deterministic positions. Keyed only (pins=/poi=/markers=) -- a bare number is a sizing token here. Visually clamped so a huge value can never blow up the render. |
 | path | boolean |  | false | yes | route | Draw a deterministic GPS-style route (an origin marker, a few waypoints, and a destination arrowhead) as a clean directional connector. Off by default; keyless flag path or keyed path=/route=. |
@@ -1607,16 +1616,10 @@ Map area pins=4
 *Neighborhood level (sparser roads + a park/water blob) with 4 POI pins.*
 
 ```wireframe
-Map region path
+Map area path
 ```
 
-*A highway region with a deterministic GPS route drawn.*
-
-```wireframe
-Map national pins=3
-```
-
-*Broad national borders plus a few city/POI dots.*
+*A neighborhood map with a deterministic GPS route drawn.*
 
 ```wireframe
 Map LocationOn pins=5 compass
@@ -1631,10 +1634,10 @@ Map street path compass labels
 *The works: a route, controls, and squiggle labels over the street grid.*
 
 ```wireframe
-Map region contours=false
+Map area contours=false
 ```
 
-*Drop the faint contour texture for a flat base (just roads and the dashed boundary).*
+*Drop the faint contour texture for a flat base (just roads and the blob).*
 
 ```wireframe
 Stack column

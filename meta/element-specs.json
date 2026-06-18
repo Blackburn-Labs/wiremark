@@ -670,7 +670,8 @@
         { "code": "Stack row\n  MenuItem \"File\" selected\n  MenuItem \"Edit\"", "description": "The highlighted item, drawn with a hand-drawn hatch tint." },
         { "code": "Stack row\n  MenuItem \"Edit\"\n  MenuItem \"Format\" disabled", "description": "A disabled item, its label in muted ink." },
         { "code": "Stack row\n  MenuItem \"Home\" to=#next", "description": "A navigating item: to= links the label to another frame." },
-        { "code": "Stack row\n  MenuItem label=\"Help\"", "description": "The label given keyed instead of as a bare quoted string." }
+        { "code": "Stack row\n  MenuItem label=\"Help\"", "description": "The label given keyed instead of as a bare quoted string." },
+        { "code": "Stack row\n  MenuItem \"File\" icon=Save\n  MenuItem \"Edit\"", "description": "A leading icon: the label sits to the right and the item widens to fit it." }
       ],
       "properties": [
         {
@@ -692,6 +693,13 @@
           "default": false,
           "keyless": true,
           "description": "Keyless boolean flag for the inactive state; renders the label in muted ink. Defaults to false (absent when omitted)."
+        },
+        {
+          "name": "icon",
+          "type": "icon",
+          "default": null,
+          "keyless": false,
+          "description": "Optional leading icon NAME drawn at the left edge, with the label to its right (keyed only: icon=Save; the value may be bare or quoted, PascalCase). A known name draws real artwork, an unknown one a placeholder glyph plus a warning; a disabled item mutes the icon too. The item widens to reserve the icon's slot. Defaults to null (no leading icon)."
         }
       ]
     },

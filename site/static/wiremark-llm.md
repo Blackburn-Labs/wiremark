@@ -293,7 +293,7 @@ AccordionBody [c]
 NAVIGATION
 Drawer [c] -- variant:(permanent|overlay|rail)=permanent*, pin:(left|right|top|bottom)=left*, divider:B=true*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
 Link [~] -- label:T*, underline:(none|hover|always)=always, variant:(h1|h2|h3|h4|h5|h6|subtitle1|subtitle2|body1|body2|caption|overline|button)*, filler:(squiggle|lorem|blocks)
-MenuItem -- label:T*, selected:B*, disabled:B*
+MenuItem -- label:T*, selected:B*, disabled:B*, icon:I
 Menubar [c]
 Tabs [c] -- orientation:(horizontal|vertical)=horizontal*, variant:(standard|scrollable|fullWidth)=standard*
 Tab [~] -- label:T*
@@ -314,7 +314,7 @@ TextField [~] -- label:T*, variant:(outlined|filled|standard)=outlined*, value|v
 CONTENT
 Img [w h] -- ratio:A, alt:T, src:T
 Chart [w h] -- variant|type|kind:(bar|column|line|area|histogram|pie|donut)=bar*, title|label:T*, series|bars|slices|points|n:N, legend:B*, axes|grid:B=true*, labels:B=true*
-Map [w h] -- level|zoom:(street|area|region|national)=street*, icon|marker|center:I*, pins|poi|markers:N, path|route:B*, compass|controls:B*, labels:B*, contours:B=true*
+Map [w h] -- level|zoom:(street|area)=street*, icon|marker|center:I*, pins|poi|markers:N, path|route:B*, compass|controls:B*, labels:B*, contours:B=true*
 Placeholder [w h] -- label:T*, description:T
 Avatar -- variant:(circular|rounded|square)=circular*, size:(small|medium|large)=medium*, src:T, label:T*, background:(hatch|crosshatch|none)=hatch*, denseBackground:B*
 Chip [~] -- label:T*, variant:(filled|outlined)=filled*, size:(small|medium)=medium*, background:(hatch|crosshatch|none)=hatch, denseBackground:B*, filler:(squiggle|lorem|blocks)
