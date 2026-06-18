@@ -62,6 +62,29 @@ test('Img accepts percent and flex sizing tokens', () => {
   assert.deepEqual(flex.size?.w, { unit: 'fill' });
 });
 
+// --- render: alt caption ------------------------------------------------------
+
+test('Img with alt and no src draws the alt as a centered caption over the box', () => {
+  const { svg, diagnostics } = render('Wireframe\n  Img alt="Hero photo"');
+  assert.deepEqual(diagnostics, []);
+  assert.match(svg, /<path/, 'the crossed box is still drawn');
+  const texts = svg.match(/<text/g) ?? [];
+  assert.equal(texts.length, 1, 'exactly the alt caption line');
+  assert.match(svg, /text-anchor="middle"/);
+  assert.match(svg, /Hero photo/);
+});
+
+test('Img with both alt and src draws no caption (a real src is the picture)', () => {
+  const { svg } = render('Wireframe\n  Img alt="Hero photo" src="hero.png"');
+  assert.match(svg, /<path/);
+  assert.doesNotMatch(svg, /<text/, 'a real src suppresses the alt caption');
+});
+
+test('a bare Img (no alt) draws no caption text', () => {
+  const { svg } = render(BARE_SRC);
+  assert.doesNotMatch(svg, /<text/);
+});
+
 // --- layout: precedence -------------------------------------------------------
 
 test('both dimensions pinned -> the explicit sizes win and ratio is IGNORED', () => {
