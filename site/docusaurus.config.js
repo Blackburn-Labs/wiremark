@@ -39,6 +39,27 @@ const config = {
 
   i18n: { defaultLocale: 'en', locales: ['en'] },
 
+  // Google tag (Google Ads / Tag Manager container GTM-WTW39DPJ), injected
+  // into the <head> of every page.
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {
+        async: 'async',
+        src: 'https://www.googletagmanager.com/gtm.js?id=GTM-WTW39DPJ',
+      },
+    },
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML: [
+        'window.dataLayer = window.dataLayer || [];',
+        'function gtag(){dataLayer.push(arguments);}',
+        "gtag('js', new Date());",
+      ].join('\n'),
+    },
+  ],
+
   presets: [
     [
       'classic',
