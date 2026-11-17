@@ -15,10 +15,11 @@ import { build } from 'esbuild';
 
 import { BUILD_OPTIONS } from '../scripts/build-browser.mjs';
 
-// 182 KB at the time of writing (the built-in icon module is 80 KB of that,
-// with its own budget in scripts/generate-icons.mjs). Catches accidental
+// 262 KB at the time of writing: the built-in icon module is 80 KB of that
+// (budget in scripts/generate-icons.mjs) and the embedded sketch font ~44 KB
+// (budget in scripts/generate-font.mjs; tasks/FONT.md). Catches accidental
 // bloat, e.g. a dependency creeping in beside roughjs.
-const SIZE_BUDGET = 256 * 1024;
+const SIZE_BUDGET = 320 * 1024;
 
 const result = await build({ ...BUILD_OPTIONS, write: false, logLevel: 'silent' });
 const code = result.outputFiles[0].text;

@@ -1,13 +1,16 @@
 // @ts-check
 /**
- * Shared layout/text metrics -- a leaf module (imports nothing from core) so the
- * engine (layout), the renderer, and every element strategy can depend on it
- * with no risk of an import cycle.
+ * Shared layout/text metrics -- a leaf module (imports nothing from core but the
+ * generated, data-only fonts/comic-neue.js) so the engine (layout), the
+ * renderer, and every element strategy can depend on it with no risk of an
+ * import cycle.
  *
  * Numbers here fill gaps the SPEC leaves to the renderer: preset pixel sizes,
  * per-variant font sizes, spacing, and a crude single-line text measurer (good
  * enough for sketch fidelity; no real font shaping) plus its truncation inverse.
  */
+
+import { COMIC_NEUE_ADVANCE } from './fonts/comic-neue.js';
 
 /** MUI spacing unit; `gap=N` resolves to N * SPACING px. */
 export const SPACING = 8;
@@ -98,8 +101,28 @@ export const VARIANT_FONT = {
   caption: 12, overline: 12, button: 14,
 };
 export const DEFAULT_VARIANT = 'body';
-export const LINE_HEIGHT = 1.4;
+/** Line height (multiple of font size) of the built-in sketch font. */
+export const DEFAULT_LEADING = 1.4;
 const CHAR_W = 0.58; // average glyph advance as a fraction of font size
+
+/**
+ * Per-render text metrics for the font in use (tasks/FONT.md): the line height,
+ * and a horizontal scale applied to every width estimate (`measureText`, the
+ * per-glyph table) -- 1 for the built-in font. `LINE_HEIGHT` is an exported
+ * `let`, so every importer reads the live value through its ES-module binding.
+ * Set by index.js's render() around layout + render and ALWAYS restored to the
+ * defaults (`setFontMetrics()`), the same swap discipline as the theme palette.
+ */
+export let LINE_HEIGHT = DEFAULT_LEADING;
+let widthScale = 1;
+
+/**
+ * @param {{ width?: number, leading?: number }} [m]  omit to restore the defaults
+ */
+export function setFontMetrics(m = {}) {
+  widthScale = m.width ?? 1;
+  LINE_HEIGHT = m.leading ?? DEFAULT_LEADING;
+}
 
 /** @param {import('./resolve.js').ResolvedNode} node @returns {string} */
 export function variantOf(node) {
@@ -117,29 +140,68 @@ export function fontSizeOf(node) {
  * @param {string} str @param {number} fontSize @returns {{ w: number, h: number }}
  */
 export function measureText(str, fontSize) {
-  return { w: Math.ceil(str.length * fontSize * CHAR_W), h: Math.ceil(fontSize * LINE_HEIGHT) };
+  return { w: Math.ceil(str.length * fontSize * CHAR_W * widthScale), h: Math.ceil(fontSize * LINE_HEIGHT) };
 }
 
 /** The truncation marker -- a single ellipsis glyph. */
 export const ELLIPSIS = '…';
 
 /**
- * Per-glyph advance ratios (advance / fontSize) for ASCII 32..126, measured
- * from Comic Sans MS -- the sketch stack's primary face, and on average its
- * widest common member, so the estimate errs safe on fallback faces. Canvas
- * advances at 64px, stored as thousandths. These drive WHERE truncateText cuts;
- * `measureText`'s flat CHAR_W average stays the layout-time sizer, so intrinsic
- * geometry is unchanged.
+ * Scale the embedded sketch face (Comic Neue) is drawn at, via the @font-face
+ * `size-adjust` draw.js emits. Comic Neue is ~a uniformly 10%-smaller Comic
+ * Sans (fixture-label corpus: width 0.911, x-height 0.915), so at 110% it lands
+ * on Comic Sans geometry and layouts sized for Comic Sans carry over
+ * (tasks/FONT.md). `size-adjust` is scoped to the embedded face only, so a
+ * fallback to an installed Comic Neue / Comic Sans is never scaled.
  */
-const GLYPH_W = ('299,238,424,843,693,820,654,388,366,366,530,480,277,417,249,512,610,450,610,610,'
+export const FONT_SIZE_ADJUST = 1.1;
+/** Comic Sans bold runs ~6% wider per glyph on average. */
+const BOLD_FACTOR = 1.06;
+
+/**
+ * Per-glyph advance ratios (advance / fontSize) for ASCII 32..126, measured
+ * from Comic Sans MS (canvas advances at 64px, stored as thousandths) -- the
+ * fallback face for viewers that ignore the embedded font.
+ */
+const COMIC_SANS_W = ('299,238,424,843,693,820,654,388,366,366,530,480,277,417,249,512,610,450,610,610,'
   + '610,610,610,610,610,610,299,299,381,510,381,524,931,731,630,603,722,625,607,680,768,546,665,'
   + '611,551,883,797,798,521,876,628,693,680,737,650,1040,724,635,693,376,550,376,581,627,556,512,'
   + '593,514,587,548,508,531,578,280,403,540,274,777,523,526,535,520,480,487,471,520,486,684,590,'
   + '521,538,366,421,366,598').split(',').map((n) => Number(n) / 1000);
-/** Advance ratio of the ELLIPSIS glyph itself (same at 400 and 700 weight). */
-const ELLIPSIS_W = 0.675;
-/** Comic Sans bold runs ~6% wider per glyph on average. */
-const BOLD_FACTOR = 1.06;
+/** Comic Sans's own ELLIPSIS advance ratio (same at 400 and 700 weight). */
+const COMIC_SANS_ELLIPSIS_W = 0.675;
+
+/**
+ * Comic Neue advance ratio as drawn (size-adjusted), normalized to the regular
+ * scale the truncation math uses: bold runs are multiplied by BOLD_FACTOR at
+ * use, so the 700 face is divided by it here.
+ * @param {number} thousandths @param {400|700} weight @returns {number}
+ */
+function neueRatio(thousandths, weight) {
+  return (thousandths / 1000) * FONT_SIZE_ADJUST / (weight === 700 ? BOLD_FACTOR : 1);
+}
+
+/**
+ * The truncation table: per glyph, the WIDER of Comic Sans and the embedded
+ * Comic Neue (regular and bold) -- the two faces viewers realistically get.
+ * Matching on average isn't enough: Comic Neue's space, `n`, `m` run 15-25%
+ * wider than Comic Sans's, so an average-only table lets a quarter of labels
+ * spill past their box. Taking the max costs ~5% (text ellipsizes slightly
+ * earlier) and keeps every cut safe in both faces. These drive WHERE
+ * truncateText cuts; `measureText`'s flat CHAR_W average stays the layout-time
+ * sizer, so intrinsic geometry is unchanged.
+ */
+const GLYPH_W = COMIC_SANS_W.map((cs, i) => Math.max(
+  cs,
+  neueRatio(COMIC_NEUE_ADVANCE[400].ascii[i], 400),
+  neueRatio(COMIC_NEUE_ADVANCE[700].ascii[i], 700),
+));
+/** Advance ratio of the ELLIPSIS glyph itself -- same max-of-faces rule. */
+const ELLIPSIS_W = Math.max(
+  COMIC_SANS_ELLIPSIS_W,
+  neueRatio(COMIC_NEUE_ADVANCE[400].ellipsis, 400),
+  neueRatio(COMIC_NEUE_ADVANCE[700].ellipsis, 700),
+);
 /** Headroom for viewers that fall back to slightly wider faces in the stack. */
 const SAFETY = 1.03;
 
@@ -161,7 +223,7 @@ function glyphRatio(ch) {
 export function textRunWidth(str, fontSize, weight = 400) {
   let run = 0;
   for (const ch of str) run += glyphRatio(ch);
-  return run * fontSize * (Number(weight) >= 600 ? BOLD_FACTOR : 1);
+  return run * fontSize * widthScale * (Number(weight) >= 600 ? BOLD_FACTOR : 1);
 }
 
 /**
@@ -210,7 +272,7 @@ export function truncateText(str, fontSize, maxW, weight = 400) {
   if (!Number.isFinite(maxW)) return str;
   const w = /** @type {number} */ (maxW);
   if (measureText(str, fontSize).w <= w) return str;
-  const scale = fontSize * (Number(weight) >= 600 ? BOLD_FACTOR : 1) * SAFETY;
+  const scale = fontSize * widthScale * (Number(weight) >= 600 ? BOLD_FACTOR : 1) * SAFETY;
   let run = 0;
   for (const ch of str) run += glyphRatio(ch);
   if (run * scale <= w) return str;

@@ -71,8 +71,9 @@ test('bold text trims earlier than normal text in the same run', () => {
 });
 
 test('truncateText degenerates: a lone ellipsis when only it fits, nothing when not even that', () => {
-  assert.equal(truncateText(STR, FS, 12), ELLIPSIS); // '…' needs ~11.1px at 16px
-  assert.equal(truncateText(STR, FS, 10), '');
+  // '…' needs ~12.0px at 16px (Comic Neue's at 110% size-adjust, + SAFETY)
+  assert.equal(truncateText(STR, FS, 13), ELLIPSIS);
+  assert.equal(truncateText(STR, FS, 11), '');
   assert.equal(truncateText(STR, FS, 0), '');
   assert.equal(truncateText(STR, FS, -10), '');
 });

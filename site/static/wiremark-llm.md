@@ -91,8 +91,8 @@ fields, and a primary button that links to a `#dashboard` frame.
 9. **Comments are `//`** to end of line. `#` is reserved for ids and links.
 
 10. **Frames.** Every top-level line is a `Wireframe` root (the optional
-    `Icons` block of rule 13 and the `Flow` directive of rule 11 are the only
-    other top-level forms): `Wireframe #id preset key=value...`
+    `Icons` block of rule 13, the `Flow` directive of rule 11, and the `Font`
+    directive of rule 14 are the only other top-level forms): `Wireframe #id preset key=value...`
 
     - `#id` names the frame (optional, but needed to link to it).
     - Preset: `mobile`, `landscape`, or `portrait`; or explicit `w=` **and**
@@ -139,7 +139,16 @@ fields, and a primary button that links to a `#dashboard` frame.
       logo "M12 2 2 22h20z"
     ```
 
-14. **Three failure modes.** *Hard errors* stop the render and must be fixed:
+14. **Font (optional -- usually omit it).** Text renders in a built-in
+    hand-drawn font that is embedded in the SVG. Only when a user asks for a
+    specific font, add one top-level `Font "Family Name"` line; `width=N`
+    (text width vs the built-in, e.g. `0.8`) and `leading=N` (line height,
+    default `1.4`) tune measurement for an unmeasured face. Known faces
+    (`Patrick Hand`, `Architects Daughter`) need no tuning. The family must be
+    installed or loaded by the viewer, else text falls back to Comic Neue /
+    Comic Sans MS.
+
+15. **Three failure modes.** *Hard errors* stop the render and must be fixed:
     tabs in indentation, unquoted text, an unknown component or property, an
     invalid or quoted enum value, the same prop set twice (e.g. via both
     `gap=` and `spacing=`). *Soft warnings* still render: a missing
@@ -148,7 +157,7 @@ fields, and a primary button that links to a `#dashboard` frame.
     `to=` link to a nonexistent frame, and children indented under a leaf
     component (anything without `[c]` in the list below drops its subtree).
 
-15. **Out of scope -- do not reach for these.** No styling (`style=`, `sx=`,
+16. **Out of scope -- do not reach for these.** No styling (`style=`, `sx=`,
     colors, themes -- hand-drawn is the only render model), no responsive
     breakpoints (one frame is one screen at one size), no x/y coordinates
     (nest and size instead), no deep links.
@@ -247,7 +256,7 @@ Wireframe #detail background=#shell anchor=#content
 To validate a wireframe, render it: save the block's contents as `x.wiremark`
 and run `npx @wiremark/cli x.wiremark -o x.svg` (Node 18+). Hard errors exit
 non-zero with a line number; warnings print to stderr while the SVG is still
-written. Remember rule 14: dead `to=` links and children under leaf components
+written. Remember rule 15: dead `to=` links and children under leaf components
 are silent -- inspect those by eye.
 
 ## Component list

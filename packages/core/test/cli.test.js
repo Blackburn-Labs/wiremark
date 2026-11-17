@@ -79,6 +79,50 @@ test('cli: single input writes <basename>.svg next to it', (t) => {
   assert.match(readFileSync(join(dir, 'a.svg'), 'utf8'), /^<svg /);
 });
 
+test('cli: embeds the sketch font by default; --no-embed-font leaves it out', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), 'Wireframe\n  Typography "Hello"\n');
+  assert.equal(runCLI(['a.wiremark', '-o', 'on.svg'], dir).status, 0);
+  assert.equal(runCLI(['a.wiremark', '-o', 'off.svg', '--no-embed-font'], dir).status, 0);
+  const on = readFileSync(join(dir, 'on.svg'), 'utf8');
+  const off = readFileSync(join(dir, 'off.svg'), 'utf8');
+  assert.match(on, /@font-face\{font-family:'wiremark-sketch'/);
+  assert.doesNotMatch(off, /@font-face/);
+  assert.match(off, /font-family="'wiremark-sketch', 'Comic Neue', 'Comic Sans MS'/, 'the stack stays');
+});
+
+test('cli: --font-family / --font-file embed the custom family instead of the built-in', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), 'Wireframe\n  Typography "Hello"\n');
+  writeFileSync(join(dir, 'brand.woff2'), new Uint8Array([0x77, 0x4f, 0x46, 0x32, 0, 0, 0, 0, 0, 0, 0, 0]));
+  const res = runCLI(['a.wiremark', '--font-family', 'Brand Sans', '--font-file', 'brand.woff2', '--font-leading', '1.6'], dir);
+  assert.equal(res.status, 0);
+  assert.equal(res.stderr, '');
+  const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
+  assert.match(svg, /@font-face\{font-family:'Brand Sans';src:url\(data:font\/woff2;base64,/);
+  assert.doesNotMatch(svg, /wiremark-sketch/);
+  assert.match(svg, /font-family="'Brand Sans', 'Comic Neue', 'Comic Sans MS'/);
+});
+
+test('cli: a document Font line beats --font-family', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), 'Font "Patrick Hand"\nWireframe\n  Typography "Hello"\n');
+  assert.equal(runCLI(['a.wiremark', '--font-family', 'Georgia'], dir).status, 0);
+  assert.match(readFileSync(join(dir, 'a.svg'), 'utf8'), /font-family="'Patrick Hand', 'Comic Neue'/);
+});
+
+test('cli: font flag errors -- non-numeric width, unreadable font file', (t) => {
+  const dir = tmpProject(t);
+  writeFileSync(join(dir, 'a.wiremark'), GOOD);
+  const nan = runCLI(['a.wiremark', '--font-width', 'wide'], dir);
+  assert.equal(nan.status, 1);
+  assert.match(nan.stderr, /--font-width expects a number, got "wide"/);
+  const missing = runCLI(['a.wiremark', '--font-family', 'X', '--font-file', 'nope.woff2'], dir);
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /cannot read font file/);
+  assert.ok(!existsSync(join(dir, 'a.svg')), 'nothing is written');
+});
+
 test('cli: -o writes the named file', (t) => {
   const dir = tmpProject(t);
   writeFileSync(join(dir, 'a.wiremark'), GOOD);
@@ -225,8 +269,13 @@ test('cli: the icon sanitizer survives evasive markup (unclosed/unquoted/URI/ext
   const svg = readFileSync(join(dir, 'a.svg'), 'utf8');
   assert.ok(svg.includes('M1 1L9 9'), 'legitimate artwork survives');
   assert.ok(svg.includes('href="#local"'), 'same-document references survive');
+  // Core's own sketch-font <style> (draw.js sketchFontStyle) legitimately opens
+  // every SVG; strip exactly that block so any <style> the ICON smuggled in
+  // still fails the check below.
+  const iconPart = svg.replace(/^(<svg[^>]*>)<style>[^<]*<\/style>/, '$1');
+  assert.notEqual(iconPart, svg, 'core\'s font <style> sits right after the <svg> root');
   for (const bad of ['<script', '<style', '<foreignObject', 'onload', 'onbegin', 'javascript:', 'evil.example']) {
-    assert.ok(!svg.includes(bad), `"${bad}" must not reach the output`);
+    assert.ok(!iconPart.includes(bad), `"${bad}" must not reach the output`);
   }
 });
 

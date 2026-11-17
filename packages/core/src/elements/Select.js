@@ -37,7 +37,7 @@ const FIELD_H = 40;
 const FS = 13;
 const PAD_X = 10;
 /** Run reserved at the right inset for the end-anchored ▾ caret (+ a small gap). */
-const CARET_W = measureText('▾', FS).w + 4;
+const CARET_W = () => measureText('▾', FS).w + 4; // a function: widths follow the render's font
 /** Small font for the floating label that sits ON the field's top border (MUI). */
 const FLOAT_FS = 11;
 
@@ -103,7 +103,7 @@ export default {
   // slot -- mirroring how TextField's intrinsic tracks its label, so a Select
   // inside a content-sized surface (a Dialog, a row) asks for enough width to
   // show its value untrimmed instead of the bare 2*pad of an optionless column.
-  minSize: (node) => ({ w: measureText(fieldContent(node).str, FS).w + 2 * PAD_X + CARET_W, h: 0 }),
+  minSize: (node) => ({ w: measureText(fieldContent(node).str, FS).w + 2 * PAD_X + CARET_W(), h: 0 }),
 
   render: (node, box) => {
     const variant = node.props.variant === 'filled' || node.props.variant === 'standard'
@@ -132,7 +132,7 @@ export default {
     // The chosen value (or label) text, faint when it's only a placeholder.
     const fc = fieldContent(node);
     out += text(fx + PAD_X, midY + FS * 0.35, fc.str,
-      { fontSize: FS, fill: fc.faint ? COLORS.muted : COLORS.ink, maxW: fw - 2 * PAD_X - CARET_W });
+      { fontSize: FS, fill: fc.faint ? COLORS.muted : COLORS.ink, maxW: fw - 2 * PAD_X - CARET_W() });
 
     // A ▾ caret at the right edge, the classic dropdown affordance (cf. TextField
     // `select`).

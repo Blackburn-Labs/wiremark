@@ -102,6 +102,36 @@ language.
 npx @wiremark/cli login.wiremark -o login-dark.svg --theme dark
 ```
 
+## Font
+
+Every SVG embeds its own copy of the sketch font,
+[Comic Neue](https://comicneue.com/) (SIL Open Font License), so text looks the
+same wherever the file is opened — no font needs to be installed. Only the
+weights the wireframe uses are embedded (about 24 KB each); a wireframe with no
+text embeds nothing.
+
+`--no-embed-font` leaves the font data out for smaller files. Text then uses an
+installed Comic Neue, or falls back to Comic Sans MS and other handwriting
+fonts:
+
+```sh
+npx @wiremark/cli login.wiremark -o login.svg --no-embed-font
+```
+
+To render in another font, use `--font-family` (a document's own
+[`Font` line](../guides/05-text-and-filler.md#font) takes precedence). Pass the
+font file with `--font-file` to embed it, so the SVG doesn't depend on the font
+being installed:
+
+```sh
+npx @wiremark/cli login.wiremark -o login.svg \
+  --font-family "Patrick Hand" --font-file PatrickHand-Regular.ttf
+```
+
+`--font-width` and `--font-leading` tune text measurement for fonts wiremark
+hasn't measured: width relative to the default font (`0.85` = 15% narrower) and
+line height as a multiple of the font size (default `1.4`).
+
 ## Installing the CLI
 
 For regular use, install the package globally; it provides a `wiremark`

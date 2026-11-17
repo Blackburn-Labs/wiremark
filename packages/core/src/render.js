@@ -1,7 +1,11 @@
 // @ts-check
 import { REGISTRY } from './registry.js';
 import { isOverlay } from './layout.js';
-import { COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip, backgroundHatch, BACKGROUNDS } from './draw.js';
+import {
+  COLORS, escape, connectorArrow, centeredLabel, scrollbarStrip, backgroundHatch, BACKGROUNDS,
+  fontStyle,
+} from './draw.js';
+import { DEFAULT_FONT } from './font.js';
 import { measureText, ARROW_HEAD, CONNECTOR_LABEL_PAD } from './metrics.js';
 import { inferComponents, planFlow, realizeRoutes } from './routing.js';
 
@@ -193,7 +197,11 @@ function frameBorder(frame) {
 
 /**
  * @param {LaidOutFrame[]} frames
- * @param {{ graph?: FlowGraph, direction?: 'TD'|'LR' }} [options]
+ * @param {{ graph?: FlowGraph, direction?: 'TD'|'LR', interactive?: boolean, embedFont?: boolean,
+ *   font?: import('./font.js').EffectiveFont }} [options]
+ *   `font` is the font this render uses (font.js resolveFont; default built-in).
+ *   `embedFont: false` omits every embedded face (the family rule and stack
+ *   stay) -- for hosts that load the font themselves.
  * @returns {string}  SVG markup
  */
 export function renderSVG(frames, options = {}) {
@@ -258,14 +266,40 @@ export function renderSVG(frames, options = {}) {
     ? boundsOf(placed, conn.bounds)
     : { x: 0, y: 0, w: maxEdge(placed, 'x'), h: maxEdge(placed, 'y') };
 
+  const body = blocks.join('') + (conn.markup ? `<g class="wm-connectors">${conn.markup}</g>` : '');
+  const font = options.font ?? DEFAULT_FONT;
+  // Embed only what the drawing needs: nothing without text or with
+  // embedFont:false; the built-in face's used weights; a custom family's
+  // host-supplied faces (no built-in embed -- tasks/FONT.md).
+  const embed = options.embedFont !== false && body.includes('<text ');
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${view.w}" height="${view.h}" `
     + `viewBox="${view.x} ${view.y} ${view.w} ${view.h}">`
+    + fontStyle({ ...font, faces: embed ? font.faces : [] }, embed ? usedWeights(body) : [])
     + `<rect x="${view.x}" y="${view.y}" width="${view.w}" height="${view.h}" fill="${COLORS.paper}"/>`
-    + blocks.join('')
-    + (conn.markup ? `<g class="wm-connectors">${conn.markup}</g>` : '')
+    // The family rides on this group twice: the presentation attribute (for
+    // renderers that ignore <style>) and the scoped <style> rule (which beats
+    // it in browsers and carries the --wiremark-font-family hook).
+    + `<g class="${font.className}" font-family="${font.stack}">${body}</g>`
     + '</svg>'
   );
+}
+
+/**
+ * Which built-in font faces a text-bearing body needs (tasks/FONT.md): the
+ * 400 face for any text, plus the 700 face only when some
+ * text is bold (weight >= 600 -- the browser maps 600 onto the 700 face). Read
+ * back from the markup itself, since `draw.text` is the only text emitter and
+ * always writes a numeric-or-keyword font-weight.
+ * @param {string} body @returns {Array<400|700>}
+ */
+function usedWeights(body) {
+  /** @type {Array<400|700>} */
+  const weights = [400];
+  for (const m of body.matchAll(/<text [^>]*font-weight="([^"]*)"/g)) {
+    if (Number(m[1]) >= 600 || m[1] === 'bold' || m[1] === 'bolder') { weights.push(700); break; }
+  }
+  return weights;
 }
 
 /** Far edge of the placed frames on one axis (legacy bounds). @param {Placed[]} placed @param {'x'|'y'} axis @returns {number} */

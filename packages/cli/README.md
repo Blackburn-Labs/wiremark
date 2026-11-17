@@ -21,17 +21,26 @@ parsing, layout, and rendering live there.
 
 ```
 wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir] [--theme light|dark]
+         [--font-family name] [--font-width n] [--font-leading n] [--font-file file] [--no-embed-font]
 
   -o, --out <file>     output path (exactly one input)
   -d, --out-dir <dir>  write each <input>.svg into <dir>, created if missing
   --icons <dir>        register every <name>.svg in <dir> as a custom icon "name"
   --theme <name>       color palette: light (default) or dark
+  --font-family <name> custom font family (a document's own Font line wins)
+  --font-width <n>     text width scale vs the built-in font (default: preset or 1)
+  --font-leading <n>   line height as a multiple of font size (default 1.4)
+  --font-file <file>   WOFF2/WOFF/TTF/OTF file of the custom family, embedded in each SVG
+  --no-embed-font      embed no font data (smaller SVGs)
 ```
 
 Custom icon files are resolved by the CLI: `--icons <dir>` injects a directory
 of SVGs, and `Icons`-block `src=./logo.svg` entries load relative to their
 input file. Built-in Material icon names need nothing. `--theme dark` renders
-with the dark palette for dark-mode hosts; the default is light.
+with the dark palette for dark-mode hosts; the default is light. Each SVG
+embeds the sketch font (Comic Neue) so text looks the same everywhere;
+`--no-embed-font` drops it for smaller files, falling back to installed fonts.
+`--font-family` picks another font (embed it with `--font-file`).
 
 Run on demand with `npx @wiremark/cli …`, or install globally for a `wiremark`
 command:

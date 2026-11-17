@@ -25,6 +25,7 @@ import { resolve as resolvePath, dirname, basename, join, extname } from 'node:p
 import { render } from './index.js';
 
 const USAGE = `Usage: wiremark <input.wiremark...> [-o out.svg | -d out-dir] [--icons icon-dir] [--theme light|dark]
+                [--font-family name] [--font-width n] [--font-leading n] [--font-file file] [--no-embed-font]
 
 Render .wiremark files to hand-drawn SVGs, one SVG per input.
 
@@ -32,6 +33,13 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
   -d, --out-dir <dir>  write each <input>.svg into <dir>, created if missing
   --icons <dir>        register every <name>.svg in <dir> as a custom icon "name"
   --theme <name>       color palette: light (default) or dark
+  --font-family <name> custom font family (a document's own Font line wins)
+  --font-width <n>     text width scale vs the built-in font (default: preset or 1)
+  --font-leading <n>   line height as a multiple of font size (default 1.4)
+  --font-file <file>   WOFF2/WOFF/TTF/OTF file of the custom family, embedded in
+                       each SVG (needs --font-family or a Font line)
+  --no-embed-font      embed no font data (smaller SVGs; text falls back to
+                       installed fonts: the family, Comic Neue, Comic Sans MS)
   -h, --help           show this help
 `;
 
@@ -42,27 +50,42 @@ Render .wiremark files to hand-drawn SVGs, one SVG per input.
  * @property {string|null} outDir  -d/--out-dir value
  * @property {string|null} iconDir --icons value
  * @property {string|null} theme   --theme value, handed to render() verbatim
+ * @property {boolean} embedFont  false after --no-embed-font
+ * @property {string|null} fontFamily  --font-family value, handed to render() verbatim
+ * @property {string|null} fontWidth   --font-width value (parsed by render's option check)
+ * @property {string|null} fontLeading --font-leading value
+ * @property {string|null} fontFile    --font-file path
  * @property {boolean} help
  * @property {string|null} error   first argv-level problem, printable as-is
  */
 
+/** Options that take a value (the next argv entry). */
+const VALUE_FLAGS = ['-o', '--out', '-d', '--out-dir', '--icons', '--theme',
+  '--font-family', '--font-width', '--font-leading', '--font-file'];
+
 /** @param {string[]} argv @returns {Args} */
 function parseArgs(argv) {
   /** @type {Args} */
-  const out = { inputs: [], output: null, outDir: null, iconDir: null, theme: null, help: false, error: null };
+  const out = { inputs: [], output: null, outDir: null, iconDir: null, theme: null, embedFont: true,
+    fontFamily: null, fontWidth: null, fontLeading: null, fontFile: null, help: false, error: null };
   let positionalOnly = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (positionalOnly || a === '-' || !a.startsWith('-')) out.inputs.push(a);
     else if (a === '--') positionalOnly = true;
-    else if (a === '-o' || a === '--out' || a === '-d' || a === '--out-dir' || a === '--icons' || a === '--theme') {
+    else if (VALUE_FLAGS.includes(a)) {
       const value = argv[++i];
       if (value === undefined) out.error ??= `error: ${a} requires a value`;
       else if (a === '-o' || a === '--out') out.output = value;
       else if (a === '--icons') out.iconDir = value;
       else if (a === '--theme') out.theme = value;
+      else if (a === '--font-family') out.fontFamily = value;
+      else if (a === '--font-width') out.fontWidth = value;
+      else if (a === '--font-leading') out.fontLeading = value;
+      else if (a === '--font-file') out.fontFile = value;
       else out.outDir = value;
-    } else if (a === '-h' || a === '--help') out.help = true;
+    } else if (a === '--no-embed-font') out.embedFont = false;
+    else if (a === '-h' || a === '--help') out.help = true;
     else out.error ??= `error: unknown option ${a}`;
   }
   return out;
@@ -160,11 +183,12 @@ function outputPathFor(inputPath, args) {
  * throwing so the caller can keep processing the remaining inputs.
  * @param {string} inputPath   resolved input path
  * @param {string} outputPath  resolved output path
- * @param {Record<string, *>} [icons]  injected icons shared by all inputs (--icons)
- * @param {string} [theme]  --theme value, passed through verbatim (core falls back to light)
+ * @param {Record<string, *>} shared  render options shared by every input:
+ *   icons (--icons), theme (--theme, verbatim -- core falls back to light),
+ *   embedFont, and the --font-* options (core validates them and warns)
  * @returns {boolean} true if the SVG was written
  */
-function renderOne(inputPath, outputPath, icons, theme) {
+function renderOne(inputPath, outputPath, shared) {
   let source;
   try {
     source = readFileSync(inputPath, 'utf8');
@@ -186,7 +210,7 @@ function renderOne(inputPath, outputPath, icons, theme) {
 
   let result;
   try {
-    result = render(source, { icons, loadIcon, theme });
+    result = render(source, { ...shared, loadIcon });
   } catch (err) {
     // WiremarkError messages already carry " (line N)".
     process.stderr.write(`${inputPath}: error: ${/** @type {Error} */ (err).message}\n`);
@@ -267,6 +291,26 @@ export function run(argv) {
     }
   }
 
+  /** @type {Record<string, *>} */
+  const shared = { icons, theme: args.theme ?? undefined, embedFont: args.embedFont };
+  if (args.fontFamily !== null) shared.fontFamily = args.fontFamily;
+  for (const [flag, key, value] of /** @type {const} */ ([
+    ['--font-width', 'fontWidth', args.fontWidth], ['--font-leading', 'fontLeading', args.fontLeading]])) {
+    if (value === null) continue;
+    const n = Number(value);
+    if (value.trim() === '' || !Number.isFinite(n)) return fail(`error: ${flag} expects a number, got "${value}"`);
+    shared[key] = n;
+  }
+  if (args.fontFile) {
+    // Core never reads files: the CLI hands it the bytes, and core checks the
+    // file signature before embedding (font.js).
+    try {
+      shared.fontFace = { data: new Uint8Array(readFileSync(resolvePath(args.fontFile))) };
+    } catch (err) {
+      return fail(`error: cannot read font file ${resolvePath(args.fontFile)}: ${/** @type {Error} */ (err).message}`);
+    }
+  }
+
   if (args.outDir) {
     try {
       mkdirSync(resolvePath(args.outDir), { recursive: true });
@@ -277,7 +321,7 @@ export function run(argv) {
 
   let failed = false;
   for (let i = 0; i < inputs.length; i++) {
-    if (!renderOne(inputs[i], outputs[i], icons, args.theme ?? undefined)) failed = true;
+    if (!renderOne(inputs[i], outputs[i], shared)) failed = true;
   }
   if (failed) process.exitCode = 1;
 }

@@ -113,6 +113,43 @@ neither is set, the renderer's own default applies.
 > not the look of the wireframe. wiremark has no `style=`/`sx=`; hand-drawn is
 > the one render model.
 
+## Font
+
+Text is drawn in [Comic Neue](https://comicneue.com/), a hand-drawn face that
+wiremark **embeds in every SVG** — the wireframe looks the same wherever it is
+opened, with nothing to install.
+
+To use a different font, add one top-level `Font` line anywhere in the file
+(like `Flow`, it applies to the whole document):
+
+```wireframe
+Font "Patrick Hand"
+
+Wireframe #login mobile
+  Typography h4 "Sign in"
+  Button "Continue" contained
+```
+
+The font is **not** embedded for you: it must be installed on the viewer's
+machine or loaded by the page showing the wireframe (a host app can also hand
+wiremark the font file to embed). If it is missing, text falls back to Comic
+Neue, then Comic Sans MS.
+
+wiremark measures text to size and wrap it, so a font noticeably wider or
+narrower than the default needs its measurements adjusted:
+
+```wireframe
+Font "Brand Hand" width=0.85 leading=1.3
+```
+
+- `width=` — how wide the font runs compared with the default (`1` = same,
+  `0.85` = 15% narrower). Default `1`.
+- `leading=` — line height as a multiple of the font size. Default `1.4`.
+
+`Patrick Hand` and `Architects Daughter` are pre-measured and need neither.
+`Font "Comic Neue"` means the default. A family name may contain letters,
+digits, spaces, `-`, `_`, and `.`.
+
 ## Which components take filler
 
 Any text-bearing element: `Typography`, `Button` (its label), `TextField` (label

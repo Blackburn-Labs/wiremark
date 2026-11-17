@@ -1,6 +1,7 @@
 // @ts-check
 import rough from 'roughjs';
-import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, truncateText, textRunWidth } from './metrics.js';
+import { LINE_HEIGHT, ARROW_HEAD, ARROW_SPREAD, CONNECTOR_WIDTH, FONT_SIZE_ADJUST, truncateText, textRunWidth } from './metrics.js';
+import { COMIC_NEUE_WOFF } from './fonts/comic-neue.js';
 
 /**
  * Hand-drawn SVG primitives shared by every element's `render` (SPEC ss.1 goal
@@ -76,9 +77,58 @@ export function setTheme(theme) {
     typeof theme === 'string' && Object.hasOwn(PALETTES, theme) ? PALETTES[theme] : PALETTES.light);
 }
 
-/** Handwriting-ish font stack for the sketch look (no font embedding). */
-export const SKETCH_FONT =
-  "'Comic Sans MS', 'Comic Sans', 'Marker Felt', 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', cursive";
+/**
+ * Private family name the embedded Comic Neue is declared under. Private so an
+ * inline SVG's (document-global) @font-face can never clash with a host page's
+ * own 'Comic Neue', and so its size-adjust never touches an installed copy.
+ */
+export const SKETCH_FAMILY = 'wiremark-sketch';
+
+/**
+ * Font stack for all sketch text (tasks/FONT.md): the embedded face first, then
+ * an installed Comic Neue, then the historical handwriting stack. The faces
+ * before `cursive` stay because `cursive` maps to script faces on some
+ * platforms, further from the look than any of them.
+ */
+export const SKETCH_FONT = `'${SKETCH_FAMILY}', 'Comic Neue', 'Comic Sans MS', 'Comic Sans', `
+  + "'Chalkboard SE', 'Marker Felt', 'Segoe Print', 'Bradley Hand', cursive";
+
+/**
+ * Class on the group that wraps a rendered document's content. The font rule is
+ * scoped to it because an inline SVG's <style> applies to the WHOLE host page:
+ * an unscoped `text {}` would restyle every other SVG there.
+ */
+export const SKETCH_CLASS = 'wm-sketch';
+
+/** data: URL media type per @font-face format. */
+const FONT_MIME = { woff2: 'font/woff2', woff: 'font/woff', truetype: 'font/ttf', opentype: 'font/otf' };
+
+/**
+ * The <style> block that applies the document's font (font.js decides which):
+ *  - built-in: one @font-face per embedded weight of the private
+ *    'wiremark-sketch' face (base64 WOFF, size-adjusted -- FONT_SIZE_ADJUST);
+ *  - custom family: the host-supplied faces, if any, under the family's own
+ *    name (no size-adjust -- its metrics come from width/leading instead).
+ * Then the family rule, scoped to the document group's class. It reads
+ * `--wiremark-font-family` first so a host page can restyle inline SVGs from
+ * CSS. Emitted even with no faces so the CSS hook keeps working. Family names
+ * and data are validated upstream (font.js), so nothing here needs escaping.
+ * @param {{ builtin: boolean, family: string, stack: string, className: string,
+ *   faces: Array<{ base64: string, format: 'woff2'|'woff'|'truetype'|'opentype', weight?: number }> }} font
+ * @param {Array<400|700>} builtinWeights   built-in faces to embed (ignored for a custom family)
+ * @returns {string}
+ */
+export function fontStyle(font, builtinWeights) {
+  const adjust = `${Math.round(FONT_SIZE_ADJUST * 100)}%`;
+  const faces = font.builtin
+    ? builtinWeights.map((w) => `@font-face{font-family:'${SKETCH_FAMILY}';`
+      + `src:url(data:font/woff;base64,${COMIC_NEUE_WOFF[w]}) format('woff');`
+      + `font-weight:${w};font-style:normal;size-adjust:${adjust}}`)
+    : font.faces.map((f) => `@font-face{font-family:'${font.family}';`
+      + `src:url(data:${FONT_MIME[f.format]};base64,${f.base64}) format('${f.format}');`
+      + `${f.weight !== undefined ? `font-weight:${f.weight};` : ''}font-style:normal}`);
+  return `<style>${faces.join('')}.${font.className} text{font-family:var(--wiremark-font-family, ${font.stack})}</style>`;
+}
 
 /** @param {*} s @returns {string} */
 export function escape(s) {
@@ -394,7 +444,9 @@ export function drawIcon(node, key, x, y, s, opts = {}) {
 }
 
 /**
- * A `<text>` element in the sketch font. `maxW` is the available run (px) from
+ * A `<text>` element in the sketch font. The family is not set per element: it
+ * is inherited from the document's SKETCH_CLASS group (presentation attribute)
+ * and its scoped <style> rule (render.js). `maxW` is the available run (px) from
  * the anchor in the text's direction; the string is trimmed to a '…'-terminated
  * prefix (metrics.truncateText, the same CHAR_W estimator measurement uses)
  * when it would measure wider. Omit it for unconstrained text (single glyphs,
@@ -407,7 +459,7 @@ export function drawIcon(node, key, x, y, s, opts = {}) {
 export function text(x, y, str, opts = {}) {
   const { fontSize = 16, weight = 400, anchor = 'start', fill = COLORS.ink, maxW } = opts;
   const s = truncateText(str, fontSize, maxW, weight);
-  return `<text x="${x}" y="${y}" font-family="${SKETCH_FONT}" font-size="${fontSize}" `
+  return `<text x="${x}" y="${y}" font-size="${fontSize}" `
     + `font-weight="${weight}" text-anchor="${anchor}" fill="${fill}">${escape(s)}</text>`;
 }
 

@@ -37,6 +37,7 @@ npm run build:browser --workspace @wiremark/core    # browser IIFE bundle -> pac
 
 npm run docs:reference              # regenerate docs/reference/components.md + the component list in site/static/wiremark-llm.md from meta/element-specs.json
 npm run icons:builtin               # regenerate the built-in icon module + docs/reference/icons.md from meta/builtin-icons.json
+npm run font:builtin                # regenerate the embedded sketch font module (packages/core/src/fonts/) from @fontsource/comic-neue
 cd site && npm start                # docs site dev server (regenerates the reference first)
 cd site && npm run build            # build the docs site
 ```
@@ -128,10 +129,24 @@ authoritative intent even though you can't open the file.
   80 KB budget enforced) — never edit it (or `docs/reference/icons.md`) by hand;
   change the JSON and `npm run icons:builtin`. Core never reads icon files: `src=`
   entries resolve through the host's `loadIcon` callback (the CLI implements it).
+- **Sketch font** (tasks/FONT.md). Every SVG embeds Comic Neue (OFL) as base64 WOFF under
+  the private family `wiremark-sketch` with `size-adjust: 110%` (`FONT_SIZE_ADJUST` in
+  `metrics.js`), only the weights the body uses; `render.js` wraps content in
+  `<g class="wm-sketch" font-family=...>` and `draw.js` `sketchFontStyle()` emits the
+  scoped `<style>`. `text()` never sets its own family. `embedFont: false` drops the data.
+  `metrics.js`'s truncation table is the per-glyph MAX of Comic Sans and Comic Neue, so
+  cuts are safe in the embed and the fallback. `src/fonts/comic-neue.js` (+ its
+  `OFL.txt`, which must ship) is **generated** by `scripts/generate-font.mjs` (60 KB
+  budget) -- never edit it; `npm run font:builtin`. Custom fonts (`Font "X"` directive,
+  `fontFamily`/`fontWidth`/`fontLeading`/`fontFace` options) resolve in `src/font.js`;
+  the document's `Font` beats the options (opposite of `Flow`). Text metrics are
+  per-render (`setFontMetrics`, live `LINE_HEIGHT` binding): never cache a
+  `measureText`/`LINE_HEIGHT` result in a module-level constant.
 - **Aliases** (`gap`→`spacing`, `w`→`width`, …) are declared per-prop and mapped to
   the canonical name by the resolver.
 - **Leaf modules avoid import cycles.** `common.js`, `metrics.js`, and `draw.js` import
-  nothing else from core, so every element can depend on them freely. All numeric
+  nothing else from core (except the generated, data-only `fonts/comic-neue.js`), so
+  every element can depend on them freely. All numeric
   layout/text constants live in `metrics.js`.
 - **All drawing goes through `draw.js`** (`surface`, `centeredLabel`, `rrect`,
   `rcrossbox`, `rline`, …). No element touches `roughjs` directly. Seeds are derived
