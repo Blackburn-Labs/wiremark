@@ -6,7 +6,8 @@ import { measureText, LINE_HEIGHT } from '../metrics.js';
 /** Text size for the label/value/helper/caret, its derived line height, the
  *  field heights per size, and the gaps around the field (px). */
 const FS = 12;
-const LINE_H = Math.ceil(FS * LINE_HEIGHT);
+/** Line height of field text -- a function: LINE_HEIGHT follows the render's font. */
+const LINE_H = () => Math.ceil(FS * LINE_HEIGHT);
 const FIELD_H = { small: 30, medium: 36 };
 const GAP = 4;                 // floating-label band -> field and field -> helper vertical gap
 const PAD_X = 10;              // inner horizontal padding for field text
@@ -14,7 +15,7 @@ const MULTILINE_ROWS = 3;      // default rows for a multiline field without `ro
 
 /** The `select` dropdown caret glyph and the run it reserves on the right edge (px). */
 const CARET = '▾';        // a small down-triangle
-const CARET_W = measureText(CARET, FS).w + 2;
+const CARET_W = () => measureText(CARET, FS).w + 2; // a function: widths follow the render's font
 
 /** Icon slot extent + its gap to the adjacent text (px) -- shared by intrinsic + render. */
 const ICON = 14;
@@ -23,7 +24,7 @@ const ICON_GAP = 6;
 /** Floating-label band height above the field (px): the small label sits ON the
  *  top border, so reserve its half-height as the gap before the field box. */
 const FLOAT_FS = 11;
-const FLOAT_BAND = Math.ceil(FLOAT_FS * LINE_HEIGHT);
+const FLOAT_BAND = () => Math.ceil(FLOAT_FS * LINE_HEIGHT); // a function: follows the render's font
 
 /** size enum -> field height (medium default). @param {*} node */
 const fieldHeight = (node) => FIELD_H[node.props.size === 'small' ? 'small' : 'medium'];
@@ -36,7 +37,7 @@ function rowCount(node) {
 }
 
 /** Total field height for a node (single height, or rows stacked). @param {*} node */
-const fieldBoxH = (node) => fieldHeight(node) + (rowCount(node) - 1) * LINE_H;
+const fieldBoxH = (node) => fieldHeight(node) + (rowCount(node) - 1) * LINE_H();
 
 /** The label string, or undefined when none is set. Read straight from props
  *  (NOT textOf) so an absent label draws nothing and reserves no space -- filler
@@ -175,15 +176,15 @@ export default {
     // band above the box; the inside/standard/filled label needs no extra height
     // (it sits within the field). Absent label reserves nothing.
     const label = labelStr(node);
-    const labelBand = label !== undefined && labelFloats(node) ? FLOAT_BAND + GAP : 0;
-    const helperH = typeof node.props.helperText === 'string' ? GAP + LINE_H : 0;
+    const labelBand = label !== undefined && labelFloats(node) ? FLOAT_BAND() + GAP : 0;
+    const helperH = typeof node.props.helperText === 'string' ? GAP + LINE_H() : 0;
     const labelW = label !== undefined ? measureText(label, FS).w : 0;
     // Reserve the same horizontal slots render uses, so a content-sized field (a
     // Dialog, a narrow row) is wide enough for its adornments; `block: true` makes
     // it fill a column anyway, but this floor keeps the icons/caret from squeezing
     // the text when the field is NOT stretched.
     const startW = node.props.startIcon ? ICON + ICON_GAP : 0;
-    const endW = node.props.endIcon ? ICON + ICON_GAP : (node.props.select ? CARET_W : 0);
+    const endW = node.props.endIcon ? ICON + ICON_GAP : (node.props.select ? CARET_W() : 0);
     return {
       w: Math.max(160, labelW) + startW + endW,
       h: labelBand + fieldBoxH(node) + helperH,
@@ -192,7 +193,7 @@ export default {
   render: (node, box) => {
     const label = labelStr(node);
     const floats = label !== undefined && labelFloats(node);
-    const fieldY = box.y + (floats ? FLOAT_BAND + GAP : 0);
+    const fieldY = box.y + (floats ? FLOAT_BAND() + GAP : 0);
     const fieldH = fieldBoxH(node);
     const muted = node.props.disabled;
     const ink = muted ? COLORS.muted : COLORS.ink;
@@ -215,7 +216,7 @@ export default {
       out += drawIcon(node, 'endIcon', box.x + box.w - PAD_X - ICON, iconCy, ICON, { ink, diagonal: false });
     }
     // Right-edge reserve: an explicit endIcon, else the `select` caret slot.
-    const caretReserve = node.props.select ? CARET_W : 0;
+    const caretReserve = node.props.select ? CARET_W() : 0;
     const endReserve = node.props.endIcon ? ICON + ICON_GAP : caretReserve;
 
     // `select` caret on the right edge (only when no endIcon claims that slot).

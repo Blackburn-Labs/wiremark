@@ -11,12 +11,14 @@
     "test": "node --test",
     "docs:reference": "node scripts/generate-reference.mjs",
     "icons:builtin": "node scripts/generate-icons.mjs",
-    "render:fixtures": "node scripts/render-fixtures.mjs"
+    "render:fixtures": "node scripts/render-fixtures.mjs",
+    "font:builtin": "node scripts/generate-font.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
+    "@fontsource/comic-neue": "^5.3.0",
     "@iconify-json/ic": "^1.2.4"
   }
 }

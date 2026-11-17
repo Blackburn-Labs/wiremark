@@ -3,6 +3,7 @@ import { WiremarkError, diagnostic } from './errors.js';
 import { getComponent } from './registry.js';
 import { DIRECTIONS, FLEX_DIRECTIONS, PRESETS } from './elements/common.js';
 import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
+import { isValidFamily, inRange, FONT_WIDTH_RANGE, FONT_LEADING_RANGE } from './font.js';
 
 /**
  * Stage (3) -- RESOLVE.  raw tree -> validated, semantic Document.
@@ -62,6 +63,7 @@ import { buildInjectedIcons, normalizeIconName, resolveIcon } from './icons.js';
  * @property {Frame[]} frames
  * @property {Diagnostic[]} diagnostics
  * @property {'TD'|'LR'} [flow]   // document-wide flow-chart orientation (`Flow` directive, ss.7.4)
+ * @property {import('./font.js').FontSpec} [font]   // document-wide font (`Font` directive, tasks/FONT.md)
  */
 
 /**
@@ -502,6 +504,49 @@ function collectFlow(raw, current, diagnostics) {
 }
 
 /**
+ * Consume one top-level `Font` directive (tasks/FONT.md) into the document-wide
+ * font: `Font "Patrick Hand"`, optionally `width=0.8` (horizontal scale vs the
+ * built-in font's measurements) and `leading=1.3` (line height as a multiple of
+ * font size). One literal family name, no children. The family is restricted to
+ * letters, digits, spaces, `-`, `_`, `.` -- it lands inside a CSS rule, so this
+ * is also the injection guard. A second `Font` warns and the first wins (as
+ * `Flow`). Everything else is an author-must-fix error.
+ * @param {RawNode} raw
+ * @param {import('./font.js').FontSpec|undefined} current
+ * @param {Diagnostic[]} diagnostics
+ * @returns {import('./font.js').FontSpec}
+ */
+function collectFont(raw, current, diagnostics) {
+  const loc = { line: raw.line };
+  const usage = '`Font "Family Name" [width=N] [leading=N]`';
+  if (raw.children.length) throw new WiremarkError(`Font takes no children -- it is a one-line directive (${usage})`, loc);
+  const literals = raw.tokens.filter((t) => t.kind === 'literal');
+  if (literals.length !== 1) throw new WiremarkError(`Font expects exactly one quoted family name (${usage})`, loc);
+  const family = literals[0].value;
+  if (!isValidFamily(family)) {
+    throw new WiremarkError(`Font: "${family}" is not a valid family name -- use letters, digits, spaces, - _ . (max 64 characters)`, loc);
+  }
+  /** @type {import('./font.js').FontSpec} */
+  const spec = { family };
+  for (const t of raw.tokens) {
+    if (t.kind === 'literal') continue;
+    if (t.kind === 'bare') throw new WiremarkError(`Font: unexpected token \`${t.value}\` (${usage})`, loc);
+    const range = t.key === 'width' ? FONT_WIDTH_RANGE : t.key === 'leading' ? FONT_LEADING_RANGE : null;
+    if (!range) throw new WiremarkError(`Font: unknown property "${t.key}=" -- only width= and leading=`, loc);
+    const n = Number(t.value);
+    if (t.quoted || !inRange(n, range)) {
+      throw new WiremarkError(`Font: ${t.key}= expects a number from ${range[0]} to ${range[1]}, got \`${t.value}\``, loc);
+    }
+    if (t.key === 'width') spec.width = n; else spec.leading = n;
+  }
+  if (current !== undefined) {
+    diagnostics.push(diagnostic('warning', `duplicate Font directive -- the first ("${current.family}") wins`, loc));
+    return current;
+  }
+  return spec;
+}
+
+/**
  * Post-pass over a resolved tree: resolve every icon-typed prop against the
  * lookup chain (inline -> injected -> built-in) and annotate the node for
  * draw.js's drawIcon (ICONS.md ss.3). An UNSET prop falls back to its
@@ -557,12 +602,15 @@ export function resolve(roots, options = {}) {
   const frameRoots = [];
   /** @type {'TD'|'LR'|undefined} */
   let flow;
-  // `Icons` and `Flow` roots are document-level declarations, not frames (ICONS.md
-  // ss.4a / SPEC ss.7.4): consume them wherever they appear; they apply document-
-  // wide regardless of source order.
+  /** @type {import('./font.js').FontSpec|undefined} */
+  let font;
+  // `Icons`, `Flow`, and `Font` roots are document-level declarations, not frames
+  // (ICONS.md ss.4a / SPEC ss.7.4 / tasks/FONT.md): consume them wherever they
+  // appear; they apply document-wide regardless of source order.
   for (const r of roots) {
     if (r.name === 'Icons') collectInlineIcons(r, inline, diagnostics, options);
     else if (r.name === 'Flow') flow = collectFlow(r, flow, diagnostics);
+    else if (r.name === 'Font') font = collectFont(r, font, diagnostics);
     else frameRoots.push(r);
   }
   const scopes = { inline, injected: buildInjectedIcons(/** @type {*} */ (options).icons) };
@@ -571,5 +619,5 @@ export function resolve(roots, options = {}) {
     checkElementIds(frame, diagnostics);
     annotateIcons(frame.children, scopes, diagnostics);
   }
-  return { frames, diagnostics, flow };
+  return font ? { frames, diagnostics, flow, font } : { frames, diagnostics, flow };
 }

@@ -18,6 +18,8 @@ import { layout } from './layout.js';
 import { layoutFrames } from './frame-layout.js';
 import { renderSVG } from './render.js';
 import { setTheme } from './draw.js';
+import { setFontMetrics } from './metrics.js';
+import { resolveFont } from './font.js';
 import { toFlowGraph, toMermaid } from './flow.js';
 
 export { REGISTRY, getComponent, isKnownComponent } from './registry.js';
@@ -55,6 +57,27 @@ export function parse(source, options = {}) {
  * @param {'TD'|'LR'} [options.direction]   flow direction override (default: TD)
  * @param {'light'|'dark'} [options.theme]  color palette (default 'light'; any
  *   unknown value falls back to light, never throws)
+ * @param {boolean} [options.embedFont]    default true: embed the font in the
+ *   SVG so text looks the same everywhere -- the built-in sketch font (Comic
+ *   Neue, as the private family 'wiremark-sketch', ~24 KB per weight used), or
+ *   a custom family's `fontFace` data. `false` omits all font data -- for hosts
+ *   that load the font themselves or accept the fallback stack (an installed
+ *   Comic Neue, then Comic Sans MS). Pages can also override the family for
+ *   inline SVG with the `--wiremark-font-family` CSS custom property.
+ * @param {string} [options.fontFamily]     host default custom font family
+ *   (tasks/FONT.md). A document `Font "X"` line wins over ALL font options.
+ *   Choosing a custom family turns off the built-in embed; the stack becomes
+ *   `'X', 'Comic Neue', 'Comic Sans MS', ...`. 'Comic Neue' means the built-in.
+ *   Invalid values warn and are ignored (never throws).
+ * @param {number} [options.fontWidth]      horizontal scale of text measurement
+ *   vs the built-in font (1 = same, 0.9 = 10% narrower; default: a measured
+ *   preset for known faces such as Patrick Hand, else 1). 0.3..3.
+ * @param {number} [options.fontLeading]    line height as a multiple of font
+ *   size (default 1.4). 0.8..4.
+ * @param {*} [options.fontFace]            the custom family's font file(s) to
+ *   embed: `{ data, family?, weight? }` or an array of them, where `data` is
+ *   base64 text or bytes (Uint8Array/ArrayBuffer) of a WOFF2, WOFF, TTF, or OTF
+ *   file. Core never reads files -- the host supplies the bytes.
  * @param {*} [options.icons]               injected icons (see `parse`)
  * @param {(src: string) => *} [options.loadIcon]  host icon-file loader (see `parse`)
  * @param {boolean} [options.interactive]   when true, wrap each element and frame in
@@ -66,23 +89,36 @@ export function parse(source, options = {}) {
  * @returns {{ svg: string, diagnostics: import('./errors.js').Diagnostic[] }}
  */
 export function render(input, options = {}) {
-  const doc = typeof input === 'string' ? parse(input, options) : input;
-  const frames = layout(doc, options);
-  const graph = toFlowGraph(doc);
-  const direction = resolveDirection(doc, options);
-  layoutFrames(frames, graph, { direction });
-  // Only the SVG stage reads colors: swap the palette around it and always
-  // restore, so a theme can never leak into the next render (tasks/THEME.md).
-  // The options spread is built BEFORE the swap so no caller code (accessor
-  // getters on `options`) can run -- and re-entrantly render -- inside the
-  // themed window.
-  const renderOptions = { ...options, graph, direction };
-  setTheme(options.theme);
+  // Snapshot the options first: everything below runs inside the font-metrics
+  // (and later palette) swap windows, and a caller's accessor getter must not
+  // run -- and re-entrantly render, resetting the shared state -- inside them.
+  const opts = { ...options };
+  const doc = typeof input === 'string' ? parse(input, opts) : input;
+  /** @type {import('./errors.js').Diagnostic[]} */
+  const fontDiagnostics = [];
+  const font = resolveFont(doc.font, opts, fontDiagnostics);
+  const diagnostics = fontDiagnostics.length ? [...doc.diagnostics, ...fontDiagnostics] : doc.diagnostics;
+  // Text metrics follow the font from layout onward (sizing happens in
+  // layout, not just at draw time); restore them no matter what, like the
+  // theme, so a font can never leak into the next render (tasks/FONT.md).
+  setFontMetrics(font);
   try {
-    const svg = renderSVG(frames, renderOptions);
-    return { svg, diagnostics: doc.diagnostics };
+    const frames = layout(doc, opts);
+    const graph = toFlowGraph(doc);
+    const direction = resolveDirection(doc, opts);
+    layoutFrames(frames, graph, { direction });
+    // Only the SVG stage reads colors: swap the palette around it and always
+    // restore, so a theme can never leak into the next render (tasks/THEME.md).
+    const renderOptions = { ...opts, graph, direction, font };
+    setTheme(opts.theme);
+    try {
+      const svg = renderSVG(frames, renderOptions);
+      return { svg, diagnostics };
+    } finally {
+      setTheme('light');
+    }
   } finally {
-    setTheme('light');
+    setFontMetrics();
   }
 }
 

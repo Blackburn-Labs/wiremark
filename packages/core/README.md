@@ -83,6 +83,32 @@ value falls back to it — never an error. The dark background is opaque;
 embedders that want a seamless surround should match the dark paper color,
 `#1e2127`.
 
+Text is drawn in [Comic Neue](https://comicneue.com/) (SIL Open Font License),
+which `render` embeds in each SVG under the private family name
+`wiremark-sketch` — so the output looks the same everywhere, including
+standalone `.svg` files and `<img>` embeds. Only the weights a wireframe uses
+are embedded (about 24 KB each). Core never fetches or reads font files. Hosts
+that load the font themselves can pass `embedFont: false` to omit it; text then
+falls back to an installed Comic Neue, then Comic Sans MS. For SVG placed inline
+in a page, the `--wiremark-font-family` CSS custom property overrides the font
+(layout is still measured for Comic Neue, so pick a face of similar width).
+
+To use another font, a document can say so itself (`Font "Patrick Hand"` — see
+the [text guide](https://docs.wiremark.dev/guides/text-and-filler#font)), or the
+host can set a default:
+
+```js
+render(source, {
+  fontFamily: 'Patrick Hand',   // a document's own `Font` line wins over these
+  fontWidth: 0.77,              // text width vs the default (known faces have presets)
+  fontLeading: 1.4,             // line height as a multiple of font size
+  fontFace: { data: bytes },    // optional: WOFF2/WOFF/TTF/OTF bytes or base64 to embed
+});
+```
+
+A custom font is not embedded unless you pass `fontFace` (core never reads font
+files), and it replaces the built-in embed rather than adding to it.
+
 Icon props accept [built-in Material icon names](https://docs.wiremark.dev/reference/icons)
 out of the box. To add your own, pass `icons` (a flat name-to-SVG map or
 Iconify icon packs) or a `loadIcon` callback in the options to `render`/`parse`
